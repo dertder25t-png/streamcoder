@@ -87,8 +87,9 @@ def _run(cmd, timeout):
     return subprocess.CompletedProcess(cmd, p.returncode, out, err)
 
 
-_MISSING_TSC = re.compile(r"TS(2305|2614|2307)\b.*solution|solution.*TS(2305|2614|2307)\b|"
-                          r"has no exported member|Cannot find module '\./solution'")
+# Only errors in the TEST file's import of "./solution" mean the expected export is missing.
+# Bad imports inside the solution itself (e.g. 'node:crypto' member, missing npm package) are type errors.
+_MISSING_TSC = re.compile(r"solution\.test\.tsx?\(\d+,\d+\): error TS(2305|2306|2307|2614|2724)\b")
 _MISSING_RUNTIME = re.compile(r"is not a function|is not a constructor|Element type is invalid|"
                               r"does not provide an export named|is not a module|is not iterable")
 

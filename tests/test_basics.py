@@ -59,3 +59,8 @@ def test_categorize():
     assert categorize(False, "test failed: TypeError: debounce is not a function") == "missing-export"
     assert categorize(False, "test failed: Error: Element type is invalid: expected a string") == "missing-export"
     assert categorize(False, "test failed: AssertionError: expected 3 to be 4") == "test-fail"
+    # bad imports inside the solution are type errors, not missing exports
+    assert categorize(False, "type error: .runs/x/solution.ts(1,22): error TS2305: Module '\"node:crypto\"' "
+                             "has no exported member 'createHasher'.") == "type-error"
+    assert categorize(False, "type error: .runs/x/solution.ts(1,27): error TS2307: Cannot find module "
+                             "'lodash' or its corresponding type declarations.") == "type-error"
