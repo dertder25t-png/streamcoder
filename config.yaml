@@ -16,6 +16,7 @@ library:
   index_path: data/library/index.joblib
   top_k: 3
   max_context_chars: 4000      # cap on retrieved text added to the prompt
+  include_docs: false          # recipes only (step 5 change 1); true = also search docs/ folders
   min_score: 0.12              # drop weak matches: irrelevant context can confuse a small model
 
 prefetch:

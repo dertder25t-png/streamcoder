@@ -74,7 +74,8 @@ RECIPE_BOOST = 1.5  # hand-written recipes beat raw docs when scores are close
 
 def search_pack(pack_data: dict, query: str, k: int):
     scores = linear_kernel(pack_data["vec"].transform([query]), pack_data["matrix"])[0]
-    scores = scores * [1.0 if d["source"].startswith("docs") else RECIPE_BOOST for d in pack_data["docs"]]
+    doc_weight = 1.0 if cfg()["library"].get("include_docs", True) else 0.0  # 0 = recipes only
+    scores = scores * [doc_weight if d["source"].startswith("docs") else RECIPE_BOOST for d in pack_data["docs"]]
     best = scores.argsort()[::-1][:k]
     return [dict(pack_data["docs"][i], score=round(float(scores[i]), 3)) for i in best if scores[i] > 0]
 
