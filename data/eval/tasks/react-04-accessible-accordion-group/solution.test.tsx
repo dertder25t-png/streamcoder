@@ -13,10 +13,15 @@ const items = [
 
 const trigger = (name: string) => screen.getByRole("button", { name });
 const expanded = (name: string) => trigger(name).getAttribute("aria-expanded");
-// A panel counts as visible when it is in the DOM and not inside a [hidden] ancestor.
+// A panel counts as visible when it is in the DOM, not inside a [hidden] ancestor,
+// and no ancestor has display:none (any common hiding technique is accepted).
 const visible = (text: string) => {
   const el = screen.queryByText(text);
-  return !!el && !el.closest("[hidden]");
+  if (!el || el.closest("[hidden]")) return false;
+  for (let n: HTMLElement | null = el; n; n = n.parentElement) {
+    if (getComputedStyle(n).display === "none") return false;
+  }
+  return true;
 };
 
 it("starts collapsed", () => {
