@@ -80,8 +80,13 @@ def run_tests(t, code: str):
     (run / f"solution{ext(t)}").write_text(code)
     for f in task_dir(t).glob("solution.test.*"):
         shutil.copy(f, run / f.name)
-    (run / "tsconfig.json").write_text(json.dumps(
-        {"extends": "../../tsconfig.base.json", "include": ["./*.ts", "./*.tsx"]}))
+    tsconfig = {"extends": "../../tsconfig.base.json", "include": ["./*.ts", "./*.tsx"]}
+    if t["topic"] == "react":
+        # Browser code: setTimeout returns number (DOM), not NodeJS.Timeout. The shim keeps
+        # code that annotates timers as NodeJS.Timeout compiling too, so both idioms pass.
+        tsconfig["compilerOptions"] = {"types": []}
+        (run / "node-shim.d.ts").write_text("declare namespace NodeJS { type Timeout = number; }\n")
+    (run / "tsconfig.json").write_text(json.dumps(tsconfig))
     bin_ = KIT / "node_modules" / ".bin"
     timeout = cfg()["eval"]["timeout_seconds"]
     try:
@@ -186,7 +191,7 @@ def main(argv=None):
                 info["route"] = route["pack"]
             else:
                 msgs = [{"role": "system", "content": SYSTEM}, {"role": "user", "content": prompt}]
-            out = llm.chat(a.model, msgs, max_tokens=2048)
+            out = llm.chat(a.model, msgs, max_tokens=2048, temperature=0)  # greedy: repeatable runs
             info.update(seconds=out["seconds"], tokens_per_sec=out["tokens_per_sec"], vram_mb=vram_used_mb())
             code = extract_code(out["text"])
         ok, err = run_tests(t, code)

@@ -35,7 +35,7 @@ it("does not mutate the input", () => {
   ];
   const snapshot = JSON.parse(JSON.stringify(input));
   const frozen = Object.freeze(input.map((e) => Object.freeze(e)));
-  collapseStatusLog(frozen);
+  collapseStatusLog(frozen as typeof input); // cast: criteria do not require a readonly parameter type
   expect(input).toEqual(snapshot);
 });
 

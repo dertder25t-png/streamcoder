@@ -7,7 +7,7 @@ it("never exceeds the concurrency limit and keeps input order", async () => {
   let active = 0;
   let peak = 0;
   const delays = [30, 5, 20, 1, 15, 2, 25, 3];
-  const out = await runTaskPool(delays, 3, async (ms, i) => {
+  const out = await runTaskPool(delays, 3, async (ms: number, i: number) => {
     active++;
     peak = Math.max(peak, active);
     await sleep(ms);
@@ -24,14 +24,14 @@ it("resolves [] for empty input", async () => {
 
 it("throws RangeError synchronously for invalid concurrency", () => {
   for (const c of [0, -1, 1.5, NaN]) {
-    expect(() => runTaskPool([1], c, async (x) => x)).toThrow(RangeError);
+    expect(() => runTaskPool([1], c, async (x: number) => x)).toThrow(RangeError);
   }
 });
 
 it("stops starting new items after a rejection", async () => {
   const started: number[] = [];
   const boom = new Error("boom");
-  const p = runTaskPool([0, 1, 2, 3, 4, 5], 2, async (x) => {
+  const p = runTaskPool([0, 1, 2, 3, 4, 5], 2, async (x: number) => {
     started.push(x);
     await sleep(10);
     if (x === 1) throw boom;
@@ -46,7 +46,7 @@ it("stops starting new items after a rejection", async () => {
 it("rejects with the abort reason and starts nothing new", async () => {
   const ctrl = new AbortController();
   const started: number[] = [];
-  const p = runTaskPool([0, 1, 2, 3, 4], 1, async (x) => {
+  const p = runTaskPool([0, 1, 2, 3, 4], 1, async (x: number) => {
     started.push(x);
     await sleep(20);
     return x;
