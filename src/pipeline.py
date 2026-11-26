@@ -25,15 +25,24 @@ def prefetcher():
     return _PF
 
 
+def search_query(prompt: str) -> str:
+    """Text used for routing and search. 'first_paragraph' = just the task description,
+    without requirement lists, broken code or output rules that add noise words."""
+    if cfg()["library"].get("query", "full") == "first_paragraph":
+        return prompt.strip().split("\n\n", 1)[0]
+    return prompt
+
+
 def build_messages(prompt: str, files=(), system: str = None):
-    route = router.predict(prompt)
+    query = search_query(prompt)
+    route = router.predict(query)
     pf = prefetcher()
     if route["trusted"]:
-        hits = pf.retrieve(prompt, route["pack"])
+        hits = pf.retrieve(query, route["pack"])
     else:  # unsure: look in the top two packs
         hits = []
         for pack, _ in route["pack_ranking"][:2]:
-            hits += pf.retrieve(prompt, pack)
+            hits += pf.retrieve(query, pack)
         hits = sorted(hits, key=lambda h: -h["score"])[: cfg()["library"]["top_k"]]
 
     min_score = cfg()["library"].get("min_score", 0)
