@@ -31,14 +31,25 @@ Both at once doesn't fit, so run them one at a time.
 - Comparison: the 14B version of the same family.
 - Draft for speculative decoding: the 0.5B version of the same family (must share the tokenizer).
 
+## Measured speed (llama-bench)
+2026-11-26, llama.cpp `0ac39e4`, Vulkan, `-ngl 99 -dev Vulkan1 -r 3`, defaults pp512 / tg128.
+Vulkan0 is the laptop's Intel Arc B390 iGPU. Always pass `--device Vulkan1` (the 6700 XT),
+or llama.cpp splits layers across both GPUs.
+
+| Model (Qwen2.5-Coder Instruct) | File size | Prompt pp512 (tok/s) | Generate tg128 (tok/s) |
+|---|---:|---:|---:|
+| 0.5B Q8_0 (draft) | 639 MiB | 7723.8 ± 11.2 | 165.1 ± 8.1 |
+| 7B Q4_K_M | 4.36 GiB | 789.1 ± 1.1 | 43.0 ± 0.3 |
+| 14B Q4_K_M | 8.37 GiB | 396.0 ± 0.0 | 23.4 ± 0.1 |
+
 ## Running llama-server
 ```bash
 # 7B, all layers on GPU, quantized KV cache, port 8080
-./llama.cpp/build/bin/llama-server -m models/coder-7b-q4_k_m.gguf \
-  -ngl 99 -c 8192 -ctk q8_0 -ctv q8_0 --port 8080
+./llama.cpp/build/bin/llama-server -m models/qwen2.5-coder-7b-instruct-q4_k_m.gguf \
+  --device Vulkan1 -ngl 99 -c 8192 -ctk q8_0 -ctv q8_0 --port 8080
 
 # later: + draft model for speculative decoding
-#   -md models/coder-0.5b-q8_0.gguf -ngld 99
+#   -md models/qwen2.5-coder-0.5b-instruct-q8_0.gguf -ngld 99 -devd Vulkan1
 # later: + LoRA skill packs loaded but off, switched by src/prefetch.py
 #   --lora data/adapters/python.gguf --lora data/adapters/web.gguf --lora-init-without-apply
 ```
