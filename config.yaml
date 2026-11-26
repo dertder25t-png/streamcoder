@@ -1,0 +1,30 @@
+# Where llama-server instances live. Run one at a time on 12 GB VRAM.
+models:
+  7b:
+    url: http://127.0.0.1:8080/v1
+    name: coder-7b
+  14b:
+    url: http://127.0.0.1:8080/v1   # same port; restart server with the 14B file
+    name: coder-14b
+
+router:
+  model_path: data/router/router.joblib
+  confidence_threshold: 0.60   # below this, don't trust the pack guess: search all packs
+
+library:
+  root: data/library
+  index_path: data/library/index.joblib
+  top_k: 3
+  max_context_chars: 4000      # cap on retrieved text added to the prompt
+  min_score: 0.12              # drop weak matches: irrelevant context can confuse a small model
+
+prefetch:
+  ram_budget_packs: 3          # how many packs to keep "warm" in memory
+  # LoRA ids as llama-server numbers them (order of --lora flags). Empty = no adapters yet.
+  lora_ids: {}
+  #  typescript: 0
+  #  react: 1
+  #  node: 2
+
+eval:
+  timeout_seconds: 20   # per tool (tsc / vitest) is 6x this

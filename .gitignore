@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.pyc
+models/
+llama.cpp/
+data/books/*
+!data/books/.gitkeep
+data/adapters/*.gguf
+data/library/*/books/
+*.joblib
+results/
+data/docs_src/
+data/library/*/docs/
+evalkit/node_modules/
+evalkit/.runs/
+*.gguf

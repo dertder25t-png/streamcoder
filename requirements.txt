@@ -1,0 +1,9 @@
+scikit-learn>=1.4
+numpy>=1.26
+joblib>=1.3
+pyyaml>=6.0
+pytest>=8.0
+# optional, for tools/ingest_books.py
+pypdf>=4.0
+ebooklib>=0.18
+beautifulsoup4>=4.12

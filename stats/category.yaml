@@ -1,0 +1,11 @@
+# Published scores for models in the same size class, for the stat sheet's comparison table.
+# Only add numbers you found in a real source (model card, paper, leaderboard), with the link.
+# Use the SAME benchmark for every row, or the comparison means nothing.
+# Your own runs of a public benchmark go here too (source: "my run, <date>").
+models: []
+#  - name: <model name>
+#    params: 7B
+#    quant: Q4_K_M        # or "fp16" if the source tested unquantized
+#    benchmark: HumanEval pass@1
+#    score: <number from the source>
+#    source: <url>

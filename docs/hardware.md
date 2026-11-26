@@ -1,0 +1,52 @@
+# Hardware notes: Framework + RX 6700 XT eGPU on Kubuntu
+
+## The card
+- RX 6700 XT: 12 GB VRAM, RDNA2 (chip id `gfx1031`).
+- ROCm doesn't officially support it. It usually works with
+  `export HSA_OVERRIDE_GFX_VERSION=10.3.0`, but that can break between versions.
+- **Start with llama.cpp's Vulkan backend.** It uses the normal Mesa (RADV) driver,
+  needs no ROCm and is often about as fast on RDNA2. Try ROCm later only if you want to compare.
+
+## The eGPU link
+- Thunderbolt/USB4 carries roughly 3–4 GB/s at best, versus 380+ GB/s inside the card.
+- Loading a 4.5 GB model takes a couple of seconds, so load it once at startup.
+- Once the model is in VRAM, generation speed is barely affected by the cable.
+- Swapping a LoRA adapter (~20–150 MB) or sending text is cheap. That's why the design streams those.
+- Check the link is working: `boltctl list` (authorized) and `vulkaninfo --summary` (card shows up).
+
+## VRAM budget (12 GB)
+| Thing | Approx. size |
+|---|---|
+| 7B coder, Q4_K_M | ~4.5 GB |
+| 14B coder, Q4_K_M | ~9 GB |
+| 0.5B draft model, Q8 | ~0.5 GB |
+| KV cache, 8k context, q8_0 | ~0.5–1 GB (7B) |
+| 2–3 LoRA adapters | ~0.1–0.4 GB |
+
+So 7B + draft + adapters + long context fits easily, and plain 14B fits for comparison runs.
+Both at once doesn't fit, so run them one at a time.
+
+## Models to try (check for newer versions first)
+- Main: a 7B coder instruct model in GGUF, e.g. Qwen2.5-Coder-7B-Instruct Q4_K_M.
+- Comparison: the 14B version of the same family.
+- Draft for speculative decoding: the 0.5B version of the same family (must share the tokenizer).
+
+## Running llama-server
+```bash
+# 7B, all layers on GPU, quantized KV cache, port 8080
+./llama.cpp/build/bin/llama-server -m models/coder-7b-q4_k_m.gguf \
+  -ngl 99 -c 8192 -ctk q8_0 -ctv q8_0 --port 8080
+
+# later: + draft model for speculative decoding
+#   -md models/coder-0.5b-q8_0.gguf -ngld 99
+# later: + LoRA skill packs loaded but off, switched by src/prefetch.py
+#   --lora data/adapters/python.gguf --lora data/adapters/web.gguf --lora-init-without-apply
+```
+Flag names change between llama.cpp versions. Check `llama-server --help` if one fails.
+
+## Training reality check
+Fine-tuning a 7B (QLoRA) on a 12 GB AMD card is possible but fiddly, because many
+training tools assume NVIDIA. Options:
+1. Phases 2–5 need no training at all except the CPU router. Do these first.
+2. Train LoRA adapters on a 1.5B model locally to learn the process.
+3. Rent a cloud GPU for an hour or two to train 7B adapters, then run them locally.
