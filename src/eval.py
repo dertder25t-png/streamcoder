@@ -114,6 +114,17 @@ def categorize(passed: bool, error: str) -> str | None:
     return "test-fail"
 
 
+def _short_with_cause(prefix: str, short: str, full: str):
+    """(False, saved_error, category). If the category comes from a line the short tail
+    dropped, put that line first, so categorize(saved_error) always equals the live category."""
+    cat = categorize(False, prefix + full)
+    if categorize(False, prefix + short) != cat:
+        pat = _MISSING_TSC if prefix.startswith("type") else _MISSING_RUNTIME
+        line = next((l.strip() for l in full.splitlines() if pat.search(l)), "")
+        short = f"{line} | {short}" if line else short
+    return False, prefix + short, cat
+
+
 def run_tests(t, code: str):
     """Returns (passed, short_error)."""
     return run_tests_cat(t, code)[:2]
@@ -140,13 +151,12 @@ def run_tests_cat(t, code: str):
     try:
         tsc = _run([str(bin_ / "tsc"), "-p", str(run / "tsconfig.json")], timeout * 6)
         if tsc.returncode != 0:
-            return False, "type error: " + _tail(tsc.stdout, 2), categorize(False, "type error: " + tsc.stdout)
+            return _short_with_cause("type error: ", _tail(tsc.stdout, 2), tsc.stdout)
         vt = _run([str(bin_ / "vitest"), "run", f".runs/{t['id']}"], timeout * 6)
         if vt.returncode != 0:
             fails = re.findall(r"FAIL .*?> (.+)", vt.stdout + vt.stderr)
             full = vt.stdout + vt.stderr
-            return (False, "test failed: " + ("; ".join(fails[:2]) or _tail(full)),
-                    categorize(False, "test failed: " + full))
+            return _short_with_cause("test failed: ", "; ".join(fails[:2]) or _tail(full), full)
         return True, "", None
     except subprocess.TimeoutExpired:
         return False, "timeout", "timeout"

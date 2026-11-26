@@ -64,3 +64,13 @@ def test_categorize():
                              "has no exported member 'createHasher'.") == "type-error"
     assert categorize(False, "type error: .runs/x/solution.ts(1,27): error TS2307: Cannot find module "
                              "'lodash' or its corresponding type declarations.") == "type-error"
+
+
+def test_saved_error_keeps_category():
+    from src.eval import _short_with_cause, categorize
+    full = ("x/solution.test.ts(2,10): error TS2305: Module '\"./solution\"' has no exported member 'f'.\n"
+            "x/solution.ts(5,3): error TS2322: Type 'string' is not assignable to type 'number'.\n"
+            "x/solution.ts(9,1): error TS7006: Parameter 'a' implicitly has an 'any' type.")
+    tail = "\n".join(full.splitlines()[-2:])
+    passed, saved, cat = _short_with_cause("type error: ", tail, full)
+    assert cat == "missing-export" and categorize(passed, saved) == cat
