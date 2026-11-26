@@ -19,6 +19,8 @@ import argparse
 import json
 import re
 import shutil
+import os
+import signal
 import subprocess
 import sys
 import time
@@ -71,6 +73,20 @@ def _tail(s: str, n=3) -> str:
     return " | ".join(lines[-n:])[:300]
 
 
+def _run(cmd, timeout):
+    """subprocess.run, but on timeout kill the whole process group: vitest's worker
+    processes would otherwise keep spinning on an infinite loop after the parent dies."""
+    p = subprocess.Popen(cmd, cwd=KIT, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                         text=True, start_new_session=True)
+    try:
+        out, err = p.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        os.killpg(p.pid, signal.SIGKILL)
+        p.communicate()
+        raise
+    return subprocess.CompletedProcess(cmd, p.returncode, out, err)
+
+
 def run_tests(t, code: str):
     """Returns (passed, short_error)."""
     run = KIT / ".runs" / t["id"]
@@ -90,12 +106,10 @@ def run_tests(t, code: str):
     bin_ = KIT / "node_modules" / ".bin"
     timeout = cfg()["eval"]["timeout_seconds"]
     try:
-        tsc = subprocess.run([str(bin_ / "tsc"), "-p", str(run / "tsconfig.json")],
-                             cwd=KIT, capture_output=True, text=True, timeout=timeout * 6)
+        tsc = _run([str(bin_ / "tsc"), "-p", str(run / "tsconfig.json")], timeout * 6)
         if tsc.returncode != 0:
             return False, "type error: " + _tail(tsc.stdout, 2)
-        vt = subprocess.run([str(bin_ / "vitest"), "run", f".runs/{t['id']}"],
-                            cwd=KIT, capture_output=True, text=True, timeout=timeout * 6)
+        vt = _run([str(bin_ / "vitest"), "run", f".runs/{t['id']}"], timeout * 6)
         if vt.returncode != 0:
             fails = re.findall(r"FAIL .*?> (.+)", vt.stdout + vt.stderr)
             return False, "test failed: " + ("; ".join(fails[:2]) or _tail(vt.stdout + vt.stderr))
