@@ -6,7 +6,7 @@ set -euo pipefail
 echo "==> System packages"
 sudo apt update
 sudo apt install -y build-essential cmake git curl python3-venv python3-pip \
-  libvulkan-dev vulkan-tools mesa-vulkan-drivers glslc bolt nodejs npm
+  libvulkan-dev vulkan-tools mesa-vulkan-drivers glslc spirv-headers bolt nodejs npm
 
 echo "==> Node version (need 18+)"
 node --version || true
