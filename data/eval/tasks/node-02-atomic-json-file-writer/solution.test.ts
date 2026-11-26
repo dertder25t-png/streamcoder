@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, expect, it } from "vitest";
@@ -17,6 +17,15 @@ it("writes pretty-printed JSON with trailing newline and leaves no temp files", 
   const text = readFileSync(p, "utf8");
   expect(text).toBe(JSON.stringify(data, null, 2) + "\n");
   expect(readdirSync(dir)).toEqual(["data.json"]);
+});
+
+it("replaces the file by renaming a temp file over it (not by rewriting it in place)", async () => {
+  const p = join(dir, "data.json");
+  writeFileSync(p, "old");
+  const before = statSync(p).ino;
+  await writeJsonAtomic(p, { n: 3 });
+  // A rename puts a different inode at filePath; an in-place write keeps the old one.
+  expect(statSync(p).ino).not.toBe(before);
 });
 
 it("overwrites an existing file", async () => {

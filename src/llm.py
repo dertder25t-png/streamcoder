@@ -6,7 +6,7 @@ import urllib.request
 from .config import cfg
 
 
-def chat(model_key: str, messages: list, max_tokens=1024, temperature=0.2) -> dict:
+def chat(model_key: str, messages: list, max_tokens=1024, temperature=0) -> dict:
     m = cfg()["models"][model_key]
     body = {"model": m["name"], "messages": messages,
             "max_tokens": max_tokens, "temperature": temperature}

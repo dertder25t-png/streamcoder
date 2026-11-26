@@ -87,8 +87,32 @@ def _run(cmd, timeout):
     return subprocess.CompletedProcess(cmd, p.returncode, out, err)
 
 
+_MISSING_TSC = re.compile(r"TS(2305|2614|2307)\b.*solution|solution.*TS(2305|2614|2307)\b|"
+                          r"has no exported member|Cannot find module '\./solution'")
+_MISSING_RUNTIME = re.compile(r"is not a function|is not a constructor|Element type is invalid|"
+                              r"does not provide an export named|is not a module|is not iterable")
+
+
+def categorize(passed: bool, error: str) -> str | None:
+    """Failure category from the (full) error text: missing-export, type-error, test-fail, timeout."""
+    if passed:
+        return None
+    if error == "timeout":
+        return "timeout"
+    if error.startswith("type error"):
+        return "missing-export" if _MISSING_TSC.search(error) else "type-error"
+    if _MISSING_RUNTIME.search(error):
+        return "missing-export"
+    return "test-fail"
+
+
 def run_tests(t, code: str):
     """Returns (passed, short_error)."""
+    return run_tests_cat(t, code)[:2]
+
+
+def run_tests_cat(t, code: str):
+    """Returns (passed, short_error, category); category is classified from the full output."""
     run = KIT / ".runs" / t["id"]
     if run.exists():
         shutil.rmtree(run)
@@ -108,14 +132,16 @@ def run_tests(t, code: str):
     try:
         tsc = _run([str(bin_ / "tsc"), "-p", str(run / "tsconfig.json")], timeout * 6)
         if tsc.returncode != 0:
-            return False, "type error: " + _tail(tsc.stdout, 2)
+            return False, "type error: " + _tail(tsc.stdout, 2), categorize(False, "type error: " + tsc.stdout)
         vt = _run([str(bin_ / "vitest"), "run", f".runs/{t['id']}"], timeout * 6)
         if vt.returncode != 0:
             fails = re.findall(r"FAIL .*?> (.+)", vt.stdout + vt.stderr)
-            return False, "test failed: " + ("; ".join(fails[:2]) or _tail(vt.stdout + vt.stderr))
-        return True, ""
+            full = vt.stdout + vt.stderr
+            return (False, "test failed: " + ("; ".join(fails[:2]) or _tail(full)),
+                    categorize(False, "test failed: " + full))
+        return True, "", None
     except subprocess.TimeoutExpired:
-        return False, "timeout"
+        return False, "timeout", "timeout"
 
 
 def vram_used_mb():
@@ -153,6 +179,7 @@ def record_run(a, results, detail_file):
         "avg_seconds": round(sum(r["seconds"] for r in results) / n, 2),
         "tokens_per_sec": round(sum(tps) / len(tps), 1) if tps else None,
         "peak_vram_mb": max(vram) if vram else None,
+        "fail_categories": dict(Counter(r["category"] for r in results if r.get("category"))),
         "commit": _git_commit(), "details": f"results/{detail_file}",
     }
     out = path("stats/runs.jsonl")
@@ -208,8 +235,9 @@ def main(argv=None):
             out = llm.chat(a.model, msgs, max_tokens=2048, temperature=0)  # greedy: repeatable runs
             info.update(seconds=out["seconds"], tokens_per_sec=out["tokens_per_sec"], vram_mb=vram_used_mb())
             code = extract_code(out["text"])
-        ok, err = run_tests(t, code)
-        results.append(dict(id=t["id"], topic=t["topic"], difficulty=t["difficulty"], passed=ok, error=err, **info))
+        ok, err, cat = run_tests_cat(t, code)
+        results.append(dict(id=t["id"], topic=t["topic"], difficulty=t["difficulty"], passed=ok, error=err,
+                            category=cat, **info))
         print(f"{'PASS' if ok else 'FAIL'}  {t['id']:<46} {err}")
 
     n = len(results)
@@ -221,6 +249,9 @@ def main(argv=None):
         sub = [r for r in results if key in (r["difficulty"], r["topic"])]
         if sub:
             print(f"  {key:<10} {sum(r['passed'] for r in sub)}/{len(sub)}")
+    cats = Counter(r["category"] for r in results if r["category"])
+    if cats:
+        print("  failures: " + ", ".join(f"{k} {v}" for k, v in sorted(cats.items())))
     if not a.reference:
         print(f"  avg time: {sum(r['seconds'] for r in results) / n:.1f}s")
         out_dir = path("results")

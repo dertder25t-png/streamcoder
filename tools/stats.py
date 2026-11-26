@@ -36,6 +36,13 @@ def num(x, fmt="{:.1f}"):
     return "–" if x is None else fmt.format(x)
 
 
+def fails(r):
+    fc = r.get("fail_categories")
+    if fc is None:
+        return "-"
+    return " / ".join(str(fc.get(k, 0)) for k in ("missing-export", "type-error", "test-fail", "timeout"))
+
+
 def main():
     runs = [json.loads(l) for l in RUNS.read_text().splitlines() if l.strip()] if RUNS.exists() else []
     lines = ["# StreamCoder stat sheet", "",
@@ -64,14 +71,14 @@ def main():
         lines.append("| _missing: run with `--label baseline` first_ | | | | | | | | |")
 
     lines += ["", "## 2. Development log", "",
-              "| # | Date | Change (label) | Model | Mode | Tasks | Pass | vs baseline | Hard | TS / React / Node | Sec/task | Tok/s | VRAM | Commit |",
-              "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+              "| # | Date | Change (label) | Model | Mode | Tasks | Pass | vs baseline | Hard | TS / React / Node | Sec/task | Tok/s | VRAM | Fails (missing/type/test/timeout) | Commit |",
+              "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for i, r in enumerate(runs, 1):
         b = base.get(r["model"])
         lines.append(f"| {i} | {r['date']} | {r['label']} | {r['model']} | {r['mode']} | {r['tasks']} | {pct(r['pass_rate'])} | "
                      f"{delta(r['pass_rate'], b and b['pass_rate'])} | {pct(r['hard'])} | "
                      f"{pct(r.get('typescript'))} / {pct(r.get('react'))} / {pct(r.get('node'))} | {num(r['avg_seconds'])} | "
-                     f"{num(r['tokens_per_sec'])} | {num(r['peak_vram_mb'], '{:,}')} | {r.get('commit') or '–'} |")
+                     f"{num(r['tokens_per_sec'])} | {num(r['peak_vram_mb'], '{:,}')} | {fails(r)} | {r.get('commit') or '–'} |")
 
     lines += ["", "## 3. Gap closed: 7B + StreamCoder vs plain 14B", ""]
     b7, b14 = base.get("7b"), base.get("14b")
