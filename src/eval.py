@@ -60,6 +60,13 @@ def build_prompt(t) -> str:
     parts.append("Requirements:\n" + "\n".join(f"- {c}" for c in t["criteria"]))
     lang = "tsx" if t["topic"] == "react" else "ts"
     parts.append(f"Reply with the full module in one ```{lang} code block.")
+    if cfg()["eval"].get("format_rules", False):
+        # Repeated at the very end so it comes AFTER any reference recipes (stream mode).
+        parts.append("Output rules (follow exactly):\n"
+                     f"- One ```{lang} code block containing the complete module, nothing else needed.\n"
+                     "- Use `export` on every name the task asks for (named exports, no `export default`).\n"
+                     "- Strict TypeScript: no implicit `any`, narrow `unknown` before use.\n"
+                     "- Only React and Node built-ins (`node:` modules); no other packages.")
     return "\n\n".join(parts)
 
 

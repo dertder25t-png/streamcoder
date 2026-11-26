@@ -28,4 +28,5 @@ prefetch:
   #  node: 2
 
 eval:
+  format_rules: true    # step 5 change 2: repeat output-format rules at the end of the prompt
   timeout_seconds: 20   # per tool (tsc / vitest) is 6x this
