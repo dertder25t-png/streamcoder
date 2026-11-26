@@ -28,5 +28,6 @@ prefetch:
   #  node: 2
 
 eval:
+  repair_retry: true    # step 5 change 3: one retry with compiler errors (solution compiled alone)
   format_rules: true    # step 5 change 2: repeat output-format rules at the end of the prompt
   timeout_seconds: 20   # per tool (tsc / vitest) is 6x this

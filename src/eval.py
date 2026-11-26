@@ -125,6 +125,36 @@ def _short_with_cause(prefix: str, short: str, full: str):
     return False, prefix + short, cat
 
 
+def _write_tsconfig(t, run: Path):
+    tsconfig = {"extends": "../../tsconfig.base.json", "include": ["./*.ts", "./*.tsx"]}
+    if t["topic"] == "react":
+        # Browser code: setTimeout returns number (DOM), not NodeJS.Timeout. The shim keeps
+        # code that annotates timers as NodeJS.Timeout compiling too, so both idioms pass.
+        tsconfig["compilerOptions"] = {"types": []}
+        (run / "node-shim.d.ts").write_text("declare namespace NodeJS { type Timeout = number; }\n")
+    (run / "tsconfig.json").write_text(json.dumps(tsconfig))
+
+
+def compile_alone(t, code: str, max_lines=15) -> str:
+    """Type-check the solution ON ITS OWN (no test file), same compiler settings as grading.
+    Returns compiler errors ('' if clean). Safe to show the model: nothing about the hidden tests."""
+    run = KIT / ".runs" / f"{t['id']}--tsc"
+    if run.exists():
+        shutil.rmtree(run)
+    run.mkdir(parents=True)
+    (run / f"solution{ext(t)}").write_text(code)
+    _write_tsconfig(t, run)
+    try:
+        tsc = _run([str(KIT / "node_modules" / ".bin" / "tsc"), "-p", str(run / "tsconfig.json")],
+                   cfg()["eval"]["timeout_seconds"] * 6)
+    except subprocess.TimeoutExpired:
+        return ""
+    if tsc.returncode == 0:
+        return ""
+    lines = [re.sub(r"^.*?(solution\.tsx?\()", r"\1", l) for l in tsc.stdout.splitlines() if l.strip()]
+    return "\n".join(lines[:max_lines])
+
+
 def run_tests(t, code: str):
     """Returns (passed, short_error)."""
     return run_tests_cat(t, code)[:2]
@@ -139,13 +169,7 @@ def run_tests_cat(t, code: str):
     (run / f"solution{ext(t)}").write_text(code)
     for f in task_dir(t).glob("solution.test.*"):
         shutil.copy(f, run / f.name)
-    tsconfig = {"extends": "../../tsconfig.base.json", "include": ["./*.ts", "./*.tsx"]}
-    if t["topic"] == "react":
-        # Browser code: setTimeout returns number (DOM), not NodeJS.Timeout. The shim keeps
-        # code that annotates timers as NodeJS.Timeout compiling too, so both idioms pass.
-        tsconfig["compilerOptions"] = {"types": []}
-        (run / "node-shim.d.ts").write_text("declare namespace NodeJS { type Timeout = number; }\n")
-    (run / "tsconfig.json").write_text(json.dumps(tsconfig))
+    _write_tsconfig(t, run)
     bin_ = KIT / "node_modules" / ".bin"
     timeout = cfg()["eval"]["timeout_seconds"]
     try:
@@ -253,6 +277,18 @@ def main(argv=None):
             out = llm.chat(a.model, msgs, max_tokens=2048, temperature=0)  # greedy: repeatable runs
             info.update(seconds=out["seconds"], tokens_per_sec=out["tokens_per_sec"], vram_mb=vram_used_mb())
             code = extract_code(out["text"])
+            if cfg()["eval"].get("repair_retry", False):
+                errors = compile_alone(t, code)
+                if errors:  # one retry; the model sees compiler output only, never the tests
+                    lang = "tsx" if t["topic"] == "react" else "ts"
+                    msgs = msgs + [{"role": "assistant", "content": out["text"]},
+                                   {"role": "user", "content": "The TypeScript compiler (strict mode) reported:\n"
+                                    f"```\n{errors}\n```\nFix these errors. Reply with the full corrected "
+                                    f"module in one ```{lang} code block."}]
+                    out2 = llm.chat(a.model, msgs, max_tokens=2048, temperature=0)
+                    code = extract_code(out2["text"])
+                    info["seconds"] = round(info["seconds"] + out2["seconds"], 2)
+                    info["repaired"] = True
         ok, err, cat = run_tests_cat(t, code)
         results.append(dict(id=t["id"], topic=t["topic"], difficulty=t["difficulty"], passed=ok, error=err,
                             category=cat, **info))
