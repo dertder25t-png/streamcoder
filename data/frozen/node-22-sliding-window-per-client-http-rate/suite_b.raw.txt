@@ -1,0 +1,55 @@
+- Allows up to maxRequests within any rolling windowMs interval per client key, returning HTTP 429 with an accurate integer Retry-After header (in seconds) once exceeded.
+- Sets X-RateLimit-Limit and X-RateLimit-Remaining headers accurately on both allowed and blocked responses.
+- Evicts expired client buckets automatically so memory does not grow unbounded under rotating client keys.
+
+```ts
+import { createRateLimiter } from './createRateLimiter'; // Adjust the import path as necessary
+
+test("allows up to maxRequests within any rolling windowMs interval per client key", async () => {
+  const { wrap, size } = createRateLimiter({ windowMs: 1000, maxRequests: 2, keyFn: () => 'client1', now: () => Date.now() });
+  const handler = vi.fn();
+  const wrappedHandler = wrap(handler);
+
+  wrappedHandler({}, {}); // First request
+  expect(handler).toHaveBeenCalledTimes(1);
+
+  wrappedHandler({}, {}); // Second request
+  expect(handler).toHaveBeenCalledTimes(2);
+
+  wrappedHandler({}, {}); // Third request, should be blocked
+  expect(handler).toHaveBeenCalledTimes(2);
+  expect(handler).not.toHaveBeenCalledWith({}, {});
+});
+
+test("sets X-RateLimit-Limit and X-RateLimit-Remaining headers accurately on both allowed and blocked responses", async () => {
+  const { wrap } = createRateLimiter({ windowMs: 1000, maxRequests: 2, keyFn: () => 'client1', now: () => Date.now() });
+  const handler = vi.fn();
+  const wrappedHandler = wrap(handler);
+
+  const res = { setHeader: vi.fn() };
+  wrappedHandler({}, res);
+  expect(res.setHeader).toHaveBeenCalledWith('X-RateLimit-Limit', 2);
+  expect(res.setHeader).toHaveBeenCalledWith('X-RateLimit-Remaining', 1);
+
+  wrappedHandler({}, res);
+  expect(res.setHeader).toHaveBeenCalledWith('X-RateLimit-Limit', 2);
+  expect(res.setHeader).toHaveBeenCalledWith('X-RateLimit-Remaining', 0);
+
+  wrappedHandler({}, res);
+  expect(res.setHeader).toHaveBeenCalledWith('X-RateLimit-Limit', 2);
+  expect(res.setHeader).toHaveBeenCalledWith('X-RateLimit-Remaining', 0);
+  expect(res.setHeader).toHaveBeenCalledWith('Retry-After', 1);
+});
+
+test("evicts expired client buckets automatically so memory does not grow unbounded under rotating client keys", async () => {
+  const { wrap, size } = createRateLimiter({ windowMs: 1000, maxRequests: 2, keyFn: () => 'client1', now: () => Date.now() });
+  const handler = vi.fn();
+  const wrappedHandler = wrap(handler);
+
+  wrappedHandler({}, {});
+  wrappedHandler({}, {});
+  wrappedHandler({}, {}); // Should evict the first request
+
+  expect(size()).toBe(1);
+});
+```

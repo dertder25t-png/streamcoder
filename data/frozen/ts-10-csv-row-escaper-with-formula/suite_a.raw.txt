@@ -1,0 +1,22 @@
+- null and undefined render as empty fields
+- strings containing commas, quotes, or newlines are wrapped in double quotes with internal quotes doubled
+- String values starting with =, +, -, or @ are prefixed with a single quote ' before quoting
+- Actual negative numbers passed as number (such as -42) are serialized as -42 without a leading apostrophe
+
+```ts
+test("null and undefined render as empty fields", () => {
+  expect(formatCsvRow([null, undefined])).toBe(',,');
+});
+
+test("strings containing commas, quotes, or newlines are wrapped in double quotes with internal quotes doubled", () => {
+  expect(formatCsvRow(["a,b", 'a"b', "a\nb"])).toBe('"a,b","a""b","a\nb"');
+});
+
+test("String values starting with =, +, -, or @ are prefixed with a single quote ' before quoting", () => {
+  expect(formatCsvRow(["=a", "+b", "-c", "@d"])).toBe("='a',+'b','-c','@d'");
+});
+
+test("Actual negative numbers passed as number (such as -42) are serialized as -42 without a leading apostrophe", () => {
+  expect(formatCsvRow([-42, 42])).toBe('-42,42');
+});
+```

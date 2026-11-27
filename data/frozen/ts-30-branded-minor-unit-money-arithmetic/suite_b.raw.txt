@@ -1,0 +1,37 @@
+- Test that `money` throws a `RangeError` for non-integer minorUnits.
+- Test that `addMoney` throws a `RangeError` for different currencies.
+- Test that `allocateMoney` throws a `RangeError` for all-zero or negative ratios.
+- Test that `allocateMoney` distributes money correctly using deterministic largest-remainder or sequential penny distribution.
+- Test that `allocateMoney` returns shares summing exactly to the total.
+- Test that `allocateMoney` handles edge cases like empty ratios array.
+
+```ts
+import * as S from './module'; // Adjust the import path as necessary
+
+test("money throws a RangeError for non-integer minorUnits", () => {
+  expect(() => S.money(100.5, "USD")).toThrow(RangeError);
+});
+
+test("addMoney throws a RangeError for different currencies", () => {
+  expect(() => S.addMoney(S.money(100, "USD"), S.money(100, "EUR"))).toThrow(RangeError);
+});
+
+test("allocateMoney throws a RangeError for all-zero or negative ratios", () => {
+  expect(() => S.allocateMoney(S.money(100, "USD"), [0, 0, 0])).toThrow(RangeError);
+  expect(() => S.allocateMoney(S.money(100, "USD"), [-1, 1, 1])).toThrow(RangeError);
+});
+
+test("allocateMoney distributes money correctly using deterministic largest-remainder or sequential penny distribution", () => {
+  const shares = S.allocateMoney(S.money(100, "USD"), [1, 1, 1]);
+  expect(shares).toEqual([34, 33, 33]);
+});
+
+test("allocateMoney returns shares summing exactly to the total", () => {
+  const shares = S.allocateMoney(S.money(100, "USD"), [1, 1, 1]);
+  expect(shares.reduce((acc, share) => acc + share, 0)).toBe(100);
+});
+
+test("allocateMoney handles edge cases like empty ratios array", () => {
+  expect(() => S.allocateMoney(S.money(100, "USD"), [])).toThrow(RangeError);
+});
+```

@@ -1,0 +1,58 @@
+- Formats boundaries accurately (59s → "just now", 60s → "1m ago", 3600s → "1h ago").
+- Advances its displayed text automatically when fake timers advance without requiring prop changes.
+- Clears its interval timer cleanly when unmounted.
+
+```tsx
+import React from 'react';
+import { render, screen, cleanup, act, waitFor, vi } from '@testing-library/react';
+import TimeAgoLabel from './TimeAgoLabel';
+
+afterEach(cleanup);
+
+test("displays 'just now' for timestamps within 60s", async () => {
+  const timestampMs = Date.now() - 50000;
+  render(<TimeAgoLabel timestampMs={timestampMs} />);
+  expect(screen.getByRole('time')).toHaveTextContent('just now');
+});
+
+test("displays '1m ago' for timestamps within 60m", async () => {
+  const timestampMs = Date.now() - 600000;
+  render(<TimeAgoLabel timestampMs={timestampMs} />);
+  expect(screen.getByRole('time')).toHaveTextContent('1m ago');
+});
+
+test("displays '1h ago' for timestamps within 3600s", async () => {
+  const timestampMs = Date.now() - 3600000;
+  render(<TimeAgoLabel timestampMs={timestampMs} />);
+  expect(screen.getByRole('time')).toHaveTextContent('1h ago');
+});
+
+test("advances its displayed text automatically when fake timers advance", async () => {
+  vi.useFakeTimers();
+  const timestampMs = Date.now() - 50000;
+  render(<TimeAgoLabel timestampMs={timestampMs} />);
+  expect(screen.getByRole('time')).toHaveTextContent('just now');
+
+  act(() => {
+    vi.advanceTimersByTime(60000);
+  });
+  await waitFor(() => {
+    expect(screen.getByRole('time')).toHaveTextContent('1m ago');
+  });
+});
+
+test("clears its interval timer cleanly when unmounted", async () => {
+  vi.useFakeTimers();
+  const timestampMs = Date.now() - 50000;
+  const { unmount } = render(<TimeAgoLabel timestampMs={timestampMs} />);
+  expect(screen.getByRole('time')).toHaveTextContent('just now');
+
+  unmount();
+  act(() => {
+    vi.advanceTimersByTime(60000);
+  });
+  await waitFor(() => {
+    expect(screen.queryByRole('time')).toBeNull();
+  });
+});
+```

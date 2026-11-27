@@ -1,0 +1,67 @@
+- The search input updates immediately on keystrokes while list filtering waits until delayMs elapses after the last keystroke.
+- Matches against either name or department, and displays "No matching people" when zero entries match.
+- Clears any pending debounce timer on unmount and when the user clicks a "Clear" button (which resets immediately without waiting for debounce).
+
+```tsx
+import React from 'react';
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import FilterableDirectory from './FilterableDirectory';
+
+afterEach(cleanup);
+
+test('search input updates immediately on keystrokes', async () => {
+  render(<FilterableDirectory entries={[{ id: '1', name: 'Alice', department: 'HR' }]} />);
+  const searchInput = screen.getByRole('textbox');
+  fireEvent.change(searchInput, { target: { value: 'A' } });
+  expect(screen.getByText('Alice')).toBeInTheDocument();
+});
+
+test('list filtering waits until delayMs elapses after the last keystroke', async () => {
+  vi.useFakeTimers();
+  render(<FilterableDirectory entries={[{ id: '1', name: 'Alice', department: 'HR' }]} delayMs={100} />);
+  const searchInput = screen.getByRole('textbox');
+  fireEvent.change(searchInput, { target: { value: 'A' } });
+  expect(screen.queryByText('Alice')).not.toBeInTheDocument();
+  vi.advanceTimersByTime(100);
+  await waitFor(() => expect(screen.getByText('Alice')).toBeInTheDocument());
+  vi.useRealTimers();
+});
+
+test('matches against either name or department', async () => {
+  render(<FilterableDirectory entries={[{ id: '1', name: 'Alice', department: 'HR' }, { id: '2', name: 'Bob', department: 'IT' }]} />);
+  const searchInput = screen.getByRole('textbox');
+  fireEvent.change(searchInput, { target: { value: 'IT' } });
+  expect(screen.getByText('Bob')).toBeInTheDocument();
+});
+
+test('displays "No matching people" when zero entries match', async () => {
+  render(<FilterableDirectory entries={[{ id: '1', name: 'Alice', department: 'HR' }]} />);
+  const searchInput = screen.getByRole('textbox');
+  fireEvent.change(searchInput, { target: { value: 'Z' } });
+  expect(screen.getByText('No matching people')).toBeInTheDocument();
+});
+
+test('clears any pending debounce timer on unmount', async () => {
+  vi.useFakeTimers();
+  render(<FilterableDirectory entries={[{ id: '1', name: 'Alice', department: 'HR' }]} delayMs={100} />);
+  const searchInput = screen.getByRole('textbox');
+  fireEvent.change(searchInput, { target: { value: 'A' } });
+  expect(screen.queryByText('Alice')).not.toBeInTheDocument();
+  unmount();
+  vi.advanceTimersByTime(100);
+  expect(screen.queryByText('Alice')).not.toBeInTheDocument();
+  vi.useRealTimers();
+});
+
+test('clears any pending debounce timer when the user clicks a "Clear" button', async () => {
+  vi.useFakeTimers();
+  render(<FilterableDirectory entries={[{ id: '1', name: 'Alice', department: 'HR' }]} delayMs={100} />);
+  const searchInput = screen.getByRole('textbox');
+  fireEvent.change(searchInput, { target: { value: 'A' } });
+  expect(screen.queryByText('Alice')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+  vi.advanceTimersByTime(100);
+  expect(screen.queryByText('Alice')).not.toBeInTheDocument();
+  vi.useRealTimers();
+});
+```

@@ -1,0 +1,66 @@
+```ts
+probe("basic batch", async () => {
+  const stream = createNdjsonBatchStream({ maxBatchSize: 2 });
+  const chunks = [
+    Buffer.from('{"a":1}\n{"b":2}\n{"c":3}\n'),
+    Buffer.from('{"d":4}\n{"e":5}\n{"f":6}\n'),
+  ];
+  const results: any[] = [];
+  stream.on('data', (batch) => results.push(batch));
+  chunks.forEach(chunk => stream.write(chunk));
+  stream.end();
+  return results;
+});
+
+probe("invalid JSON", async () => {
+  const stream = createNdjsonBatchStream({ maxBatchSize: 2 });
+  const chunks = [
+    Buffer.from('{"a":1}\n{"b":2}\n{"c":3}\n'),
+    Buffer.from('{"d":4}\n{"e":5}\n{"f":6}\n'),
+  ];
+  const results: any[] = [];
+  stream.on('data', (batch) => results.push(batch));
+  stream.on('error', (err) => results.push(err));
+  chunks.forEach(chunk => stream.write(chunk));
+  stream.write(Buffer.from('{"g":7\n{"h":8}\n'));
+  stream.end();
+  return results;
+});
+
+probe("empty input", async () => {
+  const stream = createNdjsonBatchStream({ maxBatchSize: 2 });
+  const results: any[] = [];
+  stream.on('data', (batch) => results.push(batch));
+  stream.end();
+  return results;
+});
+
+probe("maxBatchSize 1", async () => {
+  const stream = createNdjsonBatchStream({ maxBatchSize: 1 });
+  const chunks = [
+    Buffer.from('{"a":1}\n{"b":2}\n{"c":3}\n'),
+    Buffer.from('{"d":4}\n{"e":5}\n{"f":6}\n'),
+  ];
+  const results: any[] = [];
+  stream.on('data', (batch) => results.push(batch));
+  chunks.forEach(chunk => stream.write(chunk));
+  stream.end();
+  return results;
+});
+
+probe("non-integer maxBatchSize", async () => {
+  try {
+    createNdjsonBatchStream({ maxBatchSize: '2' });
+  } catch (err) {
+    return err;
+  }
+});
+
+probe("negative maxBatchSize", async () => {
+  try {
+    createNdjsonBatchStream({ maxBatchSize: -1 });
+  } catch (err) {
+    return err;
+  }
+});
+```

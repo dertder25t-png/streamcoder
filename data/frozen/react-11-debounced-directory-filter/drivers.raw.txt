@@ -1,0 +1,25 @@
+```ts
+probe("Initial state", async () => {
+  render(<FilterableDirectory entries={[]} />);
+  return snap();
+});
+
+probe("Filtering with matches", async () => {
+  render(<FilterableDirectory entries={[{ id: "1", name: "Alice", department: "HR" }, { id: "2", name: "Bob", department: "Tech" }]} />);
+  fireEvent.change(screen.getByRole("textbox"), { target: { value: "al" } });
+  return snap();
+});
+
+probe("Filtering with no matches", async () => {
+  render(<FilterableDirectory entries={[{ id: "1", name: "Alice", department: "HR" }, { id: "2", name: "Bob", department: "Tech" }]} />);
+  fireEvent.change(screen.getByRole("textbox"), { target: { value: "xyz" } });
+  return snap();
+});
+
+probe("Clear button resets", async () => {
+  render(<FilterableDirectory entries={[{ id: "1", name: "Alice", department: "HR" }, { id: "2", name: "Bob", department: "Tech" }]} />);
+  fireEvent.change(screen.getByRole("textbox"), { target: { value: "al" } });
+  fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+  return snap();
+});
+```

@@ -1,0 +1,29 @@
+```ts
+probe("empty array", async () => {
+  return chunkArray([], 2);
+});
+
+probe("single element", async () => {
+  return chunkArray([1], 1);
+});
+
+probe("multiple elements", async () => {
+  return chunkArray([1, 2, 3, 4, 5], 2);
+});
+
+probe("size less than 1", async () => {
+  try {
+    return chunkArray([1, 2, 3], 0);
+  } catch (error) {
+    return error;
+  }
+});
+
+probe("size equal to array length", async () => {
+  return chunkArray([1, 2, 3], 3);
+});
+
+probe("size greater than array length", async () => {
+  return chunkArray([1, 2, 3], 4);
+});
+```

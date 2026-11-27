@@ -1,0 +1,29 @@
+```ts
+probe("initial capacity", async () => {
+  const bucket = createTokenBucket({ capacity: 10, refillPerSecond: 1, now: () => 0 });
+  return bucket.tryConsume();
+});
+
+probe("consume one token", async () => {
+  const bucket = createTokenBucket({ capacity: 10, refillPerSecond: 1, now: () => 0 });
+  return bucket.tryConsume(1);
+});
+
+probe("consume more tokens than capacity", async () => {
+  const bucket = createTokenBucket({ capacity: 10, refillPerSecond: 1, now: () => 0 });
+  return bucket.tryConsume(15);
+});
+
+probe("refill over time", async () => {
+  const bucket = createTokenBucket({ capacity: 10, refillPerSecond: 1, now: () => 0 });
+  await vi.advanceTimersByTimeAsync(1000);
+  return bucket.tryConsume();
+});
+
+probe("clock regression", async () => {
+  const bucket = createTokenBucket({ capacity: 10, refillPerSecond: 1, now: () => 0 });
+  await vi.advanceTimersByTimeAsync(1000);
+  bucket.now = () => 500;
+  return bucket.tryConsume();
+});
+```

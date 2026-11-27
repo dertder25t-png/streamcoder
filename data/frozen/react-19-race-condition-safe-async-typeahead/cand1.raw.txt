@@ -1,0 +1,100 @@
+```tsx
+import React, { useState, useEffect, useRef } from 'react';
+
+interface AsyncAutocompleteProps {
+  fetchSuggestions: (query: string, signal: AbortSignal) => Promise<string[]>;
+  onSelect: (suggestion: string) => void;
+}
+
+const AsyncAutocomplete: React.FC<AsyncAutocompleteProps> = ({ fetchSuggestions, onSelect }) => {
+  const [query, setQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const abortController = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (abortController.current) {
+      abortController.current.abort();
+    }
+    abortController.current = new AbortController();
+
+    const debouncedFetch = setTimeout(async () => {
+      try {
+        const newSuggestions = await fetchSuggestions(query, abortController.current.signal);
+        if (abortController.current.signal.aborted) return;
+        setSuggestions(newSuggestions);
+        setActiveIndex(null);
+      } catch (error) {
+        if (error.name === 'AbortError') return;
+        console.error('Error fetching suggestions:', error);
+      }
+    }, 1000);
+
+    return () => {
+      clearTimeout(debouncedFetch);
+      if (abortController.current) {
+        abortController.current.abort();
+        abortController.current = null;
+      }
+    };
+  }, [query, fetchSuggestions]);
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(event.target.value);
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'ArrowDown') {
+      setActiveIndex((prev) => (prev === null || prev === suggestions.length - 1 ? 0 : prev + 1));
+    } else if (event.key === 'ArrowUp') {
+      setActiveIndex((prev) => (prev === null || prev === 0 ? suggestions.length - 1 : prev - 1));
+    } else if (event.key === 'Enter' && activeIndex !== null && activeIndex < suggestions.length) {
+      onSelect(suggestions[activeIndex]);
+      setQuery('');
+      setSuggestions([]);
+      setActiveIndex(null);
+    } else if (event.key === 'Escape') {
+      setSuggestions([]);
+      setActiveIndex(null);
+    }
+  };
+
+  const handleOptionClick = (index: number) => {
+    onSelect(suggestions[index]);
+    setQuery('');
+    setSuggestions([]);
+    setActiveIndex(null);
+  };
+
+  return (
+    <div role="combobox" aria-expanded={suggestions.length > 0}>
+      <input
+        type="text"
+        role="combobox"
+        value={query}
+        onChange={handleInputChange}
+        onKeyDown={handleKeyDown}
+        aria-activedescendant={activeIndex !== null ? `suggestion-${activeIndex}` : undefined}
+      />
+      {suggestions.length > 0 && (
+        <ul role="listbox">
+          {suggestions.map((suggestion, index) => (
+            <li
+              key={suggestion}
+              role="option"
+              id={`suggestion-${index}`}
+              tabIndex={0}
+              onClick={() => handleOptionClick(index)}
+              aria-selected={activeIndex === index}
+            >
+              {suggestion}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+};
+
+export { AsyncAutocomplete };
+```

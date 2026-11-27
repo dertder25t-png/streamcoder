@@ -1,0 +1,78 @@
+- Handles both \n and \r\n endings
+- Preserves = characters inside values
+- Strips inline # comments only outside quotes
+- Double-quoted values expand \n to real newlines
+- Single-quoted values treat \n literally
+- Unquoted values trim surrounding whitespace while quoted values preserve interior spaces
+- Handles empty or invalid input
+- Handles boundaries (e.g., long lines, large files)
+- Handles repeated calls
+- Cleans up resources (e.g., files, timers, listeners)
+
+```ts
+test("Handles both \n and \r\n endings", async () => {
+  const content = `KEY=VALUE\nKEY2=VALUE2\r\nKEY3=VALUE3`;
+  const result = parseDotEnv(content);
+  expect(result).toEqual({ KEY: "VALUE", KEY2: "VALUE2", KEY3: "VALUE3" });
+});
+
+test("Preserves = characters inside values", async () => {
+  const content = `KEY=VALUE=VALUE2`;
+  const result = parseDotEnv(content);
+  expect(result).toEqual({ KEY: "VALUE=VALUE2" });
+});
+
+test("Strips inline # comments only outside quotes", async () => {
+  const content = `KEY=VALUE #comment\nKEY2="VALUE #comment"`;
+  const result = parseDotEnv(content);
+  expect(result).toEqual({ KEY: "VALUE", KEY2: "VALUE #comment" });
+});
+
+test("Double-quoted values expand \n to real newlines", async () => {
+  const content = `KEY="VALUE\nnewline"`;
+  const result = parseDotEnv(content);
+  expect(result).toEqual({ KEY: "VALUE\nnewline" });
+});
+
+test("Single-quoted values treat \n literally", async () => {
+  const content = `KEY='VALUE\nnewline'`;
+  const result = parseDotEnv(content);
+  expect(result).toEqual({ KEY: "VALUE\nnewline" });
+});
+
+test("Unquoted values trim surrounding whitespace while quoted values preserve interior spaces", async () => {
+  const content = ` KEY = VALUE  \nKEY2=" VALUE 2 "`;
+  const result = parseDotEnv(content);
+  expect(result).toEqual({ KEY: "VALUE", KEY2: " VALUE 2 " });
+});
+
+test("Handles empty or invalid input", async () => {
+  const content = ``;
+  const result = parseDotEnv(content);
+  expect(result).toEqual({});
+});
+
+test("Handles boundaries (e.g., long lines, large files)", async () => {
+  const longLine = "KEY=".padEnd(1000, "a") + "VALUE";
+  const content = longLine + "\n" + longLine;
+  const result = parseDotEnv(content);
+  expect(result).toEqual({ KEY: longLine.slice(4) });
+});
+
+test("Handles repeated calls", async () => {
+  const content = `KEY=VALUE`;
+  const result1 = parseDotEnv(content);
+  const result2 = parseDotEnv(content);
+  expect(result1).toEqual({ KEY: "VALUE" });
+  expect(result2).toEqual({ KEY: "VALUE" });
+});
+
+test("Cleans up resources (e.g., files, timers, listeners)", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const filePath = path.join(dir, "test.env");
+  await fs.promises.writeFile(filePath, `KEY=VALUE`);
+  const result = parseDotEnv(await fs.promises.readFile(filePath, "utf8"));
+  expect(result).toEqual({ KEY: "VALUE" });
+  await fs.promises.rm(dir, { recursive: true });
+});
+```

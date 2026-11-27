@@ -1,0 +1,24 @@
+- An empty input array returns [].
+- Consecutive identical statuses collapse into one run with start equal to the first timestamp, end equal to the last timestamp, and count equal to the merged length.
+- Non-consecutive repeats (e.g., "up", "down", "up") remain separate runs in order.
+- The input array is never mutated and the return type preserves a narrow string literal union rather than widening to string.
+
+```ts
+test("returns an empty array for an empty input", () => {
+  expect(collapseStatusLog([])).toEqual([]);
+});
+
+test("merges consecutive identical statuses into one run", () => {
+  expect(collapseStatusLog([{ timestamp: 1, status: "up" }, { timestamp: 2, status: "up" }])).toEqual([{ status: "up", start: 1, end: 2, count: 2 }]);
+});
+
+test("keeps non-consecutive repeats as separate runs", () => {
+  expect(collapseStatusLog([{ timestamp: 1, status: "up" }, { timestamp: 2, status: "down" }, { timestamp: 3, status: "up" }])).toEqual([{ status: "up", start: 1, end: 1, count: 1 }, { status: "down", start: 2, end: 2, count: 1 }, { status: "up", start: 3, end: 3, count: 1 }]);
+});
+
+test("preserves the narrow string literal union type", () => {
+  type Status = "up" | "down";
+  const result: { status: Status; start: number; end: number; count: number }[] = collapseStatusLog([{ timestamp: 1, status: "up" }, { timestamp: 2, status: "down" }]);
+  expect(result).toEqual([{ status: "up", start: 1, end: 1, count: 1 }, { status: "down", start: 2, end: 2, count: 1 }]);
+});
+```

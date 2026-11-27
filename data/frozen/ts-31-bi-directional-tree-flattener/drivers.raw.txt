@@ -1,0 +1,95 @@
+```ts
+probe("flatten empty tree", async () => {
+  return flattenTree([]);
+});
+
+probe("rebuild empty tree", async () => {
+  return rebuildTree([]);
+});
+
+probe("flatten single root", async () => {
+  const root: TreeNode<number> = { id: "1", value: 1, children: [] };
+  return flattenTree([root]);
+});
+
+probe("rebuild single root", async () => {
+  const flat: FlatNode<number>[] = [{ id: "1", parentId: null, value: 1 }];
+  return rebuildTree(flat);
+});
+
+probe("flatten multi-root", async () => {
+  const root1: TreeNode<number> = { id: "1", value: 1, children: [] };
+  const root2: TreeNode<number> = { id: "2", value: 2, children: [] };
+  return flattenTree([root1, root2]);
+});
+
+probe("rebuild multi-root", async () => {
+  const flat: FlatNode<number>[] = [
+    { id: "1", parentId: null, value: 1 },
+    { id: "2", parentId: null, value: 2 },
+  ];
+  return rebuildTree(flat);
+});
+
+probe("flatten nested tree", async () => {
+  const root: TreeNode<number> = {
+    id: "1",
+    value: 1,
+    children: [
+      { id: "2", value: 2, children: [] },
+      { id: "3", value: 3, children: [] },
+    ],
+  };
+  return flattenTree([root]);
+});
+
+probe("rebuild nested tree", async () => {
+  const flat: FlatNode<number>[] = [
+    { id: "1", parentId: null, value: 1 },
+    { id: "2", parentId: "1", value: 2 },
+    { id: "3", parentId: "1", value: 3 },
+  ];
+  return rebuildTree(flat);
+});
+
+probe("flatten tree with duplicate IDs", async () => {
+  const root: TreeNode<number> = {
+    id: "1",
+    value: 1,
+    children: [
+      { id: "2", value: 2, children: [] },
+      { id: "2", value: 2, children: [] },
+    ],
+  };
+  return flattenTree([root]);
+});
+
+probe("rebuild tree with duplicate IDs", async () => {
+  const flat: FlatNode<number>[] = [
+    { id: "1", parentId: null, value: 1 },
+    { id: "2", parentId: "1", value: 2 },
+    { id: "2", parentId: "1", value: 2 },
+  ];
+  return rebuildTree(flat);
+});
+
+probe("flatten tree with orphan node", async () => {
+  const root: TreeNode<number> = {
+    id: "1",
+    value: 1,
+    children: [
+      { id: "2", value: 2, children: [] },
+      { id: "3", value: 3, children: [] },
+    ],
+  };
+  return flattenTree([root]);
+});
+
+probe("rebuild tree with orphan node", async () => {
+  const flat: FlatNode<number>[] = [
+    { id: "2", parentId: "1", value: 2 },
+    { id: "3", parentId: "1", value: 3 },
+  ];
+  return rebuildTree(flat);
+});
+```

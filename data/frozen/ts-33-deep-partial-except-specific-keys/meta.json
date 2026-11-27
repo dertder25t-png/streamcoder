@@ -1,0 +1,25 @@
+{
+ "id": "ts-33-deep-partial-except-specific-keys",
+ "topic": "typescript",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/ts-33-deep-partial-except-specific-keys/solution.test.ts(2,40): error TS2306: File",
+  "type error: .runs/ts-33-deep-partial-except-specific-keys/solution.test.ts(2,40): error TS2306: File",
+  "type error: .runs/ts-33-deep-partial-except-specific-keys/solution.test.ts(2,40): error TS2306: File",
+  "type error: .runs/ts-33-deep-partial-except-specific-keys/solution.test.ts(2,40): error TS2306: File"
+ ],
+ "cand_tokens": [
+  83,
+  142,
+  113,
+  112
+ ],
+ "gen_seconds": 41.4,
+ "type_only": true,
+ "errors": []
+}

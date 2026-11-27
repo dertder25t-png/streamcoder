@@ -1,0 +1,54 @@
+```ts
+type TreeNode<T> = {
+  id: string;
+  value: T;
+  children: TreeNode<T>[];
+};
+
+type FlatNode<T> = {
+  id: string;
+  parentId: string | null;
+  value: T;
+};
+
+function flattenTree<T>(roots: readonly TreeNode<T>[]): FlatNode<T>[] {
+  const result: FlatNode<T>[] = [];
+
+  function traverse(node: TreeNode<T>, parentId: string | null = null) {
+    result.push({ id: node.id, parentId, value: node.value });
+    node.children.forEach(child => traverse(child, node.id));
+  }
+
+  roots.forEach(root => traverse(root));
+  return result;
+}
+
+function rebuildTree<T>(flat: readonly FlatNode<T>[]): TreeNode<T>[] {
+  const map = new Map<string, TreeNode<T>>();
+  const rootNodes: TreeNode<T>[] = [];
+
+  flat.forEach(node => {
+    const newNode: TreeNode<T> = { id: node.id, value: node.value, children: [] };
+    map.set(node.id, newNode);
+
+    if (node.parentId === null) {
+      rootNodes.push(newNode);
+    } else {
+      const parent = map.get(node.parentId);
+      if (parent) {
+        parent.children.push(newNode);
+      } else {
+        throw new Error(`Orphan reference to nonexistent parent ID: ${node.parentId}`);
+      }
+    }
+  });
+
+  if (map.size !== flat.length) {
+    throw new Error('Duplicate node IDs');
+  }
+
+  return rootNodes;
+}
+
+export { flattenTree, rebuildTree, TreeNode, FlatNode };
+```

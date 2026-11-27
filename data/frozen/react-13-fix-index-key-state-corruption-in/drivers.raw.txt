@@ -1,0 +1,22 @@
+```ts
+probe("Move up", async () => {
+  const { getByRole, getByText, fireEvent, waitFor } = render(<PriorityQueueList items={[{ id: "1", label: "Item 1" }, { id: "2", label: "Item 2" }] } />);
+  fireEvent.click(getByText("Move Up"));
+  await waitFor(() => expect(getByText("Item 1")).toBeInTheDocument());
+  return snap();
+});
+
+probe("Move down", async () => {
+  const { getByRole, getByText, fireEvent, waitFor } = render(<PriorityQueueList items={[{ id: "1", label: "Item 1" }, { id: "2", label: "Item 2" }] } />);
+  fireEvent.click(getByText("Move Down"));
+  await waitFor(() => expect(getByText("Item 2")).toBeInTheDocument());
+  return snap();
+});
+
+probe("Delete", async () => {
+  const { getByRole, getByText, fireEvent, waitFor } = render(<PriorityQueueList items={[{ id: "1", label: "Item 1" }, { id: "2", label: "Item 2" }] } />);
+  fireEvent.click(getByText("Delete"));
+  await waitFor(() => expect(getByText("Item 1")).toBeInTheDocument());
+  return snap();
+});
+```

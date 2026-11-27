@@ -1,0 +1,34 @@
+```ts
+probe("empty array", async () => {
+  return collapseStatusLog([]);
+});
+
+probe("single entry", async () => {
+  return collapseStatusLog([{ timestamp: 1, status: "up" }]);
+});
+
+probe("consecutive identical statuses", async () => {
+  return collapseStatusLog([
+    { timestamp: 1, status: "up" },
+    { timestamp: 2, status: "up" },
+    { timestamp: 3, status: "up" },
+  ]);
+});
+
+probe("non-consecutive identical statuses", async () => {
+  return collapseStatusLog([
+    { timestamp: 1, status: "up" },
+    { timestamp: 2, status: "down" },
+    { timestamp: 3, status: "up" },
+  ]);
+});
+
+probe("mixed statuses", async () => {
+  return collapseStatusLog([
+    { timestamp: 1, status: "up" },
+    { timestamp: 2, status: "down" },
+    { timestamp: 3, status: "down" },
+    { timestamp: 4, status: "up" },
+  ]);
+});
+```

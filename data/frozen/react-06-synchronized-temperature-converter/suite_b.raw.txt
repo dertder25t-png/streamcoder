@@ -1,0 +1,44 @@
+- Typing "0" in Celsius updates Fahrenheit to "32"
+- Typing "212" in Fahrenheit updates Celsius to "100"
+- Typing an incomplete negative sign "-" or clearing a field preserves the active field's raw text and clears the opposite field
+- Does not reformat the currently edited field while the user is typing
+
+```tsx
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import TemperaturePair from './TemperaturePair';
+
+afterEach(cleanup);
+
+test("typing '0' in Celsius updates Fahrenheit to '32'", async () => {
+  render(<TemperaturePair />);
+  const celsiusInput = screen.getByRole('textbox', { name: 'Celsius' });
+  fireEvent.change(celsiusInput, { target: { value: '0' } });
+  await waitFor(() => expect(screen.getByRole('textbox', { name: 'Fahrenheit' }).value).toBe('32'));
+});
+
+test("typing '212' in Fahrenheit updates Celsius to '100'", async () => {
+  render(<TemperaturePair />);
+  const fahrenheitInput = screen.getByRole('textbox', { name: 'Fahrenheit' });
+  fireEvent.change(fahrenheitInput, { target: { value: '212' } });
+  await waitFor(() => expect(screen.getByRole('textbox', { name: 'Celsius' }).value).toBe('100'));
+});
+
+test("typing an incomplete negative sign '-' or clearing a field preserves the active field's raw text and clears the opposite field", async () => {
+  render(<TemperaturePair />);
+  const celsiusInput = screen.getByRole('textbox', { name: 'Celsius' });
+  fireEvent.change(celsiusInput, { target: { value: '-' } });
+  expect(celsiusInput.value).toBe('-');
+  expect(screen.getByRole('textbox', { name: 'Fahrenheit' }).value).toBe('');
+
+  fireEvent.change(celsiusInput, { target: { value: '' } });
+  expect(celsiusInput.value).toBe('');
+  expect(screen.getByRole('textbox', { name: 'Fahrenheit' }).value).toBe('');
+});
+
+test("does not reformat the currently edited field while the user is typing", async () => {
+  render(<TemperaturePair />);
+  const celsiusInput = screen.getByRole('textbox', { name: 'Celsius' });
+  fireEvent.change(celsiusInput, { target: { value: '20.' } });
+  expect(celsiusInput.value).toBe('20.');
+});
+```

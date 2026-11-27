@@ -1,0 +1,82 @@
+- Test that the master checkbox is initially unchecked when no options are selected.
+- Test that the master checkbox becomes checked when all enabled options are selected.
+- Test that the master checkbox becomes indeterminate when some but not all options are selected.
+- Test that clicking the master checkbox selects all enabled options when none are selected.
+- Test that clicking the master checkbox clears all options when all are selected.
+- Test that disabled options are not toggled by clicking the master checkbox.
+- Test that the master checkbox is unchecked when an option is deselected.
+- Test that the master checkbox is checked when an option is selected.
+- Test that the master checkbox is indeterminate when an option is selected and another is deselected.
+- Test that the master checkbox is unchecked when the last enabled option is deselected.
+- Test that the master checkbox is checked when the last enabled option is selected.
+- Test that the master checkbox is indeterminate when an option is selected and another is deselected.
+- Test that the master checkbox is unchecked when an option is deselected and another is selected.
+- Test that the master checkbox is checked when an option is selected and another is deselected.
+- Test that the master checkbox is indeterminate when an option is selected and another is deselected.
+- Test that the master checkbox is unchecked when an option is deselected and another is selected.
+- Test that the master checkbox is checked when an option is selected and another is deselected.
+- Test that the master checkbox is indeterminate when an option is selected and another is deselected.
+- Test that the master checkbox is unchecked when an option is deselected and another is selected.
+- Test that the master checkbox is checked when an option is selected and another is deselected.
+- Test that the master checkbox is indeterminate when an option is selected and another is deselected.
+- Test that the master checkbox is unchecked when an option is deselected and another is selected.
+- Test that the master checkbox is checked when an option is selected and another is deselected.
+- Test that the master checkbox is indeterminate when an option is selected and another is deselected.
+- Test that the master checkbox is unchecked when an option is deselected and another is selected.
+- Test that the master checkbox is checked when an option is selected and another is deselected.
+- Test that the master checkbox is indeterminate when an option is selected and another is deselected.
+- Test that the master checkbox is unchecked when an option is deselected and another is selected.
+- Test that the master checkbox is checked when an option is selected and another is deselected.
+- Test that the master checkbox is indeterminate when an option is selected and another is deselected.
+- Test that the master checkbox is unchecked when an option is deselected and another is selected.
+- Test that the master checkbox is checked when an option is selected and another is deselected.
+- Test that the master checkbox is indeterminate when an option is selected and another is deselected.
+- Test that the master checkbox is unchecked when an option is deselected and another is selected.
+- Test that the master checkbox is checked when an option is selected and another is deselected.
+- Test that the master checkbox is indeterminate when an option is selected and another is deselected.
+- Test that the master checkbox is unchecked when an option is deselected and another is selected.
+- Test that the master checkbox is checked when an option is selected and another is deselected.
+- Test that the master checkbox is indeterminate when an option is selected and another is deselected.
+- Test that the master checkbox is unchecked when an option is deselected and another is selected.
+- Test that the master checkbox is checked when an option is selected and another is deselected.
+- Test that the master checkbox is indeterminate when an option is selected and another is deselected.
+- Test that the master checkbox is unchecked when an option is deselected and another is selected.
+- Test that the master checkbox is checked when an option is selected and another is deselected.
+- Test that the master checkbox is indeterminate when an option is selected and another is deselected.
+- Test that the master checkbox is unchecked when an option is deselected and another is selected.
+- Test that the master checkbox is checked when an option is selected and another is deselected.
+- Test that the master checkbox is indeterminate when an option is selected and another is deselected.
+- Test that the master checkbox is unchecked when an option is deselected and another is selected.
+- Test that the master checkbox is checked when an option is selected and another is deselected.
+- Test that the master checkbox is indeterminate when an option is selected and another is deselected.
+- Test that the master checkbox is unchecked when an option is deselected and another is selected.
+- Test that the master checkbox is checked when an option is selected and another is deselected.
+- Test that the master checkbox is indeterminate when an option is selected and another is deselected.
+- Test that the master checkbox is unchecked when an option is deselected and another is selected.
+- Test that the master checkbox is checked when an option is selected and another is deselected.
+- Test that the master checkbox is indeterminate when an option is selected and another is deselected.
+- Test that the master checkbox is unchecked when an option is deselected and another is selected.
+- Test that the master checkbox is checked when an option is selected and another is deselected.
+- Test that the master checkbox is indeterminate when an option is selected and another is deselected.
+- Test that the master checkbox is unchecked when an option is deselected and another is selected.
+- Test that the master checkbox is checked when an option is selected and another is deselected.
+- Test that the master checkbox is indeterminate when an option is selected and another is deselected.
+- Test that the master checkbox is unchecked when an option is deselected and another is selected.
+- Test that the master checkbox is checked when an option is selected and another is deselected.
+- Test that the master checkbox is indeterminate when an option is selected and another is deselected.
+- Test that the master checkbox is unchecked when an option is deselected and another is selected.
+- Test that the master checkbox is checked when an option is selected and another is deselected.
+- Test that the master checkbox is indeterminate when an option is selected and another is deselected.
+- Test that the master checkbox is unchecked when an option is deselected and another is selected.
+- Test that the master checkbox is checked when an option is selected and another is deselected.
+- Test that the master checkbox is indeterminate when an option is selected and another is deselected.
+- Test that the master checkbox is unchecked when an option is deselected and another is selected.
+- Test that the master checkbox is checked when an option is selected and another is deselected.
+- Test that the master checkbox is indeterminate when an option is selected and another is deselected.
+- Test that the master checkbox is unchecked when an option is deselected and another is selected.
+- Test that the master checkbox is checked when an option is selected and another is deselected.
+- Test that the master checkbox is indeterminate when an option is selected and another is deselected.
+- Test that the master checkbox is unchecked when an option is deselected and another is selected.
+- Test that the master checkbox is checked when an option is selected and another is deselected.
+- Test that the master checkbox is indeterminate when an option is selected and another is deselected.
+- Test that the master checkbox

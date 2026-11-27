@@ -1,0 +1,37 @@
+- Test that it expands normal ranges like "Tue-Thu" into ["Tue", "Wed", "Thu"].
+- Test that it expands wrap-around ranges like "Sat-Mon" into ["Mon", "Sat", "Sun"].
+- Test that it handles case-insensitivity, e.g., "mon-Fri" should expand to ["Mon", "Tue", "Wed", "Thu", "Fri"].
+- Test that it deduplicates overlapping segments, e.g., "Mon-Wed,Wed-Fri" should expand to ["Mon", "Tue", "Wed", "Thu", "Fri"].
+- Test that it throws an Error on unknown tokens, e.g., "Mon-Invalid".
+- Test that it throws an Error on empty specs, e.g., "".
+- Test that it throws an Error on malformed ranges like "Mon-".
+
+```ts
+test("expands normal ranges like 'Tue-Thu' into ['Tue', 'Wed', 'Thu']", () => {
+  expect(expandWeekdaySpec("Tue-Thu")).toEqual(["Tue", "Wed", "Thu"]);
+});
+
+test("expands wrap-around ranges like 'Sat-Mon' into ['Mon', 'Sat', 'Sun']", () => {
+  expect(expandWeekdaySpec("Sat-Mon")).toEqual(["Mon", "Sat", "Sun"]);
+});
+
+test("handles case-insensitivity, e.g., 'mon-Fri' should expand to ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']", () => {
+  expect(expandWeekdaySpec("mon-Fri")).toEqual(["Mon", "Tue", "Wed", "Thu", "Fri"]);
+});
+
+test("deduplicates overlapping segments, e.g., 'Mon-Wed,Wed-Fri' should expand to ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']", () => {
+  expect(expandWeekdaySpec("Mon-Wed,Wed-Fri")).toEqual(["Mon", "Tue", "Wed", "Thu", "Fri"]);
+});
+
+test("throws an Error on unknown tokens, e.g., 'Mon-Invalid'", () => {
+  expect(() => expandWeekdaySpec("Mon-Invalid")).toThrowError("Unknown token: Invalid");
+});
+
+test("throws an Error on empty specs, e.g., ''", () => {
+  expect(() => expandWeekdaySpec("")).toThrowError("Empty spec");
+});
+
+test("throws an Error on malformed ranges like 'Mon-'", () => {
+  expect(() => expandWeekdaySpec("Mon-")).toThrowError("Malformed range: Mon-");
+});
+```

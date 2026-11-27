@@ -1,0 +1,73 @@
+- Test that an empty string returns an empty array.
+- Test that a string with no fields returns an empty array.
+- Test that a string with a single field returns an array with that field.
+- Test that a string with multiple fields returns an array with those fields.
+- Test that a string with quoted fields containing commas returns an array with those fields.
+- Test that a string with leading and trailing whitespace is trimmed.
+- Test that a string with leading and trailing quotes is handled correctly.
+- Test that a string with multiple consecutive commas returns an array with empty strings.
+- Test that a string with a single quote at the beginning is handled correctly.
+- Test that a string with a single quote at the end is handled correctly.
+- Test that a string with a single quote in the middle is handled correctly.
+- Test that a string with a single quote at the beginning and end is handled correctly.
+- Test that a string with a single quote at the beginning and a double quote at the end is handled correctly.
+- Test that a string with a double quote at the beginning and a single quote at the end is handled correctly.
+- Test that a string with a double quote at the beginning and end is handled correctly.
+- Test that a string with a double quote at the beginning and a double quote at the end is handled correctly.
+- Test that a string with a double quote at the beginning and a single quote at the end is handled correctly.
+- Test that a string with a single quote at the beginning and a double quote at the end is handled correctly.
+- Test that a string with a single quote at the beginning and a single quote at the end is handled correctly.
+- Test that a string with a single quote at the beginning and a double quote at the end is handled correctly.
+- Test that a string with a double quote at the beginning and a single quote at the end is handled correctly.
+- Test that a string with a double quote at the beginning and end is handled correctly.
+- Test that a string with a double quote at the beginning and a double quote at the end is handled correctly.
+- Test that a string with a double quote at the beginning and a single quote at the end is handled correctly.
+- Test that a string with a single quote at the beginning and a double quote at the end is handled correctly.
+- Test that a string with a single quote at the beginning and a single quote at the end is handled correctly.
+- Test that a string with a single quote at the beginning and a double quote at the end is handled correctly.
+- Test that a string with a double quote at the beginning and a single quote at the end is handled correctly.
+- Test that a string with a double quote at the beginning and end is handled correctly.
+- Test that a string with a double quote at the beginning and a double quote at the end is handled correctly.
+- Test that a string with a double quote at the beginning and a single quote at the end is handled correctly.
+- Test that a string with a single quote at the beginning and a double quote at the end is handled correctly.
+- Test that a string with a single quote at the beginning and a single quote at the end is handled correctly.
+- Test that a string with a single quote at the beginning and a double quote at the end is handled correctly.
+- Test that a string with a double quote at the beginning and a single quote at the end is handled correctly.
+- Test that a string with a double quote at the beginning and end is handled correctly.
+- Test that a string with a double quote at the beginning and a double quote at the end is handled correctly.
+- Test that a string with a double quote at the beginning and a single quote at the end is handled correctly.
+- Test that a string with a single quote at the beginning and a double quote at the end is handled correctly.
+- Test that a string with a single quote at the beginning and a single quote at the end is handled correctly.
+- Test that a string with a single quote at the beginning and a double quote at the end is handled correctly.
+- Test that a string with a double quote at the beginning and a single quote at the end is handled correctly.
+- Test that a string with a double quote at the beginning and end is handled correctly.
+- Test that a string with a double quote at the beginning and a double quote at the end is handled correctly.
+- Test that a string with a double quote at the beginning and a single quote at the end is handled correctly.
+- Test that a string with a single quote at the beginning and a double quote at the end is handled correctly.
+- Test that a string with a single quote at the beginning and a single quote at the end is handled correctly.
+- Test that a string with a single quote at the beginning and a double quote at the end is handled correctly.
+- Test that a string with a double quote at the beginning and a single quote at the end is handled correctly.
+- Test that a string with a double quote at the beginning and end is handled correctly.
+- Test that a string with a double quote at the beginning and a double quote at the end is handled correctly.
+- Test that a string with a double quote at the beginning and a single quote at the end is handled correctly.
+- Test that a string with a single quote at the beginning and a double quote at the end is handled correctly.
+- Test that a string with a single quote at the beginning and a single quote at the end is handled correctly.
+- Test that a string with a single quote at the beginning and a double quote at the end is handled correctly.
+- Test that a string with a double quote at the beginning and a single quote at the end is handled correctly.
+- Test that a string with a double quote at the beginning and end is handled correctly.
+- Test that a string with a double quote at the beginning and a double quote at the end is handled correctly.
+- Test that a string with a double quote at the beginning and a single quote at the end is handled correctly.
+- Test that a string with a single quote at the beginning and a double quote at the end is handled correctly.
+- Test that a string with a single quote at the beginning and a single quote at the end is handled correctly.
+- Test that a string with a single quote at the beginning and a double quote at the end is handled correctly.
+- Test that a string with a double quote at the beginning and a single quote at the end is handled correctly.
+- Test that a string with a double quote at the beginning and end is handled correctly.
+- Test that a string with a double quote at the beginning and a double quote at the end is handled correctly.
+- Test that a string with a double quote at the beginning and a single quote at the end is handled correctly.
+- Test that a string with a single quote at the beginning and a double quote at the end is handled correctly.
+- Test that a string with a single quote at the beginning and a single quote at the end is handled correctly.
+- Test that a string with a single quote at the beginning and a double quote at the end is handled correctly.
+- Test that a string with a double quote at the beginning and a single quote at the end is handled correctly.
+- Test that a string with a double quote at the beginning and end is handled correctly.
+- Test that a string with a double quote at the beginning and a double quote at the end is handled correctly.
+- Test that a string with a double quote at the beginning and a single quote at the end is

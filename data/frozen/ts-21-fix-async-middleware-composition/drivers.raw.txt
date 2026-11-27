@@ -1,0 +1,75 @@
+```ts
+probe("empty middleware array", async () => {
+  const middleware = composeMiddleware([]);
+  const ctx = {};
+  await middleware(ctx);
+  return ctx;
+});
+
+probe("single middleware", async () => {
+  const middleware = composeMiddleware([
+    (ctx, next) => {
+      ctx.value = 1;
+      return next();
+    }
+  ]);
+  const ctx = {};
+  await middleware(ctx);
+  return ctx;
+});
+
+probe("multiple middlewares", async () => {
+  const middleware = composeMiddleware([
+    (ctx, next) => {
+      ctx.value = 1;
+      return next();
+    },
+    (ctx, next) => {
+      ctx.value += 2;
+      return next();
+    },
+    (ctx, next) => {
+      ctx.value += 3;
+      return next();
+    }
+  ]);
+  const ctx = {};
+  await middleware(ctx);
+  return ctx;
+});
+
+probe("next called multiple times", async () => {
+  const middleware = composeMiddleware([
+    (ctx, next) => {
+      ctx.value = 1;
+      next();
+      next();
+      return Promise.resolve();
+    }
+  ]);
+  const ctx = {};
+  try {
+    await middleware(ctx);
+  } catch (err) {
+    return err.message;
+  }
+});
+
+probe("error in downstream middleware", async () => {
+  const middleware = composeMiddleware([
+    (ctx, next) => {
+      ctx.value = 1;
+      return next();
+    },
+    (ctx, next) => {
+      throw new Error("Downstream error");
+    }
+  ]);
+  const ctx = {};
+  try {
+    await middleware(ctx);
+  } catch (err) {
+    return err.message;
+  }
+});
+```

@@ -1,0 +1,52 @@
+```ts
+import { parse } from 'querystring';
+
+interface ParsedOption {
+    type: 'boolean' | 'string' | 'number';
+    alias?: string;
+    default?: boolean | string | number;
+}
+
+interface ParsedResult {
+    options: Record<string, boolean | string | number>;
+    positionals: string[];
+}
+
+function parseCliArgs(argv: readonly string[], schema: Record<string, ParsedOption>): ParsedResult {
+    const result: ParsedResult = { options: {}, positionals: [] };
+    const args = [...argv];
+    while (args.length > 0) {
+        const arg = args.shift();
+        if (arg === '--') {
+            result.positionals = [...result.positionals, ...args];
+            break;
+        } else if (arg.startsWith('--')) {
+            const [key, value] = arg.slice(2).split('=');
+            const option = schema[key];
+            if (!option) throw new Error(`Unknown flag: --${key}`);
+            if (option.type === 'boolean') {
+                result.options[key] = value ? value === 'true' : true;
+            } else {
+                if (!value && !option.default) throw new Error(`Missing value for --${key}`);
+                result.options[key] = value ? parse(value)[key] : option.default;
+            }
+        } else if (arg.startsWith('-')) {
+            for (let i = 0; i < arg.length; i++) {
+                const char = arg[i];
+                const option = schema[char];
+                if (!option) throw new Error(`Unknown flag: -${char}`);
+                if (option.type === 'boolean') {
+                    result.options[option.alias ?? char] = true;
+                } else {
+                    result.options[option.alias ?? char] = parse(args.shift() || '')?.[char] || option.default;
+                }
+            }
+        } else {
+            result.positionals.push(arg);
+        }
+    }
+    return result;
+}
+
+export { parseCliArgs };
+```

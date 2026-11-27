@@ -1,0 +1,37 @@
+```ts
+probe("opens and closes", async () => {
+  const trigger = render(<button>Open Modal</button>);
+  fireEvent.click(screen.getByText("Open Modal"));
+  await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
+  fireEvent.click(screen.getByText("Close"));
+  await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  return snap();
+});
+
+probe("traps focus", async () => {
+  const trigger = render(<button>Open Modal</button>);
+  fireEvent.click(screen.getByText("Open Modal"));
+  await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
+  fireEvent.tab();
+  await waitFor(() => expect(screen.getByRole("button")).toHaveFocus());
+  return snap();
+});
+
+probe("closes on Escape", async () => {
+  const trigger = render(<button>Open Modal</button>);
+  fireEvent.click(screen.getByText("Open Modal"));
+  await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
+  fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+  await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  return snap();
+});
+
+probe("restores focus on close", async () => {
+  const trigger = render(<button>Open Modal</button>);
+  fireEvent.click(screen.getByText("Open Modal"));
+  await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
+  fireEvent.click(screen.getByText("Close"));
+  await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  return snap();
+});
+```

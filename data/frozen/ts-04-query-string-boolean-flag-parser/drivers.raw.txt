@@ -1,0 +1,25 @@
+```ts
+probe("empty query", async () => {
+  return parseBooleanFlags("");
+});
+
+probe("single true flag", async () => {
+  return parseBooleanFlags("debug");
+});
+
+probe("single false flag", async () => {
+  return parseBooleanFlags("no");
+});
+
+probe("mixed case flags", async () => {
+  return parseBooleanFlags("Yes&no");
+});
+
+probe("repeated flags", async () => {
+  return parseBooleanFlags("debug&no&debug");
+});
+
+probe("unrecognized values", async () => {
+  return parseBooleanFlags("mode=fast");
+});
+```

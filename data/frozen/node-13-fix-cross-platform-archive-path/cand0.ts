@@ -1,0 +1,27 @@
+import { strict as assert } from 'node:assert';
+
+export function normalizeArchivePaths(rawPaths: readonly string[]): string[] {
+  const normalizedPaths = new Set<string>();
+
+  for (const path of rawPaths) {
+    if (path.includes('..') || path.includes(':')) {
+      throw new Error('Invalid path: contains .. or Windows drive prefix');
+    }
+
+    let normalized = path.replace(/\\/g, '/').replace(/^\.\//, '');
+    while (normalized.includes('//')) {
+      normalized = normalized.replace('//', '/');
+    }
+
+    if (!normalizedPaths.has(normalized)) {
+      normalizedPaths.add(normalized);
+    }
+  }
+
+  return Array.from(normalizedPaths);
+}
+
+// Test cases
+assert.deepEqual(normalizeArchivePaths(['a/b/c', 'a//b/c', 'a/b//c', './a/b/c', '/a/b/c']), ['a/b/c']);
+assert.throws(() => normalizeArchivePaths(['a/../b/c']), Error);
+assert.throws(() => normalizeArchivePaths(['C:/a/b/c']), Error);

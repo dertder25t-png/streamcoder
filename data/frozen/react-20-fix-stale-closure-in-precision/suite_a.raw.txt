@@ -1,0 +1,51 @@
+- Computes elapsed time from now() deltas rather than counting interval ticks, preserving total time across multiple pause/resume cycles.
+- Clicking Lap records both total elapsed time and the split delta since the previous lap accurately.
+- Reset stops any active timer, resets elapsed display to 00:00.0, and clears recorded laps.
+
+```tsx
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom/extend-expect';
+import { PrecisionTimer } from './PrecisionTimer';
+
+afterEach(cleanup);
+
+test("Computes elapsed time from now() deltas rather than counting interval ticks, preserving total time across multiple pause/resume cycles", async () => {
+  vi.useFakeTimers();
+  render(<PrecisionTimer />);
+  fireEvent.click(screen.getByRole('button', { name: 'Start' }));
+  vi.advanceTimersByTime(1000);
+  expect(screen.getByRole('timer')).toHaveTextContent('00:01.0');
+  fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+  vi.advanceTimersByTime(1000);
+  expect(screen.getByRole('timer')).toHaveTextContent('00:01.0');
+  fireEvent.click(screen.getByRole('button', { name: 'Resume' }));
+  vi.advanceTimersByTime(1000);
+  expect(screen.getByRole('timer')).toHaveTextContent('00:02.0');
+  vi.useRealTimers();
+});
+
+test("Clicking Lap records both total elapsed time and the split delta since the previous lap accurately", async () => {
+  render(<PrecisionTimer />);
+  fireEvent.click(screen.getByRole('button', { name: 'Start' }));
+  vi.advanceTimersByTime(1000);
+  fireEvent.click(screen.getByRole('button', { name: 'Lap' }));
+  expect(screen.getByRole('timer')).toHaveTextContent('00:01.0');
+  expect(screen.getByText('Lap 1: 00:01.0 (+00:01.0)')).toBeInTheDocument();
+  vi.advanceTimersByTime(1000);
+  fireEvent.click(screen.getByRole('button', { name: 'Lap' }));
+  expect(screen.getByRole('timer')).toHaveTextContent('00:02.0');
+  expect(screen.getByText('Lap 2: 00:02.0 (+00:01.0)')).toBeInTheDocument();
+});
+
+test("Reset stops any active timer, resets elapsed display to 00:00.0, and clears recorded laps", async () => {
+  render(<PrecisionTimer />);
+  fireEvent.click(screen.getByRole('button', { name: 'Start' }));
+  vi.advanceTimersByTime(1000);
+  fireEvent.click(screen.getByRole('button', { name: 'Lap' }));
+  expect(screen.getByRole('timer')).toHaveTextContent('00:01.0');
+  expect(screen.getByText('Lap 1: 00:01.0 (+00:01.0)')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
+  expect(screen.getByRole('timer')).toHaveTextContent('00:00.0');
+  expect(screen.queryByText('Lap 1: 00:01.0 (+00:01.0)')).not.toBeInTheDocument();
+});
+```

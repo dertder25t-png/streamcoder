@@ -1,0 +1,73 @@
+import React, { useState, useRef, useEffect } from 'react';
+
+interface TagChipsInputProps {
+  value: string[];
+  onChange: (next: string[]) => void;
+}
+
+const TagChipsInput: React.FC<TagChipsInputProps> = ({ value, onChange }) => {
+  const [inputValue, setInputValue] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, []);
+
+  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputValue(e.target.value);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addTag(inputValue.trim());
+    }
+  };
+
+  const addTag = (tag: string) => {
+    if (tag && !value.some(v => v.toLowerCase() === tag.toLowerCase())) {
+      onChange([...value, tag]);
+      setInputValue('');
+    }
+  };
+
+  const handleRemoveTag = (tag: string) => {
+    onChange(value.filter(v => v.toLowerCase() !== tag.toLowerCase()));
+  };
+
+  const handleBackspace = () => {
+    if (!inputValue) {
+      onChange(value.slice(0, -1));
+    }
+  };
+
+  return (
+    <div>
+      <input
+        ref={inputRef}
+        type="text"
+        value={inputValue}
+        onChange={handleInput}
+        onKeyDown={handleKeyDown}
+        onBackspace={handleBackspace}
+      />
+      <div>
+        {value.map((tag, index) => (
+          <span key={index}>
+            {tag}
+            <button
+              aria-label={`Remove ${tag}`}
+              onClick={() => handleRemoveTag(tag)}
+            >
+              X
+            </button>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export { TagChipsInput };

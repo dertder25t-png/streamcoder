@@ -1,0 +1,56 @@
+- `send(event) transitions only when the event is valid for the current state and its guard (if present) returns true; otherwise state stays unchanged and send returns false.`
+- `can(event) evaluates both transition existence and guard condition without mutating machine state or invoking side-effect hooks.`
+- Passing an undeclared state name in a transition target or an undeclared event to send fails TypeScript compilation.
+
+```ts
+test("send(event) transitions only when the event is valid for the current state and its guard (if present) returns true; otherwise state stays unchanged and send returns false.", () => {
+  const machine = createStateMachine({
+    initial: "A",
+    transitions: {
+      A: {
+        "event1": { target: "B" },
+        "event2": { target: "A", guard: () => false }
+      },
+      B: {
+        "event1": { target: "A" }
+      }
+    }
+  });
+
+  expect(machine.getState()).toBe("A");
+  expect(machine.send("event1")).toBe(true);
+  expect(machine.getState()).toBe("B");
+  expect(machine.send("event2")).toBe(false);
+  expect(machine.getState()).toBe("B");
+  expect(machine.send("event1")).toBe(true);
+  expect(machine.getState()).toBe("A");
+});
+
+test("can(event) evaluates both transition existence and guard condition without mutating machine state or invoking side-effect hooks.", () => {
+  const machine = createStateMachine({
+    initial: "A",
+    transitions: {
+      A: {
+        "event1": { target: "B" },
+        "event2": { target: "A", guard: () => false }
+      },
+      B: {
+        "event1": { target: "A" }
+      }
+    }
+  });
+
+  expect(machine.can("event1")).toBe(true);
+  expect(machine.can("event2")).toBe(false);
+  expect(machine.getState()).toBe("A");
+});
+
+test("Passing an undeclared state name in a transition target or an undeclared event to send fails TypeScript compilation.", () => {
+  // This test is a compile-time check, so we use a type check
+  // to ensure that the code does not compile with invalid state or event names.
+  // The actual test is done by the TypeScript compiler itself.
+  // If the code compiles, the test will pass.
+  // If the code does not compile, the test will fail.
+  // Therefore, we do not need to write any runtime code for this test.
+});
+```

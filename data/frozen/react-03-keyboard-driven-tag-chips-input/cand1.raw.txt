@@ -1,0 +1,68 @@
+```tsx
+import React, { useState } from 'react';
+
+interface TagChipsInputProps {
+  value: string[];
+  onChange: (next: string[]) => void;
+}
+
+const TagChipsInput: React.FC<TagChipsInputProps> = ({ value, onChange }) => {
+  const [inputValue, setInputValue] = useState('');
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setInputValue(event.target.value);
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter' || event.key === ',') {
+      event.preventDefault();
+      const newTags = inputValue.trim().toLowerCase().split(',').map(tag => tag.trim());
+      const uniqueTags = Array.from(new Set([...value, ...newTags])).filter(tag => tag);
+      onChange(uniqueTags);
+      setInputValue('');
+    }
+  };
+
+  const handleBackspace = () => {
+    if (inputValue === '') {
+      const newTags = [...value];
+      newTags.pop();
+      onChange(newTags);
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    const newTags = value.filter(tag => tag.toLowerCase() !== tagToRemove.toLowerCase());
+    onChange(newTags);
+  };
+
+  return (
+    <div>
+      <input
+        type="text"
+        value={inputValue}
+        onChange={handleInputChange}
+        onKeyDown={handleKeyDown}
+        onBackspace={handleBackspace}
+        placeholder="Add tags"
+      />
+      <div>
+        {value.map((tag, index) => (
+          <span key={index} className="tag-chip">
+            {tag}
+            <button
+              onClick={() => handleRemoveTag(tag)}
+              aria-label={`Remove ${tag}`}
+              className="remove-button"
+            >
+              x
+            </button>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export { TagChipsInput };
+```

@@ -1,0 +1,74 @@
+```ts
+probe("null", async () => {
+  return isPaymentWebhook(null);
+});
+
+probe("undefined", async () => {
+  return isPaymentWebhook(undefined);
+});
+
+probe("string", async () => {
+  return isPaymentWebhook("not an object");
+});
+
+probe("array", async () => {
+  return isPaymentWebhook([]);
+});
+
+probe("empty object", async () => {
+  return isPaymentWebhook({});
+});
+
+probe("valid payment webhook", async () => {
+  return isPaymentWebhook({
+    type: "payment.settled",
+    id: "12345",
+    amountCents: 100,
+  });
+});
+
+probe("missing type", async () => {
+  return isPaymentWebhook({
+    id: "12345",
+    amountCents: 100,
+  });
+});
+
+probe("missing id", async () => {
+  return isPaymentWebhook({
+    type: "payment.settled",
+    amountCents: 100,
+  });
+});
+
+probe("missing amountCents", async () => {
+  return isPaymentWebhook({
+    type: "payment.settled",
+    id: "12345",
+  });
+});
+
+probe("non-string id", async () => {
+  return isPaymentWebhook({
+    type: "payment.settled",
+    id: 12345,
+    amountCents: 100,
+  });
+});
+
+probe("non-integer amountCents", async () => {
+  return isPaymentWebhook({
+    type: "payment.settled",
+    id: "12345",
+    amountCents: 100.5,
+  });
+});
+
+probe("negative amountCents", async () => {
+  return isPaymentWebhook({
+    type: "payment.settled",
+    id: "12345",
+    amountCents: -100,
+  });
+});
+```

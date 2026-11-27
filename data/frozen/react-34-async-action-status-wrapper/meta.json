@@ -1,0 +1,25 @@
+{
+ "id": "react-34-async-action-status-wrapper",
+ "topic": "react",
+ "cand_hidden": [
+  true,
+  true,
+  true,
+  true
+ ],
+ "cand_hidden_err": [
+  "",
+  "",
+  "",
+  ""
+ ],
+ "cand_tokens": [
+  124,
+  125,
+  131,
+  166
+ ],
+ "gen_seconds": 21.3,
+ "type_only": false,
+ "errors": []
+}

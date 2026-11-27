@@ -1,0 +1,56 @@
+- Test that `createHeaderMap()` returns an object with the required methods.
+- Test that `get(name)` returns the value of a header stored with different casing.
+- Test that `set(name, value)` updates the value of an existing header and preserves the original casing.
+- Test that `has(name)` returns true for a header stored with different casing.
+- Test that `delete(name)` removes a header regardless of case and returns true if it existed.
+- Test that `toRecord()` returns a record with header names matching case-insensitively while preserving the original casing of the most recent set.
+
+```ts
+import { createHeaderMap } from './createHeaderMap';
+
+test("createHeaderMap() returns an object with the required methods", () => {
+  const headerMap = createHeaderMap();
+  expect(typeof headerMap.get).toBe('function');
+  expect(typeof headerMap.set).toBe('function');
+  expect(typeof headerMap.has).toBe('function');
+  expect(typeof headerMap.delete).toBe('function');
+  expect(typeof headerMap.toRecord).toBe('function');
+});
+
+test("get(name) returns the value of a header stored with different casing", () => {
+  const headerMap = createHeaderMap();
+  headerMap.set('Content-Type', 'application/json');
+  expect(headerMap.get('content-type')).toBe('application/json');
+  expect(headerMap.get('CONTENT-TYPE')).toBe('application/json');
+});
+
+test("set(name, value) updates the value of an existing header and preserves the original casing", () => {
+  const headerMap = createHeaderMap();
+  headerMap.set('Content-Type', 'application/json');
+  headerMap.set('content-type', 'application/xml');
+  expect(headerMap.get('Content-Type')).toBe('application/xml');
+  expect(headerMap.toRecord()['Content-Type']).toBe('application/xml');
+});
+
+test("has(name) returns true for a header stored with different casing", () => {
+  const headerMap = createHeaderMap();
+  headerMap.set('Content-Type', 'application/json');
+  expect(headerMap.has('content-type')).toBe(true);
+  expect(headerMap.has('CONTENT-TYPE')).toBe(true);
+});
+
+test("delete(name) removes a header regardless of case and returns true if it existed", () => {
+  const headerMap = createHeaderMap();
+  headerMap.set('Content-Type', 'application/json');
+  expect(headerMap.delete('content-type')).toBe(true);
+  expect(headerMap.delete('CONTENT-TYPE')).toBe(false);
+  expect(headerMap.has('Content-Type')).toBe(false);
+});
+
+test("toRecord() returns a record with header names matching case-insensitively while preserving the original casing of the most recent set", () => {
+  const headerMap = createHeaderMap();
+  headerMap.set('Content-Type', 'application/json');
+  headerMap.set('content-type', 'application/xml');
+  expect(headerMap.toRecord()['Content-Type']).toBe('application/xml');
+});
+```

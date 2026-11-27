@@ -1,0 +1,55 @@
+- Switching regions clears the currently selected city immediately.
+- Switching regions disables the city select while loading.
+- Out-of-order responses from earlier region fetches are ignored completely.
+- If fetchCities rejects, displays an error state with a Retry button that re-fetches only the currently selected region.
+
+```tsx
+import React from "react";
+import { render, screen, fireEvent, waitFor, cleanup, act } from "@testing-library/react";
+import { RegionCityPicker } from "./RegionCityPicker";
+import { vi } from "vitest";
+
+const mockRegions = ["Region A", "Region B"];
+const mockFetchCities = vi.fn();
+const mockOnChange = vi.fn();
+
+describe("RegionCityPicker", () => {
+  beforeEach(() => {
+    mockFetchCities.mockReset();
+    mockOnChange.mockReset();
+  });
+
+  afterEach(cleanup);
+
+  test("Switching regions clears the currently selected city immediately", async () => {
+    render(<RegionCityPicker regions={mockRegions} fetchCities={mockFetchCities} onChange={mockOnChange} />);
+    fireEvent.change(screen.getByRole("combobox", { name: "Region" }), { target: { value: "Region A" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "City" }), { target: { value: "City A" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "Region" }), { target: { value: "Region B" } });
+    await waitFor(() => expect(screen.getByRole("combobox", { name: "City" }).value).toBe(""));
+  });
+
+  test("Switching regions disables the city select while loading", async () => {
+    render(<RegionCityPicker regions={mockRegions} fetchCities={mockFetchCities} onChange={mockOnChange} />);
+    fireEvent.change(screen.getByRole("combobox", { name: "Region" }), { target: { value: "Region A" } });
+    expect(screen.getByRole("combobox", { name: "City" })).toBeDisabled();
+    await waitFor(() => expect(screen.getByRole("combobox", { name: "City" })).toBeEnabled());
+  });
+
+  test("Out-of-order responses from earlier region fetches are ignored completely", async () => {
+    render(<RegionCityPicker regions={mockRegions} fetchCities={mockFetchCities} onChange={mockOnChange} />);
+    fireEvent.change(screen.getByRole("combobox", { name: "Region" }), { target: { value: "Region A" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "Region" }), { target: { value: "Region B" } });
+    mockFetchCities.mockResolvedValue(["City B"]);
+    await waitFor(() => expect(screen.getByRole("combobox", { name: "City" }).value).toBe(""));
+  });
+
+  test("If fetchCities rejects, displays an error state with a Retry button that re-fetches only the currently selected region", async () => {
+    render(<RegionCityPicker regions={mockRegions} fetchCities={mockFetchCities} onChange={mockOnChange} />);
+    fireEvent.change(screen.getByRole("combobox", { name: "Region" }), { target: { value: "Region A" } });
+    mockFetchCities.mockRejectedValue(new Error("Failed to fetch cities"));
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await waitFor(() => expect(mockFetchCities).toHaveBeenCalledWith("Region A"));
+  });
+});
+```

@@ -1,0 +1,68 @@
+- Writes valid pretty-printed UTF-8 JSON with a trailing newline and leaves zero leftover temporary files on success.
+- If serialization fails (e.g., circular object) or the write fails, the existing file at filePath remains untouched and no stray temp file remains.
+- Two concurrent calls targeting the same filePath use distinct temp filenames and neither corrupts the final JSON file.
+
+```ts
+import { writeJsonAtomic } from './writeJsonAtomic'; // Adjust the import path as necessary
+import fs from 'fs/promises';
+import path from 'path';
+import os from 'os';
+import { afterEach, beforeEach, test } from 'vitest';
+
+let dir: string;
+
+beforeEach(async () => {
+  dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+});
+
+afterEach(async () => {
+  await fs.promises.rm(dir, { recursive: true, force: true });
+});
+
+test('writes valid pretty-printed UTF-8 JSON with a trailing newline', async () => {
+  const filePath = path.join(dir, 'test.json');
+  const data = { key: 'value' };
+  await writeJsonAtomic(filePath, data);
+  const content = await fs.promises.readFile(filePath, 'utf-8');
+  expect(content).toBe(`{\n  "key": "value"\n}\n`);
+});
+
+test('leaves zero leftover temporary files on success', async () => {
+  const filePath = path.join(dir, 'test.json');
+  const data = { key: 'value' };
+  await writeJsonAtomic(filePath, data);
+  const files = await fs.promises.readdir(dir);
+  expect(files).not.toContain(expect.stringMatching(/\.tmp$/));
+});
+
+test('if serialization fails, the existing file at filePath remains untouched', async () => {
+  const filePath = path.join(dir, 'test.json');
+  const data = { key: 'value' };
+  await fs.promises.writeFile(filePath, 'invalid json');
+  await expect(writeJsonAtomic(filePath, data)).rejects.toThrow();
+  const content = await fs.promises.readFile(filePath, 'utf-8');
+  expect(content).toBe('invalid json');
+});
+
+test('if write fails, the existing file at filePath remains untouched', async () => {
+  const filePath = path.join(dir, 'test.json');
+  const data = { key: 'value' };
+  await fs.promises.writeFile(filePath, 'invalid json');
+  await expect(writeJsonAtomic(filePath, data)).rejects.toThrow();
+  const content = await fs.promises.readFile(filePath, 'utf-8');
+  expect(content).toBe('invalid json');
+});
+
+test('two concurrent calls targeting the same filePath use distinct temp filenames', async () => {
+  const filePath = path.join(dir, 'test.json');
+  const data1 = { key: 'value1' };
+  const data2 = { key: 'value2' };
+  const [tempFile1, tempFile2] = await Promise.all([
+    writeJsonAtomic(filePath, data1),
+    writeJsonAtomic(filePath, data2)
+  ]);
+  const files = await fs.promises.readdir(dir);
+  expect(files).toContain(expect.stringMatching(/\.tmp$/));
+  expect(files).not.toContain(expect.stringMatching(/\.tmp$/));
+});
+```

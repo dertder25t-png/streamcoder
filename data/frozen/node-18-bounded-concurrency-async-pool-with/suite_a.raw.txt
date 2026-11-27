@@ -1,0 +1,58 @@
+- Active in-flight workers never exceed concurrency, and the returned array aligns index-for-index with items regardless of completion order.
+- When a worker rejects or signal aborts, no further queued items are started and the pool rejects with the triggering error or abort reason.
+- Invalid concurrency (< 1 or non-integer) throws a RangeError synchronously; empty items resolves to [].
+
+```ts
+test("concurrency of 1", async () => {
+  const items = [1, 2, 3];
+  const results = await runTaskPool(items, 1, async (item) => item * 2);
+  expect(results).toEqual([2, 4, 6]);
+});
+
+test("concurrency of 2", async () => {
+  const items = [1, 2, 3, 4];
+  const results = await runTaskPool(items, 2, async (item) => item * 2);
+  expect(results).toEqual([2, 4, 6, 8]);
+});
+
+test("concurrency of 3", async () => {
+  const items = [1, 2, 3, 4, 5];
+  const results = await runTaskPool(items, 3, async (item) => item * 2);
+  expect(results).toEqual([2, 4, 6, 8, 10]);
+});
+
+test("rejects on worker error", async () => {
+  const items = [1, 2, 3];
+  const error = new Error("Worker error");
+  const results = await runTaskPool(items, 2, async (item) => {
+    if (item === 2) throw error;
+    return item * 2;
+  });
+  expect(results).toEqual([2, error, 6]);
+});
+
+test("aborts on signal", async () => {
+  const items = [1, 2, 3];
+  const controller = new AbortController();
+  controller.abort();
+  const error = new Error("Aborted");
+  const results = await runTaskPool(items, 2, async (item) => {
+    if (item === 2) throw error;
+    return item * 2;
+  }, { signal: controller.signal });
+  expect(results).toEqual([2, error, 6]);
+});
+
+test("invalid concurrency throws RangeError", async () => {
+  const items = [1, 2, 3];
+  expect(() => runTaskPool(items, 0, async (item) => item * 2)).toThrow(RangeError);
+  expect(() => runTaskPool(items, -1, async (item) => item * 2)).toThrow(RangeError);
+  expect(() => runTaskPool(items, 1.5, async (item) => item * 2)).toThrow(RangeError);
+});
+
+test("empty items resolves to []", async () => {
+  const items: number[] = [];
+  const results = await runTaskPool(items, 2, async (item) => item * 2);
+  expect(results).toEqual([]);
+});
+```

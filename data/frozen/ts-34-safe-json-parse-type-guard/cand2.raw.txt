@@ -1,0 +1,15 @@
+```ts
+import { parse } from 'node:util';
+
+export function safeParseJson<T>(
+  raw: string,
+  validator: (val: unknown) => val is T
+): T | null {
+  try {
+    const parsed = parse(JSON.parse(raw));
+    return validator(parsed) ? parsed : null;
+  } catch (error) {
+    return null;
+  }
+}
+```

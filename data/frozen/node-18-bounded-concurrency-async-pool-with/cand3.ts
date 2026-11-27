@@ -1,0 +1,111 @@
+import { AbortController, AbortSignal } from 'node:events';
+
+type WorkerFunction<T, R> = (item: T, index: number) => Promise<R>;
+
+interface RunTaskPoolOptions {
+  signal?: AbortSignal;
+}
+
+export async function runTaskPool<T, R>(
+  items: T[],
+  concurrency: number,
+  worker: WorkerFunction<T, R>,
+  options?: RunTaskPoolOptions
+): Promise<R[]> {
+  if (!Number.isInteger(concurrency) || concurrency < 1) {
+    throw new RangeError('Concurrency must be a positive integer');
+  }
+
+  if (items.length === 0) {
+    return [];
+  }
+
+  const results: (R | Error)[] = new Array(items.length).fill(null);
+  const activeWorkers: Promise<void>[] = [];
+  const abortController = new AbortController();
+
+  const handleAbort = (error: Error) => {
+    abortController.abort();
+    reject(error);
+  };
+
+  const reject = (error: Error) => {
+    for (const worker of activeWorkers) {
+      worker.catch(() => {});
+    }
+    reject(error);
+  };
+
+  const resolve = (index: number, result: R) => {
+    results[index] = result;
+    if (results.every((r) => r !== null)) {
+      resolve(results.filter((r) => r instanceof Error) as R[]);
+    }
+  };
+
+  items.forEach((item, index) => {
+    activeWorkers.push(
+      worker(item, index)
+        .then((result) => resolve(index, result))
+        .catch((error) => resolve(index, error))
+        .finally(() => {
+          const completedIndex = activeWorkers.findIndex((p) => p === activeWorkers[0]);
+          if (completedIndex !== -1) {
+            activeWorkers.splice(completedIndex, 1);
+          }
+          if (activeWorkers.length < concurrency && items.length > results.filter((r) => r !== null).length) {
+            items.forEach((item, index) => {
+              if (results[index] === null) {
+                activeWorkers.push(
+                  worker(item, index)
+                    .then((result) => resolve(index, result))
+                    .catch((error) => resolve(index, error))
+                    .finally(() => {
+                      const completedIndex = activeWorkers.findIndex((p) => p === activeWorkers[0]);
+                      if (completedIndex !== -1) {
+                        activeWorkers.splice(completedIndex, 1);
+                      }
+                    })
+                );
+              }
+            });
+          }
+        })
+    );
+  });
+
+  if (options?.signal) {
+    options.signal.addEventListener('abort', () => handleAbort(new Error('Aborted')));
+  }
+
+  return new Promise<R[]>((resolve, reject) => {
+    const cleanup = () => {
+      if (options?.signal) {
+        options.signal.removeEventListener('abort', () => handleAbort(new Error('Aborted')));
+      }
+    };
+
+    const checkCompletion = () => {
+      if (results.every((r) => r !== null)) {
+        const errors = results.filter((r) => r instanceof Error) as R[];
+        cleanup();
+        if (errors.length > 0) {
+          reject(errors[0]);
+        } else {
+          resolve(results as R[]);
+        }
+      }
+    };
+
+    items.forEach((item, index) => {
+      activeWorkers.push(
+        worker(item, index)
+          .then((result) => resolve(index, result))
+          .catch((error) => resolve(index, error))
+          .finally(() => {
+            checkCompletion();
+          })
+      );
+    });
+  });
+}

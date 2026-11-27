@@ -1,0 +1,46 @@
+- Empty or single-point arrays return a shallow copy without throwing.
+- Missing 3,600,000 ms intervals between the first and last point are filled with fillValue (default 0).
+- Original point values (including 0 or negative numbers) are never overwritten, and the input array is not mutated.
+
+```ts
+import { fillMissingHours } from './fillMissingHours';
+
+test("Empty array returns a shallow copy without throwing", () => {
+  const result = fillMissingHours([]);
+  expect(result).toEqual([]);
+});
+
+test("Single-point array returns a shallow copy without throwing", () => {
+  const result = fillMissingHours([{ hourMs: 1633072800000, value: 10 }]);
+  expect(result).toEqual([{ hourMs: 1633072800000, value: 10 }]);
+});
+
+test("Missing 3,600,000 ms intervals between the first and last point are filled with fillValue (default 0)", () => {
+  const result = fillMissingHours([
+    { hourMs: 1633072800000, value: 10 },
+    { hourMs: 1633076400000, value: 20 }
+  ]);
+  expect(result).toEqual([
+    { hourMs: 1633072800000, value: 10 },
+    { hourMs: 1633076400000, value: 20 },
+    { hourMs: 1633074000000, value: 0 }
+  ]);
+});
+
+test("Original point values (including 0 or negative numbers) are never overwritten, and the input array is not mutated", () => {
+  const input = [
+    { hourMs: 1633072800000, value: 10 },
+    { hourMs: 1633076400000, value: 20 }
+  ];
+  const result = fillMissingHours(input);
+  expect(result).toEqual([
+    { hourMs: 1633072800000, value: 10 },
+    { hourMs: 1633076400000, value: 20 },
+    { hourMs: 1633074000000, value: 0 }
+  ]);
+  expect(input).toEqual([
+    { hourMs: 1633072800000, value: 10 },
+    { hourMs: 1633076400000, value: 20 }
+  ]);
+});
+```

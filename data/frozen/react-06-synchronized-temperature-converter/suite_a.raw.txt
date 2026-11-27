@@ -1,0 +1,46 @@
+- Typing "0" in Celsius updates Fahrenheit to "32"
+- Typing "212" in Fahrenheit updates Celsius to "100"
+- Typing an incomplete negative sign "-" or clearing a field preserves the active field's raw text and clears the opposite field
+- Does not reformat the currently edited field while the user is typing
+
+```tsx
+import React from 'react';
+import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom/extend-expect';
+import TemperaturePair from './TemperaturePair';
+
+afterEach(cleanup);
+
+test("typing '0' in Celsius updates Fahrenheit to '32'", async () => {
+  render(<TemperaturePair />);
+  const celsiusInput = screen.getByRole('textbox', { name: 'Celsius' });
+  fireEvent.change(celsiusInput, { target: { value: '0' } });
+  await waitFor(() => expect(screen.getByRole('textbox', { name: 'Fahrenheit' })).toHaveValue('32'));
+});
+
+test("typing '212' in Fahrenheit updates Celsius to '100'", async () => {
+  render(<TemperaturePair />);
+  const fahrenheitInput = screen.getByRole('textbox', { name: 'Fahrenheit' });
+  fireEvent.change(fahrenheitInput, { target: { value: '212' } });
+  await waitFor(() => expect(screen.getByRole('textbox', { name: 'Celsius' })).toHaveValue('100'));
+});
+
+test("typing an incomplete negative sign '-' or clearing a field preserves the active field's raw text and clears the opposite field", async () => {
+  render(<TemperaturePair />);
+  const celsiusInput = screen.getByRole('textbox', { name: 'Celsius' });
+  fireEvent.change(celsiusInput, { target: { value: '-' } });
+  expect(celsiusInput).toHaveValue('-');
+  expect(screen.getByRole('textbox', { name: 'Fahrenheit' })).toHaveValue('');
+
+  fireEvent.change(celsiusInput, { target: { value: '' } });
+  expect(celsiusInput).toHaveValue('');
+  expect(screen.getByRole('textbox', { name: 'Fahrenheit' })).toHaveValue('');
+});
+
+test("does not reformat the currently edited field while the user is typing", async () => {
+  render(<TemperaturePair />);
+  const celsiusInput = screen.getByRole('textbox', { name: 'Celsius' });
+  fireEvent.change(celsiusInput, { target: { value: '20.' } });
+  expect(celsiusInput).toHaveValue('20.');
+});
+```

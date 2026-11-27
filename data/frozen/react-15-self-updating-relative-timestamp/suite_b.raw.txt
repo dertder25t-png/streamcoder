@@ -1,0 +1,43 @@
+- Formats boundaries accurately (59s → "just now", 60s → "1m ago", 3600s → "1h ago").
+- Advances its displayed text automatically when fake timers advance without requiring prop changes.
+- Clears its interval timer cleanly when unmounted.
+
+```tsx
+import React from 'react';
+import { render, screen, fireEvent, cleanup, act, waitFor, within } from '@testing-library/react';
+import { TimeAgoLabel } from './TimeAgoLabel'; // Adjust the import path as necessary
+
+afterEach(cleanup);
+
+test("displays 'just now' for timestamps within 60 seconds", async () => {
+  const timestampMs = Date.now() - 50000; // 50 seconds ago
+  render(<TimeAgoLabel timestampMs={timestampMs} />);
+  expect(screen.getByRole('time').textContent).toBe('just now');
+});
+
+test("displays '1m ago' for timestamps within 60 minutes", async () => {
+  const timestampMs = Date.now() - 3600000; // 1 hour ago
+  render(<TimeAgoLabel timestampMs={timestampMs} />);
+  expect(screen.getByRole('time').textContent).toBe('1h ago');
+});
+
+test("advances displayed text automatically when fake timers advance", async () => {
+  vi.useFakeTimers();
+  const timestampMs = Date.now() - 50000; // 50 seconds ago
+  render(<TimeAgoLabel timestampMs={timestampMs} />);
+  expect(screen.getByRole('time').textContent).toBe('just now');
+
+  vi.advanceTimersByTime(60000); // 1 minute later
+  await waitFor(() => {
+    expect(screen.getByRole('time').textContent).toBe('1m ago');
+  });
+});
+
+test("clears its interval timer cleanly when unmounted", async () => {
+  vi.useFakeTimers();
+  const timestampMs = Date.now() - 50000; // 50 seconds ago
+  const { unmount } = render(<TimeAgoLabel timestampMs={timestampMs} />);
+  unmount();
+  expect(setInterval).not.toHaveBeenCalled();
+});
+```

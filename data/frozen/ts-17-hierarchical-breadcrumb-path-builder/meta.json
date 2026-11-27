@@ -1,0 +1,25 @@
+{
+ "id": "ts-17-hierarchical-breadcrumb-path-builder",
+ "topic": "typescript",
+ "cand_hidden": [
+  true,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "",
+  "type error: .runs/ts-17-hierarchical-breadcrumb-path-builder/solution.ts(32,5): error TS2322: Type '",
+  "timeout",
+  "timeout"
+ ],
+ "cand_tokens": [
+  194,
+  195,
+  205,
+  180
+ ],
+ "gen_seconds": 26.6,
+ "type_only": false,
+ "errors": []
+}

@@ -1,0 +1,77 @@
+- Test that `streamToBuffer` returns a Promise.
+- Test that `streamToBuffer` resolves to a Buffer.
+- Test that `streamToBuffer` handles an empty stream.
+- Test that `streamToBuffer` handles a stream with a single chunk.
+- Test that `streamToBuffer` handles a stream with multiple chunks.
+- Test that `streamToBuffer` handles a stream with an error.
+- Test that `streamToBuffer` cleans up resources after completion.
+- Test that `streamToBuffer` cleans up resources after an error.
+
+```ts
+import { streamToBuffer } from './streamToBuffer';
+import { Readable } from 'stream';
+import { promises as fs } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
+
+test('returns a Promise', () => {
+  const stream = new Readable();
+  expect(streamToBuffer(stream)).toBeInstanceOf(Promise);
+});
+
+test('resolves to a Buffer', async () => {
+  const stream = new Readable();
+  const buffer = await streamToBuffer(stream);
+  expect(buffer).toBeInstanceOf(Buffer);
+});
+
+test('handles an empty stream', async () => {
+  const stream = new Readable();
+  const buffer = await streamToBuffer(stream);
+  expect(buffer.length).toBe(0);
+});
+
+test('handles a stream with a single chunk', async () => {
+  const stream = new Readable();
+  stream.push('hello');
+  stream.push(null);
+  const buffer = await streamToBuffer(stream);
+  expect(buffer.toString()).toBe('hello');
+});
+
+test('handles a stream with multiple chunks', async () => {
+  const stream = new Readable();
+  stream.push('hel');
+  stream.push('lo');
+  stream.push(null);
+  const buffer = await streamToBuffer(stream);
+  expect(buffer.toString()).toBe('hello');
+});
+
+test('handles a stream with an error', async () => {
+  const stream = new Readable();
+  stream.emit('error', new Error('test error'));
+  await expect(streamToBuffer(stream)).rejects.toThrow('test error');
+});
+
+test('cleans up resources after completion', async () => {
+  const dir = await fs.promises.mkdtemp(join(tmpdir(), "st-"));
+  const filePath = join(dir, 'test.txt');
+  const fileStream = fs.createWriteStream(filePath);
+  fileStream.write('hello');
+  fileStream.end();
+
+  const fileBuffer = await streamToBuffer(fileStream);
+  expect(fileBuffer.toString()).toBe('hello');
+  await fs.promises.rm(dir, { recursive: true });
+});
+
+test('cleans up resources after an error', async () => {
+  const dir = await fs.promises.mkdtemp(join(tmpdir(), "st-"));
+  const filePath = join(dir, 'test.txt');
+  const fileStream = fs.createWriteStream(filePath);
+  fileStream.emit('error', new Error('test error'));
+  await expect(streamToBuffer(fileStream)).rejects.toThrow('test error');
+  await fs.promises.rm(dir, { recursive: true });
+});
+```

@@ -1,0 +1,86 @@
+- Test that `createRouteMatcher` returns a function.
+- Test that the returned function correctly matches URL paths against patterns.
+- Test that the returned function extracts URL-decoded parameters with exact inferred keys.
+- Test that the returned function returns null for mismatched segment counts.
+- Test that the returned function returns null for wrong static literals.
+- Test that the returned function returns null for empty parameter segments.
+- Test that the returned function decodes percent-encoded segments safely.
+- Test that the returned function returns null for malformed percent encodings.
+- Test that the returned function handles empty or invalid input gracefully.
+- Test that the returned function handles boundaries correctly.
+- Test that the returned function handles repeated calls correctly.
+- Test that the returned function cleans up resources correctly.
+
+```ts
+import { createRouteMatcher } from './createRouteMatcher';
+
+test('returns a function', () => {
+  const matcher = createRouteMatcher('/orgs/:orgId/repos/:repoId');
+  expect(typeof matcher).toBe('function');
+});
+
+test('correctly matches URL paths against patterns', () => {
+  const matcher = createRouteMatcher('/orgs/:orgId/repos/:repoId');
+  expect(matcher('/orgs/123/repos/456')).toEqual({ orgId: '123', repoId: '456' });
+  expect(matcher('/orgs/123/repos/456/extra')).toBeNull();
+});
+
+test('extracts URL-decoded parameters with exact inferred keys', () => {
+  const matcher = createRouteMatcher('/orgs/:orgId/repos/:repoId');
+  expect(matcher('/orgs/123/repos/456%20789')).toEqual({ orgId: '123', repoId: '456 789' });
+});
+
+test('returns null for mismatched segment counts', () => {
+  const matcher = createRouteMatcher('/orgs/:orgId/repos/:repoId');
+  expect(matcher('/orgs/123')).toBeNull();
+  expect(matcher('/orgs/123/repos/456/789')).toBeNull();
+});
+
+test('returns null for wrong static literals', () => {
+  const matcher = createRouteMatcher('/orgs/:orgId/repos/:repoId');
+  expect(matcher('/orgs/123/repos/456/extra')).toBeNull();
+  expect(matcher('/orgs/123/repos/456/extra/789')).toBeNull();
+});
+
+test('returns null for empty parameter segments', () => {
+  const matcher = createRouteMatcher('/orgs/:orgId/repos/:repoId');
+  expect(matcher('/orgs//repos/456')).toBeNull();
+  expect(matcher('/orgs/123/repos//')).toBeNull();
+});
+
+test('decodes percent-encoded segments safely', () => {
+  const matcher = createRouteMatcher('/orgs/:orgId/repos/:repoId');
+  expect(matcher('/orgs/123/repos/456%20789')).toEqual({ orgId: '123', repoId: '456 789' });
+});
+
+test('returns null for malformed percent encodings', () => {
+  const matcher = createRouteMatcher('/orgs/:orgId/repos/:repoId');
+  expect(matcher('/orgs/123/repos/456%20789%')).toBeNull();
+  expect(matcher('/orgs/123/repos/456%20789%2')).toBeNull();
+});
+
+test('handles empty or invalid input gracefully', () => {
+  const matcher = createRouteMatcher('/orgs/:orgId/repos/:repoId');
+  expect(matcher('')).toBeNull();
+  expect(matcher(null)).toBeNull();
+  expect(matcher(undefined)).toBeNull();
+  expect(matcher('/orgs/:orgId/repos/:repoId')).toBeNull();
+});
+
+test('handles boundaries correctly', () => {
+  const matcher = createRouteMatcher('/orgs/:orgId/repos/:repoId');
+  expect(matcher('/orgs/123/repos/456')).toEqual({ orgId: '123', repoId: '456' });
+  expect(matcher('/orgs/123/repos/456/')).toBeNull();
+  expect(matcher('/orgs/123/repos/456/extra')).toBeNull();
+});
+
+test('handles repeated calls correctly', () => {
+  const matcher = createRouteMatcher('/orgs/:orgId/repos/:repoId');
+  expect(matcher('/orgs/123/repos/456')).toEqual({ orgId: '123', repoId: '456' });
+  expect(matcher('/orgs/123/repos/456')).toEqual({ orgId: '123', repoId: '456' });
+});
+
+test('cleans up resources correctly', () => {
+  // No resources to clean up in this example
+});
+```

@@ -1,0 +1,70 @@
+- Test that `applyDeepPatch` merges nested plain object fields deeply without mutating base or patch.
+- Test that `applyDeepPatch` replaces arrays, Date instances, and RegExp values in patch wholesale instead of merging properties.
+- Test that `applyDeepPatch` does not turn Date or function properties into partial empty objects at compile time.
+- Test that `applyDeepPatch` handles empty or invalid input gracefully.
+- Test that `applyDeepPatch` can be called repeatedly without side effects.
+- Test that `applyDeepPatch` cleans up resources like timers, listeners, files, etc., if applicable.
+
+```ts
+test("Merges nested plain object fields deeply without mutating base or patch", () => {
+  const base = { a: { b: 1 } };
+  const patch = { a: { b: 2, c: 3 } };
+  const result = applyDeepPatch(base, patch);
+  expect(result).toEqual({ a: { b: 2, c: 3 } });
+  expect(base).toEqual({ a: { b: 1 } });
+  expect(patch).toEqual({ a: { b: 2, c: 3 } });
+});
+
+test("Replaces arrays, Date instances, and RegExp values in patch wholesale instead of merging properties", () => {
+  const base = { a: [1, 2], b: new Date('2020-01-01'), c: /abc/ };
+  const patch = { a: [3, 4], b: new Date('2021-01-01'), c: /def/ };
+  const result = applyDeepPatch(base, patch);
+  expect(result).toEqual({ a: [3, 4], b: new Date('2021-01-01'), c: /def/ });
+  expect(base).toEqual({ a: [1, 2], b: new Date('2020-01-01'), c: /abc/ });
+  expect(patch).toEqual({ a: [3, 4], b: new Date('2021-01-01'), c: /def/ });
+});
+
+test("Does not turn Date or function properties into partial empty objects at compile time", () => {
+  const base = { a: new Date('2020-01-01'), b: () => {} };
+  const patch = { a: new Date('2021-01-01'), b: () => {} };
+  const result = applyDeepPatch(base, patch);
+  expect(result).toEqual({ a: new Date('2021-01-01'), b: () => {} });
+  expect(base).toEqual({ a: new Date('2020-01-01'), b: () => {} });
+  expect(patch).toEqual({ a: new Date('2021-01-01'), b: () => {} });
+});
+
+test("Handles empty or invalid input gracefully", () => {
+  const base = { a: 1 };
+  const patch = {};
+  const result = applyDeepPatch(base, patch);
+  expect(result).toEqual({ a: 1 });
+  expect(base).toEqual({ a: 1 });
+  expect(patch).toEqual({});
+
+  const invalidBase = null;
+  const invalidPatch = { a: 1 };
+  const invalidResult = applyDeepPatch(invalidBase, invalidPatch);
+  expect(invalidResult).toEqual({ a: 1 });
+  expect(invalidBase).toBeNull();
+  expect(invalidPatch).toEqual({ a: 1 });
+});
+
+test("Can be called repeatedly without side effects", () => {
+  const base = { a: 1 };
+  const patch = { a: 2 };
+  const result1 = applyDeepPatch(base, patch);
+  expect(result1).toEqual({ a: 2 });
+  expect(base).toEqual({ a: 1 });
+  expect(patch).toEqual({ a: 2 });
+
+  const result2 = applyDeepPatch(base, patch);
+  expect(result2).toEqual({ a: 2 });
+  expect(base).toEqual({ a: 1 });
+  expect(patch).toEqual({ a: 2 });
+});
+
+test("Cleans up resources like timers, listeners, files, etc., if applicable", () => {
+  // This test is hypothetical as the task does not mention any resources that need cleanup.
+  // If such resources were mentioned, they would need to be created and then cleaned up in the test.
+});
+```

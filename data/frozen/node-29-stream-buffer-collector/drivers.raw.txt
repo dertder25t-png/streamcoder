@@ -1,0 +1,48 @@
+```ts
+probe("empty stream", async () => {
+  const { Readable } = require('stream');
+  const stream = new Readable();
+  return await streamToBuffer(stream);
+});
+
+probe("single chunk", async () => {
+  const { Readable } = require('stream');
+  const stream = new Readable();
+  stream.push('hello');
+  stream.push(null);
+  return await streamToBuffer(stream);
+});
+
+probe("multiple chunks", async () => {
+  const { Readable } = require('stream');
+  const stream = new Readable();
+  stream.push('hel');
+  stream.push('lo ');
+  stream.push('wor');
+  stream.push('ld!');
+  stream.push(null);
+  return await streamToBuffer(stream);
+});
+
+probe("large chunk", async () => {
+  const { Readable } = require('stream');
+  const stream = new Readable();
+  const largeData = 'a'.repeat(1024 * 1024); // 1MB
+  stream.push(largeData);
+  stream.push(null);
+  return await streamToBuffer(stream);
+});
+
+probe("error in stream", async () => {
+  const { Readable } = require('stream');
+  const stream = new Readable();
+  stream._read = () => {
+    throw new Error('Stream error');
+  };
+  try {
+    return await streamToBuffer(stream);
+  } catch (error) {
+    return error;
+  }
+});
+```

@@ -1,0 +1,80 @@
+- Returns a new sorted array without mutating items.
+- Secondary keys break ties when primary keys are equal, honoring independent "asc" and "desc" directions.
+- Records equal across all specified keys preserve their original relative order.
+
+```ts
+test("sorts records by primary key in ascending order", () => {
+  const items = [
+    { name: "Alice", age: 25 },
+    { name: "Bob", age: 30 },
+    { name: "Charlie", age: 25 },
+  ];
+  const specs = [{ key: "age" }];
+  const sortedItems = sortRecordsByKeys(items, specs);
+  expect(sortedItems).toEqual([
+    { name: "Alice", age: 25 },
+    { name: "Charlie", age: 25 },
+    { name: "Bob", age: 30 },
+  ]);
+});
+
+test("sorts records by primary key in descending order", () => {
+  const items = [
+    { name: "Alice", age: 25 },
+    { name: "Bob", age: 30 },
+    { name: "Charlie", age: 25 },
+  ];
+  const specs = [{ key: "age", direction: "desc" }];
+  const sortedItems = sortRecordsByKeys(items, specs);
+  expect(sortedItems).toEqual([
+    { name: "Bob", age: 30 },
+    { name: "Alice", age: 25 },
+    { name: "Charlie", age: 25 },
+  ]);
+});
+
+test("breaks ties using secondary keys in ascending order", () => {
+  const items = [
+    { name: "Alice", age: 25, score: 80 },
+    { name: "Bob", age: 25, score: 90 },
+    { name: "Charlie", age: 30, score: 85 },
+  ];
+  const specs = [{ key: "age" }, { key: "score" }];
+  const sortedItems = sortRecordsByKeys(items, specs);
+  expect(sortedItems).toEqual([
+    { name: "Alice", age: 25, score: 80 },
+    { name: "Charlie", age: 30, score: 85 },
+    { name: "Bob", age: 25, score: 90 },
+  ]);
+});
+
+test("breaks ties using secondary keys in descending order", () => {
+  const items = [
+    { name: "Alice", age: 25, score: 80 },
+    { name: "Bob", age: 25, score: 90 },
+    { name: "Charlie", age: 30, score: 85 },
+  ];
+  const specs = [{ key: "age" }, { key: "score", direction: "desc" }];
+  const sortedItems = sortRecordsByKeys(items, specs);
+  expect(sortedItems).toEqual([
+    { name: "Bob", age: 25, score: 90 },
+    { name: "Charlie", age: 30, score: 85 },
+    { name: "Alice", age: 25, score: 80 },
+  ]);
+});
+
+test("preserves original order for records equal across all specified keys", () => {
+  const items = [
+    { name: "Alice", age: 25, score: 80 },
+    { name: "Bob", age: 25, score: 80 },
+    { name: "Charlie", age: 30, score: 85 },
+  ];
+  const specs = [{ key: "age" }, { key: "score" }];
+  const sortedItems = sortRecordsByKeys(items, specs);
+  expect(sortedItems).toEqual([
+    { name: "Alice", age: 25, score: 80 },
+    { name: "Bob", age: 25, score: 80 },
+    { name: "Charlie", age: 30, score: 85 },
+  ]);
+});
+```

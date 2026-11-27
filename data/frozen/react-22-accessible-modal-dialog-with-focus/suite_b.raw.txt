@@ -1,0 +1,65 @@
+- Renders role="dialog" with aria-modal="true" and aria-labelledby pointing to the title heading when open, and nothing when closed.
+- Pressing Tab on the last focusable element wraps to the first, and Shift+Tab on the first wraps to the last.
+- Closing via Escape or backdrop click invokes onClose and restores focus to the trigger element that held focus before opening.
+
+```tsx
+import React from 'react';
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import AccessibleModal from './AccessibleModal';
+
+afterEach(cleanup);
+
+test('renders role="dialog" with aria-modal="true" and aria-labelledby pointing to the title heading when open', async () => {
+  const triggerRef = React.createRef<HTMLButtonElement>();
+  render(
+    <div>
+      <button ref={triggerRef}>Open Modal</button>
+      <AccessibleModal isOpen={true} onClose={() => {}} title="Test Title">
+        <p>Modal content</p>
+      </AccessibleModal>
+    </div>
+  );
+
+  const dialog = screen.getByRole('dialog', { name: 'Test Title' });
+  expect(dialog).toHaveAttribute('aria-modal', 'true');
+  expect(dialog).toHaveAttribute('aria-labelledby', 'modal-title');
+});
+
+test('pressing Tab on the last focusable element wraps to the first, and Shift+Tab on the first wraps to the last', async () => {
+  render(
+    <AccessibleModal isOpen={true} onClose={() => {}} title="Test Title">
+      <button>Button 1</button>
+      <button>Button 2</button>
+      <button>Button 3</button>
+    </AccessibleModal>
+  );
+
+  const buttons = screen.getAllByRole('button');
+  fireEvent.focus(buttons[2]);
+  fireEvent.keyDown(buttons[2], { key: 'Tab' });
+  expect(buttons[0]).toHaveFocus();
+
+  fireEvent.keyDown(buttons[0], { key: 'Tab', shiftKey: true });
+  expect(buttons[2]).toHaveFocus();
+});
+
+test('closing via Escape or backdrop click invokes onClose and restores focus to the trigger element that held focus before opening', async () => {
+  const triggerRef = React.createRef<HTMLButtonElement>();
+  const onCloseMock = vi.fn();
+  render(
+    <div>
+      <button ref={triggerRef}>Open Modal</button>
+      <AccessibleModal isOpen={true} onClose={onCloseMock} title="Test Title">
+        <p>Modal content</p>
+      </AccessibleModal>
+    </div>
+  );
+
+  fireEvent.click(triggerRef.current!);
+  fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+  await waitFor(() => expect(onCloseMock).toHaveBeenCalled());
+
+  const triggerButton = screen.getByRole('button', { name: 'Open Modal' });
+  expect(triggerButton).toHaveFocus();
+});
+```

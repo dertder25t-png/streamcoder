@@ -1,0 +1,25 @@
+```ts
+probe("subtractIntervals basic", async () => {
+  return subtractIntervals([[0, 10)], [[2, 5)]);
+});
+
+probe("subtractIntervals coalescing", async () => {
+  return subtractIntervals([[0, 5), [5, 10)], [[2, 7)]);
+});
+
+probe("subtractIntervals splitting", async () => {
+  return subtractIntervals([[0, 10)], [[2, 4), [6, 8)]);
+});
+
+probe("subtractIntervals covering", async () => {
+  return subtractIntervals([[0, 10)], [[0, 10)]);
+});
+
+probe("subtractIntervals empty intervals", async () => {
+  return subtractIntervals([[0, 0), [5, 5)], [[2, 3)]);
+});
+
+probe("subtractIntervals inverted intervals", async () => {
+  return subtractIntervals([[0, 10]], [[10, 5]]);
+});
+```

@@ -1,0 +1,57 @@
+```ts
+probe("basic shutdown", async () => {
+  const server = http.createServer((req, res) => {
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("Hello, world!");
+  });
+
+  const shutdown = attachGracefulShutdown(server, { drainTimeoutMs: 1000 });
+
+  return { server, shutdown };
+});
+
+probe("multiple shutdown calls", async () => {
+  const server = http.createServer((req, res) => {
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("Hello, world!");
+  });
+
+  const shutdown1 = attachGracefulShutdown(server, { drainTimeoutMs: 1000 });
+  const shutdown2 = attachGracefulShutdown(server, { drainTimeoutMs: 1000 });
+
+  return { shutdown1, shutdown2 };
+});
+
+probe("shutdown with zero drain timeout", async () => {
+  const server = http.createServer((req, res) => {
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("Hello, world!");
+  });
+
+  const shutdown = attachGracefulShutdown(server, { drainTimeoutMs: 0 });
+
+  return { server, shutdown };
+});
+
+probe("shutdown with negative drain timeout", async () => {
+  const server = http.createServer((req, res) => {
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("Hello, world!");
+  });
+
+  const shutdown = attachGracefulShutdown(server, { drainTimeoutMs: -1000 });
+
+  return { server, shutdown };
+});
+
+probe("shutdown with large drain timeout", async () => {
+  const server = http.createServer((req, res) => {
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("Hello, world!");
+  });
+
+  const shutdown = attachGracefulShutdown(server, { drainTimeoutMs: 1000000 });
+
+  return { server, shutdown };
+});
+```

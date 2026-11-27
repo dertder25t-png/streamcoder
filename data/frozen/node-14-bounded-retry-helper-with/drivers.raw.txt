@@ -1,0 +1,94 @@
+```ts
+probe("basic retry with backoff", async () => {
+  let attempts = 0;
+  const result = await retryWithBackoff(
+    async () => {
+      attempts++;
+      if (attempts === 1) {
+        throw new Error("First attempt");
+      } else if (attempts === 2) {
+        throw new Error("Second attempt");
+      } else {
+        return "Success";
+      }
+    },
+    { maxAttempts: 3, baseDelayMs: 10 }
+  );
+  return result;
+});
+
+probe("shouldRetry stops retrying", async () => {
+  let attempts = 0;
+  const result = await retryWithBackoff(
+    async () => {
+      attempts++;
+      if (attempts === 1) {
+        throw new Error("First attempt");
+      } else if (attempts === 2) {
+        throw new Error("Second attempt");
+      } else {
+        return "Success";
+      }
+    },
+    { maxAttempts: 3, baseDelayMs: 10, shouldRetry: (err) => err.message !== "First attempt" }
+  );
+  return result;
+});
+
+probe("maxAttempts exhausted", async () => {
+  let attempts = 0;
+  try {
+    await retryWithBackoff(
+      async () => {
+        attempts++;
+        throw new Error("Attempt");
+      },
+      { maxAttempts: 2, baseDelayMs: 10 }
+    );
+  } catch (err) {
+    return err.message;
+  }
+});
+
+probe("signal aborts", async () => {
+  const controller = new AbortController();
+  const signal = controller.signal;
+  controller.abort();
+  try {
+    await retryWithBackoff(
+      async () => {
+        throw new Error("Attempt");
+      },
+      { maxAttempts: 2, baseDelayMs: 10, signal }
+    );
+  } catch (err) {
+    return err.name;
+  }
+});
+
+probe("sleep aborts", async () => {
+  const controller = new AbortController();
+  const signal = controller.signal;
+  controller.abort();
+  try {
+    await retryWithBackoff(
+      async () => {
+        throw new Error("Attempt");
+      },
+      { maxAttempts: 2, baseDelayMs: 10, sleep: (ms) => new Promise((resolve, reject) => {
+        const id = setTimeout(() => {
+          clearTimeout(id);
+          reject(new Error("Aborted"));
+        }, ms);
+        signal.addEventListener("abort", () => {
+          clearTimeout(id);
+          reject(new Error("Aborted"));
+        });
+      }) },
+      { signal }
+    );
+  } catch (err) {
+    return err.message;
+  }
+});
+```

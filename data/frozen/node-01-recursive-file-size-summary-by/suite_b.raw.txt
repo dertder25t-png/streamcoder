@@ -1,0 +1,46 @@
+- An empty directory resolves to {}.
+- Nested subdirectories aggregate together with normalized lowercase extension keys.
+- Extensionless files and dotfiles like .gitignore group under "(no-ext)".
+- Symbolic links to files or directories are skipped rather than counted or followed.
+
+```ts
+import { summarizeByExtension } from './summarizeByExtension'; // Adjust the import path as necessary
+import fs from 'fs/promises';
+import path from 'path';
+import os from 'os';
+
+test("empty directory resolves to {}", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const result = await summarizeByExtension(dir);
+  expect(result).toEqual({});
+  await fs.promises.rm(dir, { recursive: true });
+});
+
+test("nested subdirectories aggregate together with normalized lowercase extension keys", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  await fs.promises.mkdir(path.join(dir, "subdir"));
+  await fs.promises.writeFile(path.join(dir, "file.ts"), "console.log('Hello, world!');");
+  await fs.promises.writeFile(path.join(dir, "subdir", "file.js"), "console.log('Hello, world!');");
+  const result = await summarizeByExtension(dir);
+  expect(result).toEqual({ ".ts": { count: 1, bytes: 23 }, ".js": { count: 1, bytes: 23 } });
+  await fs.promises.rm(dir, { recursive: true });
+});
+
+test("extensionless files and dotfiles like .gitignore group under '(no-ext)'", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  await fs.promises.writeFile(path.join(dir, "file"), "console.log('Hello, world!');");
+  await fs.promises.writeFile(path.join(dir, ".gitignore"), "node_modules");
+  const result = await summarizeByExtension(dir);
+  expect(result).toEqual({ "(no-ext)": { count: 2, bytes: 46 } });
+  await fs.promises.rm(dir, { recursive: true });
+});
+
+test("symbolic links to files or directories are skipped rather than counted or followed", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const linkPath = path.join(dir, "link");
+  await fs.promises.symlink(path.join(dir, "nonexistent"), linkPath);
+  const result = await summarizeByExtension(dir);
+  expect(result).toEqual({});
+  await fs.promises.rm(dir, { recursive: true });
+});
+```

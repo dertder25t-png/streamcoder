@@ -1,0 +1,25 @@
+{
+ "id": "ts-21-fix-async-middleware-composition",
+ "topic": "typescript",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/ts-21-fix-async-middleware-composition/solution.test.ts(142,15): error TS7006: Par",
+  "test failed: runs middlewares in onion order; awaits async downstream work before the after-part run",
+  "type error: .runs/ts-21-fix-async-middleware-composition/solution.test.ts(142,15): error TS7006: Par",
+  "type error: .runs/ts-21-fix-async-middleware-composition/solution.test.ts(142,15): error TS7006: Par"
+ ],
+ "cand_tokens": [
+  202,
+  234,
+  222,
+  198
+ ],
+ "gen_seconds": 29.7,
+ "type_only": false,
+ "errors": []
+}

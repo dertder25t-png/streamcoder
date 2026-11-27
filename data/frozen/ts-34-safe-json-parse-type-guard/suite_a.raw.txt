@@ -1,0 +1,32 @@
+- Returns the parsed typed object when `validator` returns `true`.
+- Returns `null` when `JSON.parse` throws a syntax error.
+- Returns `null` when `validator` returns `false`.
+
+```ts
+test("returns the parsed typed object when validator returns true", () => {
+  const validator = (val: unknown): val is { a: number } => {
+    return typeof val === "object" && val !== null && "a" in val && typeof val.a === "number";
+  };
+
+  const result = safeParseJson('{"a": 42}', validator);
+  expect(result).toEqual({ a: 42 });
+});
+
+test("returns null when JSON.parse throws a syntax error", () => {
+  const validator = (val: unknown): val is { a: number } => {
+    return typeof val === "object" && val !== null && "a" in val && typeof val.a === "number";
+  };
+
+  const result = safeParseJson('{"a": "not a number"}', validator);
+  expect(result).toBeNull();
+});
+
+test("returns null when validator returns false", () => {
+  const validator = (val: unknown): val is { a: number } => {
+    return typeof val === "object" && val !== null && "a" in val && typeof val.a === "number";
+  };
+
+  const result = safeParseJson('{"b": 42}', validator);
+  expect(result).toBeNull();
+});
+```

@@ -1,0 +1,25 @@
+{
+ "id": "node-03-safe-path-containment-resolver",
+ "topic": "node",
+ "cand_hidden": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "cand_hidden_err": [
+  "test failed: rejects sibling directories sharing the root name prefix",
+  "test failed: rejects sibling directories sharing the root name prefix",
+  "",
+  "test failed: resolves simple and normalized relative paths under root; accepts an absolute userPath "
+ ],
+ "cand_tokens": [
+  120,
+  93,
+  105,
+  167
+ ],
+ "gen_seconds": 18.1,
+ "type_only": false,
+ "errors": []
+}

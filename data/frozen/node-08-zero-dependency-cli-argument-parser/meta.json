@@ -1,0 +1,25 @@
+{
+ "id": "node-08-zero-dependency-cli-argument-parser",
+ "topic": "node",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/node-08-zero-dependency-cli-argument-parser/solution.ts(36,11): error TS2322: Type",
+  "test failed: parses boolean flags and --no-<name> negation; parses --key=value and --key value ident",
+  "type error: .runs/node-08-zero-dependency-cli-argument-parser/solution.ts(52,19): error TS2538: Type",
+  "type error: .runs/node-08-zero-dependency-cli-argument-parser/solution.ts(44,37): error TS2345: Argu"
+ ],
+ "cand_tokens": [
+  548,
+  495,
+  598,
+  414
+ ],
+ "gen_seconds": 37.8,
+ "type_only": false,
+ "errors": []
+}

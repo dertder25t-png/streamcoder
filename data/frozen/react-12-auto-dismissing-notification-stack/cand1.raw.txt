@@ -1,0 +1,74 @@
+```tsx
+import React, { useState, useEffect, useRef } from 'react';
+
+interface Toast {
+  id: string;
+  message: string;
+  durationMs?: number;
+}
+
+interface ToastListProps {
+  toasts: Toast[];
+  onDismiss: (id: string) => void;
+  defaultDurationMs?: number;
+}
+
+const ToastList: React.FC<ToastListProps> = ({ toasts, onDismiss, defaultDurationMs = 4000 }) => {
+  const [timers, setTimers] = useState<{ [id: string]: NodeJS.Timeout | null }>({});
+  const [hoveredToast, setHoveredToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    toasts.forEach((toast) => {
+      if (!timers[toast.id]) {
+        const timer = setTimeout(() => {
+          if (!hoveredToast || hoveredToast !== toast.id) {
+            onDismiss(toast.id);
+          }
+          setTimers((prevTimers) => ({ ...prevTimers, [toast.id]: null }));
+        }, toast.durationMs ?? defaultDurationMs);
+        setTimers((prevTimers) => ({ ...prevTimers, [toast.id]: timer }));
+      }
+    });
+
+    return () => {
+      Object.values(timers).forEach((timer) => {
+        if (timer) clearTimeout(timer);
+      });
+    };
+  }, [toasts, onDismiss, defaultDurationMs, hoveredToast, timers]);
+
+  const handleMouseEnter = (id: string) => {
+    setHoveredToast(id);
+  };
+
+  const handleMouseLeave = (id: string) => {
+    setHoveredToast(null);
+  };
+
+  const handleDismiss = (id: string) => {
+    onDismiss(id);
+    setTimers((prevTimers) => ({ ...prevTimers, [id]: null }));
+  };
+
+  return (
+    <div>
+      {toasts.map((toast) => (
+        <div
+          key={toast.id}
+          onMouseEnter={() => handleMouseEnter(toast.id)}
+          onMouseLeave={() => handleMouseLeave(toast.id)}
+          style={{
+            opacity: hoveredToast === toast.id ? 0.5 : 1,
+            transition: 'opacity 0.2s',
+          }}
+        >
+          <p>{toast.message}</p>
+          <button onClick={() => handleDismiss(toast.id)}>Close</button>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export { ToastList };
+```

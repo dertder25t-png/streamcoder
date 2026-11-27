@@ -1,0 +1,53 @@
+- Rapid successive calls only invoke the underlying callback once after `delayMs` has elapsed.
+- If the callback changes between calls, the newest callback is the one that fires.
+- Unmounting the component clears any pending timers so the callback never fires.
+
+```tsx
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import { useDebouncedCallback } from './useDebouncedCallback'; // Adjust the import path as necessary
+
+test("debounces the callback after delayMs", async () => {
+  const callback = vi.fn();
+  const delayMs = 100;
+  const { rerender } = render(<div>{useDebouncedCallback(callback, delayMs)}</div>);
+
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: 'test' } });
+  expect(callback).not.toHaveBeenCalled();
+
+  await waitFor(() => expect(callback).toHaveBeenCalled());
+  expect(callback).toHaveBeenCalledTimes(1);
+});
+
+test("uses the newest callback if it changes", async () => {
+  const callback1 = vi.fn();
+  const callback2 = vi.fn();
+  const delayMs = 100;
+  const { rerender } = render(<div>{useDebouncedCallback(callback1, delayMs)}</div>);
+
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: 'test' } });
+  expect(callback1).not.toHaveBeenCalled();
+
+  rerender(<div>{useDebouncedCallback(callback2, delayMs)}</div>);
+
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: 'test2' } });
+  expect(callback1).not.toHaveBeenCalled();
+  expect(callback2).not.toHaveBeenCalled();
+
+  await waitFor(() => expect(callback2).toHaveBeenCalled());
+  expect(callback2).toHaveBeenCalledTimes(1);
+});
+
+test("clears pending timers on unmount", async () => {
+  const callback = vi.fn();
+  const delayMs = 100;
+  const { unmount } = render(<div>{useDebouncedCallback(callback, delayMs)}</div>);
+
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: 'test' } });
+  expect(callback).not.toHaveBeenCalled();
+
+  unmount();
+
+  await waitFor(() => expect(callback).not.toHaveBeenCalled());
+  expect(callback).toHaveBeenCalledTimes(0);
+});
+```

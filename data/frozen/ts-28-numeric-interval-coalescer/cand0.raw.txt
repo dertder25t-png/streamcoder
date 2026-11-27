@@ -1,0 +1,47 @@
+```typescript
+function coalesceIntervals(intervals: [number, number][]): [number, number][] {
+    if (intervals.length === 0) return [];
+
+    intervals.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+
+    const coalesced: [number, number][] = [intervals[0]];
+    for (let i = 1; i < intervals.length; i++) {
+        const last = coalesced[coalesced.length - 1];
+        const current = intervals[i];
+        if (current[0] <= last[1]) {
+            last[1] = Math.max(last[1], current[1]);
+        } else {
+            coalesced.push(current);
+        }
+    }
+
+    return coalesced;
+}
+
+export function subtractIntervals(base: readonly [number, number][], cutouts: readonly [number, number][]): [number, number][] {
+    if (base.some(([start, end]) => start === end || start > end)) {
+        throw new RangeError("Invalid interval: start must be less than end");
+    }
+
+    const coalescedBase = coalesceIntervals([...base]);
+    const coalescedCutouts = coalesceIntervals([...cutouts]);
+
+    const result: [number, number][] = [];
+    for (const [baseStart, baseEnd] of coalescedBase) {
+        let remainingStart = baseStart;
+        for (const [cutoutStart, cutoutEnd] of coalescedCutouts) {
+            if (cutoutStart >= baseEnd) break;
+            if (cutoutEnd <= remainingStart) continue;
+            if (cutoutStart > remainingStart) {
+                result.push([remainingStart, cutoutStart]);
+            }
+            remainingStart = cutoutEnd;
+        }
+        if (remainingStart < baseEnd) {
+            result.push([remainingStart, baseEnd]);
+        }
+    }
+
+    return result;
+}
+```

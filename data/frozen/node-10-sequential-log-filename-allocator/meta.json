@@ -1,0 +1,25 @@
+{
+ "id": "node-10-sequential-log-filename-allocator",
+ "topic": "node",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/node-10-sequential-log-filename-allocator/solution.ts(20,9): error TS18046: 'error",
+  "type error: .runs/node-10-sequential-log-filename-allocator/solution.ts(20,9): error TS18046: 'err' ",
+  "type error: .runs/node-10-sequential-log-filename-allocator/solution.ts(24,9): error TS18046: 'error",
+  "type error: .runs/node-10-sequential-log-filename-allocator/solution.ts(21,9): error TS18046: 'err' "
+ ],
+ "cand_tokens": [
+  198,
+  202,
+  243,
+  205
+ ],
+ "gen_seconds": 31.2,
+ "type_only": false,
+ "errors": []
+}

@@ -1,0 +1,67 @@
+- Test that calling `shutdown()` multiple times concurrently returns the same promise.
+- Test that calling `shutdown()` with an invalid `drainTimeoutMs` value (e.g., negative number) throws an error.
+- Test that calling `shutdown()` with a `drainTimeoutMs` value of 0 immediately closes the server.
+- Test that calling `shutdown()` with a `drainTimeoutMs` value greater than 0 waits for active requests to finish before closing the server.
+- Test that calling `shutdown()` with an already closed server does not throw an error.
+- Test that calling `shutdown()` with a server that has no active connections or requests closes immediately.
+
+```ts
+import { attachGracefulShutdown } from './attachGracefulShutdown'; // Adjust the import path as necessary
+import { createServer } from 'http';
+import { promises as fs } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
+
+test('Calling shutdown() multiple times concurrently returns the same promise', async () => {
+  const server = createServer();
+  const shutdown = attachGracefulShutdown(server, { drainTimeoutMs: 1000 });
+  const promise1 = shutdown();
+  const promise2 = shutdown();
+  expect(promise1).toBe(promise2);
+  await promise1;
+  server.close();
+});
+
+test('Calling shutdown() with an invalid drainTimeoutMs value throws an error', async () => {
+  const server = createServer();
+  expect(() => attachGracefulShutdown(server, { drainTimeoutMs: -1 })).toThrowError('Invalid drainTimeoutMs value');
+  server.close();
+});
+
+test('Calling shutdown() with a drainTimeoutMs value of 0 immediately closes the server', async () => {
+  const server = createServer();
+  const shutdown = attachGracefulShutdown(server, { drainTimeoutMs: 0 });
+  const promise = shutdown();
+  await promise;
+  expect(server.listening).toBe(false);
+});
+
+test('Calling shutdown() with a drainTimeoutMs value greater than 0 waits for active requests to finish before closing the server', async () => {
+  const server = createServer((req, res) => {
+    setTimeout(() => {
+      res.end('Response');
+    }, 1000);
+  });
+  const shutdown = attachGracefulShutdown(server, { drainTimeoutMs: 2000 });
+  const promise = shutdown();
+  await promise;
+  expect(server.listening).toBe(false);
+});
+
+test('Calling shutdown() with an already closed server does not throw an error', async () => {
+  const server = createServer();
+  server.close();
+  const shutdown = attachGracefulShutdown(server, { drainTimeoutMs: 1000 });
+  const promise = shutdown();
+  await promise;
+  expect(server.listening).toBe(false);
+});
+
+test('Calling shutdown() with a server that has no active connections or requests closes immediately', async () => {
+  const server = createServer();
+  const shutdown = attachGracefulShutdown(server, { drainTimeoutMs: 1000 });
+  const promise = shutdown();
+  await promise;
+  expect(server.listening).toBe(false);
+});
+```

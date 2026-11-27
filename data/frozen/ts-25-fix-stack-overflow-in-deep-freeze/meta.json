@@ -1,0 +1,25 @@
+{
+ "id": "ts-25-fix-stack-overflow-in-deep-freeze",
+ "topic": "typescript",
+ "cand_hidden": [
+  true,
+  false,
+  true,
+  true
+ ],
+ "cand_hidden_err": [
+  "",
+  "type error: .runs/ts-25-fix-stack-overflow-in-deep-freeze/solution.ts(26,35): error TS7053: Element ",
+  "",
+  ""
+ ],
+ "cand_tokens": [
+  114,
+  192,
+  139,
+  115
+ ],
+ "gen_seconds": 30.4,
+ "type_only": false,
+ "errors": []
+}

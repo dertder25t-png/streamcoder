@@ -1,0 +1,64 @@
+- Processes up to concurrency jobs in parallel and retries failing jobs up to maxRetries times before routing permanently failed jobs to onDeadLetter(job, lastError).
+- drain() resolves only after all queued, in-flight, and retried jobs have reached a terminal completed or dead-lettered state.
+- stats() accurately reports { queued, active, completed, deadLettered } at any point without ever leaking negative counts.
+
+```ts
+test("processes up to concurrency jobs in parallel", async () => {
+  const concurrency = 2;
+  const processor = vi.fn();
+  const queue = createJobQueue({ concurrency, maxRetries: 0, processor, onDeadLetter: vi.fn() });
+
+  queue.enqueue({ id: 1 });
+  queue.enqueue({ id: 2 });
+  queue.enqueue({ id: 3 });
+
+  await new Promise(resolve => setTimeout(resolve, 100));
+
+  expect(processor).toHaveBeenCalledTimes(2);
+  expect(processor).toHaveBeenCalledWith({ id: 1 });
+  expect(processor).toHaveBeenCalledWith({ id: 2 });
+});
+
+test("retries failing jobs up to maxRetries times", async () => {
+  const maxRetries = 2;
+  const processor = vi.fn(() => Promise.reject(new Error("Failed")));
+  const onDeadLetter = vi.fn();
+  const queue = createJobQueue({ concurrency: 1, maxRetries, processor, onDeadLetter });
+
+  queue.enqueue({ id: 1 });
+
+  await new Promise(resolve => setTimeout(resolve, 100));
+
+  expect(processor).toHaveBeenCalledTimes(3);
+  expect(onDeadLetter).toHaveBeenCalledWith({ id: 1 }, expect.any(Error));
+});
+
+test("drain() resolves only after all jobs have completed or dead-lettered", async () => {
+  const processor = vi.fn(() => Promise.resolve());
+  const onDeadLetter = vi.fn();
+  const queue = createJobQueue({ concurrency: 1, maxRetries: 0, processor, onDeadLetter });
+
+  queue.enqueue({ id: 1 });
+  queue.enqueue({ id: 2 });
+
+  await queue.drain();
+
+  expect(processor).toHaveBeenCalledTimes(2);
+  expect(onDeadLetter).not.toHaveBeenCalled();
+});
+
+test("stats() accurately reports job counts", async () => {
+  const processor = vi.fn(() => Promise.resolve());
+  const onDeadLetter = vi.fn();
+  const queue = createJobQueue({ concurrency: 1, maxRetries: 0, processor, onDeadLetter });
+
+  queue.enqueue({ id: 1 });
+  queue.enqueue({ id: 2 });
+
+  expect(queue.stats()).toEqual({ queued: 2, active: 2, completed: 0, deadLettered: 0 });
+
+  await new Promise(resolve => setTimeout(resolve, 100));
+
+  expect(queue.stats()).toEqual({ queued: 0, active: 0, completed: 2, deadLettered: 0 });
+});
+```

@@ -1,0 +1,37 @@
+```ts
+probe("initial render", async () => {
+  render(<ViewportBadge />);
+  await waitFor(() => screen.getByText("desktop"));
+  return snap();
+});
+
+probe("resize to mobile", async () => {
+  render(<ViewportBadge />);
+  fireEvent(window, new Event('resize', { view: window, detail: { innerWidth: 639 } }));
+  await waitFor(() => screen.getByText("mobile"));
+  return snap();
+});
+
+probe("resize to tablet", async () => {
+  render(<ViewportBadge />);
+  fireEvent(window, new Event('resize', { view: window, detail: { innerWidth: 1023 } }));
+  await waitFor(() => screen.getByText("tablet"));
+  return snap();
+});
+
+probe("resize to desktop", async () => {
+  render(<ViewportBadge />);
+  fireEvent(window, new Event('resize', { view: window, detail: { innerWidth: 1024 } }));
+  await waitFor(() => screen.getByText("desktop"));
+  return snap();
+});
+
+probe("unmount and remount", async () => {
+  const { unmount } = render(<ViewportBadge />);
+  fireEvent(window, new Event('resize', { view: window, detail: { innerWidth: 639 } }));
+  unmount();
+  render(<ViewportBadge />);
+  await waitFor(() => screen.getByText("desktop"));
+  return snap();
+});
+```

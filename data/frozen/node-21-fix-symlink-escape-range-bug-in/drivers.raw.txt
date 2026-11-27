@@ -1,0 +1,51 @@
+```ts
+probe("basic file read", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const filePath = path.join(dir, "test.txt");
+  await fs.promises.writeFile(filePath, "Hello, world!");
+  const server = createSafeFileServer(dir);
+  const response = await sendRequest(server, "GET", "/test.txt");
+  await server.close();
+  return response;
+});
+
+probe("forbidden path traversal", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const filePath = path.join(dir, "test.txt");
+  await fs.promises.writeFile(filePath, "Hello, world!");
+  const server = createSafeFileServer(dir);
+  const response = await sendRequest(server, "GET", "/../test.txt");
+  await server.close();
+  return response;
+});
+
+probe("forbidden symlink", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const filePath = path.join(dir, "test.txt");
+  await fs.promises.writeFile(filePath, "Hello, world!");
+  const symlinkPath = path.join(dir, "symlink.txt");
+  await fs.promises.symlink(filePath, symlinkPath);
+  const server = createSafeFileServer(dir);
+  const response = await sendRequest(server, "GET", "/symlink.txt");
+  await server.close();
+  return response;
+});
+
+probe("HEAD request", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const filePath = path.join(dir, "test.txt");
+  await fs.promises.writeFile(filePath, "Hello, world!");
+  const server = createSafeFileServer(dir);
+  const response = await sendRequest(server, "HEAD", "/test.txt");
+  await server.close();
+  return response;
+});
+
+probe("missing file", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const server = createSafeFileServer(dir);
+  const response = await sendRequest(server, "GET", "/nonexistent.txt");
+  await server.close();
+  return response;
+});
+```

@@ -1,0 +1,55 @@
+- Test with empty ref
+- Test with invalid ref
+- Test with repeated calls
+- Test with cleanup on unmount
+- Test with boundary conditions (e.g., clicking on the edge of the screen)
+
+```tsx
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import { useClickOutside } from './useClickOutside'; // Adjust the import path as necessary
+
+test('useClickOutside with empty ref', () => {
+  const handler = vi.fn();
+  useClickOutside(null, handler);
+  fireEvent.mouseDown(document.body);
+  expect(handler).not.toHaveBeenCalled();
+});
+
+test('useClickOutside with invalid ref', () => {
+  const handler = vi.fn();
+  useClickOutside({} as React.RefObject<HTMLElement | null>, handler);
+  fireEvent.mouseDown(document.body);
+  expect(handler).not.toHaveBeenCalled();
+});
+
+test('useClickOutside with repeated calls', () => {
+  const handler = vi.fn();
+  useClickOutside(document.createElement('div'), handler);
+  useClickOutside(document.createElement('div'), handler);
+  fireEvent.mouseDown(document.body);
+  expect(handler).toHaveBeenCalledTimes(1);
+});
+
+test('useClickOutside with cleanup on unmount', () => {
+  const handler = vi.fn();
+  const ref = React.createRef<HTMLElement>();
+  const { unmount } = render(<div ref={ref} />);
+  fireEvent.mouseDown(document.body);
+  expect(handler).not.toHaveBeenCalled();
+  unmount();
+  fireEvent.mouseDown(document.body);
+  expect(handler).not.toHaveBeenCalled();
+});
+
+test('useClickOutside with boundary conditions', async () => {
+  const handler = vi.fn();
+  const ref = React.createRef<HTMLElement>();
+  render(<div ref={ref}>Dropdown</div>);
+  fireEvent.mouseDown(document.body);
+  expect(handler).not.toHaveBeenCalled();
+  fireEvent.mouseDown(ref.current!);
+  expect(handler).not.toHaveBeenCalled();
+  fireEvent.mouseDown(document.body);
+  expect(handler).not.toHaveBeenCalled();
+});
+```

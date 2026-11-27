@@ -1,0 +1,38 @@
+```ts
+import { Weekday } from 'react-day-picker';
+
+export function expandWeekdaySpec(spec: string): Weekday[] {
+  if (!spec) throw new Error('Empty spec provided');
+
+  const tokens = spec.split(',');
+  const weekdays = new Set<Weekday>();
+
+  tokens.forEach(token => {
+    const parts = token.split('-').map(part => part.trim().toLowerCase());
+    if (parts.length !== 2) throw new Error('Malformed range');
+
+    const [start, end] = parts;
+    if (!['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].includes(start) || !['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].includes(end)) {
+      throw new Error('Unknown token');
+    }
+
+    const startIdx = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].indexOf(start);
+    const endIdx = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].indexOf(end);
+
+    if (startIdx <= endIdx) {
+      for (let i = startIdx; i <= endIdx; i++) {
+        weekdays.add(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'][i] as Weekday);
+      }
+    } else {
+      for (let i = startIdx; i < 7; i++) {
+        weekdays.add(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'][i] as Weekday);
+      }
+      for (let i = 0; i <= endIdx; i++) {
+        weekdays.add(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'][i] as Weekday);
+      }
+    }
+  });
+
+  return Array.from(weekdays).sort((a, b) => ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].indexOf(a) - ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].indexOf(b));
+}
+```

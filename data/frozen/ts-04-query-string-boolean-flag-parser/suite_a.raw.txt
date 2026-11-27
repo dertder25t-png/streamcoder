@@ -1,0 +1,22 @@
+- Leading ? characters are optional and comparison is case-insensitive (e.g., "TRUE" resolves to true).
+- Repeated keys use the last valid occurrence in the query string.
+- Keys with unrecognized values (such as ?mode=fast) are omitted rather than coerced to false.
+
+```ts
+test("Leading ? characters are optional and comparison is case-insensitive", () => {
+  expect(parseBooleanFlags("debug=true")).toEqual({ debug: true });
+  expect(parseBooleanFlags("?debug=true")).toEqual({ debug: true });
+  expect(parseBooleanFlags("debug=TRUE")).toEqual({ debug: true });
+  expect(parseBooleanFlags("debug=TrUe")).toEqual({ debug: true });
+});
+
+test("Repeated keys use the last valid occurrence in the query string", () => {
+  expect(parseBooleanFlags("debug=true&debug=false")).toEqual({ debug: false });
+  expect(parseBooleanFlags("debug=false&debug=true")).toEqual({ debug: true });
+});
+
+test("Keys with unrecognized values are omitted rather than coerced to false", () => {
+  expect(parseBooleanFlags("mode=fast")).toEqual({});
+  expect(parseBooleanFlags("mode=fast&debug=true")).toEqual({ debug: true });
+});
+```

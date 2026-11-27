@@ -1,0 +1,43 @@
+```ts
+probe("valid JSON", async () => {
+  const result = safeParseJson('{"name": "John", "age": 30}', (val: unknown) => {
+    return typeof val === 'object' && val !== null && 'name' in val && 'age' in val;
+  });
+  return result;
+});
+
+probe("invalid JSON", async () => {
+  const result = safeParseJson('{"name": "John", "age": 30', (val: unknown) => {
+    return typeof val === 'object' && val !== null && 'name' in val && 'age' in val;
+  });
+  return result;
+});
+
+probe("non-JSON string", async () => {
+  const result = safeParseJson('This is not JSON', (val: unknown) => {
+    return typeof val === 'object' && val !== null && 'name' in val && 'age' in val;
+  });
+  return result;
+});
+
+probe("empty string", async () => {
+  const result = safeParseJson('', (val: unknown) => {
+    return typeof val === 'object' && val !== null && 'name' in val && 'age' in val;
+  });
+  return result;
+});
+
+probe("null input", async () => {
+  const result = safeParseJson(null, (val: unknown) => {
+    return typeof val === 'object' && val !== null && 'name' in val && 'age' in val;
+  });
+  return result;
+});
+
+probe("undefined input", async () => {
+  const result = safeParseJson(undefined, (val: unknown) => {
+    return typeof val === 'object' && val !== null && 'name' in val && 'age' in val;
+  });
+  return result;
+});
+```

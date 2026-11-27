@@ -1,0 +1,65 @@
+- Recursively freezes nested plain objects, arrays, and symbol-keyed nested objects.
+- Handles self-referential and mutually cyclic graphs using a WeakSet without throwing or infinite recursion.
+- Primitives and null return unchanged without throwing.
+
+```ts
+test("freezes plain objects", () => {
+  const obj = { a: 1, b: { c: 2 } };
+  const frozen = deepFreezeSafe(obj);
+  expect(frozen).toBe(obj);
+  expect(frozen.a).toBe(1);
+  expect(frozen.b).toBe(obj.b);
+  expect(frozen.b.c).toBe(2);
+  expect(() => frozen.a = 3).toThrow(TypeError);
+  expect(() => frozen.b.c = 4).toThrow(TypeError);
+});
+
+test("freezes arrays", () => {
+  const arr = [1, { a: 2 }, [3, 4]];
+  const frozen = deepFreezeSafe(arr);
+  expect(frozen).toBe(arr);
+  expect(frozen[0]).toBe(1);
+  expect(frozen[1]).toBe(arr[1]);
+  expect(frozen[2]).toBe(arr[2]);
+  expect(() => frozen[0] = 5).toThrow(TypeError);
+  expect(() => frozen[1].a = 6).toThrow(TypeError);
+  expect(() => frozen[2][0] = 7).toThrow(TypeError);
+});
+
+test("freezes symbol-keyed objects", () => {
+  const sym = Symbol("key");
+  const obj = { [sym]: 1 };
+  const frozen = deepFreezeSafe(obj);
+  expect(frozen).toBe(obj);
+  expect(frozen[sym]).toBe(1);
+  expect(() => frozen[sym] = 2).toThrow(TypeError);
+});
+
+test("handles self-referential graphs", () => {
+  const obj: { a?: any } = {};
+  obj.a = obj;
+  const frozen = deepFreezeSafe(obj);
+  expect(frozen).toBe(obj);
+  expect(frozen.a).toBe(obj);
+  expect(() => frozen.a = 3).toThrow(TypeError);
+});
+
+test("handles mutually cyclic graphs", () => {
+  const obj1: { a?: any } = {};
+  const obj2: { b?: any } = {};
+  obj1.a = obj2;
+  obj2.b = obj1;
+  const frozen = deepFreezeSafe(obj1);
+  expect(frozen).toBe(obj1);
+  expect(frozen.a).toBe(obj2);
+  expect(frozen.a.b).toBe(obj1);
+  expect(() => frozen.a = 3).toThrow(TypeError);
+  expect(() => frozen.a.b = 4).toThrow(TypeError);
+});
+
+test("returns unchanged for primitives and null", () => {
+  expect(deepFreezeSafe(1)).toBe(1);
+  expect(deepFreezeSafe(null)).toBe(null);
+  expect(deepFreezeSafe("test")).toBe("test");
+});
+```

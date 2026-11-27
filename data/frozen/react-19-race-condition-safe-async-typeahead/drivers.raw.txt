@@ -1,0 +1,72 @@
+```ts
+probe("basic functionality", async () => {
+  const fetchSuggestions = vi.fn().mockResolvedValue(["apple", "banana", "cherry"]);
+  const onSelect = vi.fn();
+
+  render(<AsyncAutocomplete fetchSuggestions={fetchSuggestions} onSelect={onSelect} />);
+
+  fireEvent.change(screen.getByRole("combobox"), { target: { value: "a" } });
+  await waitFor(() => expect(fetchSuggestions).toHaveBeenCalledWith("a", expect.any(AbortSignal)));
+
+  fireEvent.keyDown(screen.getByRole("combobox"), { key: "ArrowDown" });
+  expect(screen.getByRole("option", { name: "apple" })).toHaveAttribute("aria-selected", "true");
+
+  fireEvent.keyDown(screen.getByRole("combobox"), { key: "Enter" });
+  expect(onSelect).toHaveBeenCalledWith("apple");
+
+  return snap();
+});
+
+probe("debounce", async () => {
+  const fetchSuggestions = vi.fn().mockResolvedValue(["apple", "banana", "cherry"]);
+  const onSelect = vi.fn();
+
+  render(<AsyncAutocomplete fetchSuggestions={fetchSuggestions} onSelect={onSelect} />);
+
+  fireEvent.change(screen.getByRole("combobox"), { target: { value: "a" } });
+  await waitFor(() => expect(fetchSuggestions).toHaveBeenCalledWith("a", expect.any(AbortSignal)));
+
+  vi.advanceTimersByTime(500);
+  fireEvent.change(screen.getByRole("combobox"), { target: { value: "ab" } });
+  await waitFor(() => expect(fetchSuggestions).toHaveBeenCalledWith("ab", expect.any(AbortSignal)));
+
+  vi.advanceTimersByTime(500);
+  fireEvent.change(screen.getByRole("combobox"), { target: { value: "abc" } });
+  await waitFor(() => expect(fetchSuggestions).toHaveBeenCalledWith("abc", expect.any(AbortSignal)));
+
+  return snap();
+});
+
+probe("abort previous request", async () => {
+  const fetchSuggestions = vi.fn().mockResolvedValue(["apple", "banana", "cherry"]);
+  const onSelect = vi.fn();
+
+  render(<AsyncAutocomplete fetchSuggestions={fetchSuggestions} onSelect={onSelect} />);
+
+  fireEvent.change(screen.getByRole("combobox"), { target: { value: "a" } });
+  await waitFor(() => expect(fetchSuggestions).toHaveBeenCalledWith("a", expect.any(AbortSignal)));
+
+  fireEvent.change(screen.getByRole("combobox"), { target: { value: "ab" } });
+  await waitFor(() => expect(fetchSuggestions).toHaveBeenCalledWith("ab", expect.any(AbortSignal)));
+
+  return snap();
+});
+
+probe("escape closes listbox", async () => {
+  const fetchSuggestions = vi.fn().mockResolvedValue(["apple", "banana", "cherry"]);
+  const onSelect = vi.fn();
+
+  render(<AsyncAutocomplete fetchSuggestions={fetchSuggestions} onSelect={onSelect} />);
+
+  fireEvent.change(screen.getByRole("combobox"), { target: { value: "a" } });
+  await waitFor(() => expect(fetchSuggestions).toHaveBeenCalledWith("a", expect.any(AbortSignal)));
+
+  fireEvent.keyDown(screen.getByRole("combobox"), { key: "ArrowDown" });
+  expect(screen.getByRole("option", { name: "apple" })).toHaveAttribute("aria-selected", "true");
+
+  fireEvent.keyDown(screen.getByRole("combobox"), { key: "Escape" });
+  expect(screen.queryByRole("listbox")).toBeNull();
+
+  return snap();
+});
+```

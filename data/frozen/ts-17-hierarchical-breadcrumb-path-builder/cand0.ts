@@ -1,0 +1,29 @@
+export function buildCategoryPath(
+  nodes: readonly { id: string; parentId: string | null; name: string }[],
+  targetId: string
+): string[] {
+  const nodeMap = new Map<string, { id: string; parentId: string | null; name: string }>();
+  for (const node of nodes) {
+    nodeMap.set(node.id, node);
+  }
+
+  const path: string[] = [];
+  let currentId: string | null = targetId;
+  const visited = new Set<string>();
+
+  while (currentId !== null) {
+    if (visited.has(currentId)) {
+      throw new Error('Circular parent chain detected');
+    }
+    visited.add(currentId);
+
+    const currentNode = nodeMap.get(currentId);
+    if (!currentNode) {
+      break;
+    }
+    path.unshift(currentNode.name);
+    currentId = currentNode.parentId;
+  }
+
+  return path;
+}

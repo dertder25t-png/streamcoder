@@ -1,0 +1,32 @@
+- Expands normal ranges ("Tue-Thu") and wrap-around ranges ("Sat-Mon" → ["Mon", "Sat", "Sun"]) case-insensitively.
+- Deduplicates overlapping segments and returns canonical three-letter names sorted Mon–Sun.
+- Throws an Error on unknown tokens, empty specs, or malformed ranges like "Mon-".
+
+```ts
+test("expands normal ranges case-insensitively", () => {
+  expect(expandWeekdaySpec("Tue-Thu")).toEqual(["Tue", "Wed", "Thu"]);
+  expect(expandWeekdaySpec("tue-thu")).toEqual(["Tue", "Wed", "Thu"]);
+});
+
+test("expands wrap-around ranges", () => {
+  expect(expandWeekdaySpec("Sat-Mon")).toEqual(["Mon", "Sat", "Sun"]);
+  expect(expandWeekdaySpec("sat-mon")).toEqual(["Mon", "Sat", "Sun"]);
+});
+
+test("deduplicates overlapping segments", () => {
+  expect(expandWeekdaySpec("Mon-Wed,Fri")).toEqual(["Mon", "Tue", "Wed", "Fri"]);
+  expect(expandWeekdaySpec("mon-wed,fri")).toEqual(["Mon", "Tue", "Wed", "Fri"]);
+});
+
+test("throws an Error on unknown tokens", () => {
+  expect(() => expandWeekdaySpec("Xyz")).toThrowError("Unknown token: Xyz");
+});
+
+test("throws an Error on empty specs", () => {
+  expect(() => expandWeekdaySpec("")).toThrowError("Empty spec");
+});
+
+test("throws an Error on malformed ranges", () => {
+  expect(() => expandWeekdaySpec("Mon-")).toThrowError("Malformed range: Mon-");
+});
+```

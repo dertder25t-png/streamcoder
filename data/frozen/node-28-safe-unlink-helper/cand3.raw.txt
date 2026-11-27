@@ -1,0 +1,15 @@
+```ts
+import { promises as fs } from 'node:fs';
+
+export async function removeFileSafe(filePath: string): Promise<boolean> {
+  try {
+    await fs.unlink(filePath);
+    return true;
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      return false;
+    }
+    throw err;
+  }
+}
+```

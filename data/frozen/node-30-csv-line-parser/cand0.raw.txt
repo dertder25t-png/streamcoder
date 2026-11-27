@@ -1,0 +1,39 @@
+```typescript
+function parseCsvLine(line: string): string[] {
+    const result: string[] = [];
+    let currentField = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+
+        if (char === '"') {
+            if (inQuotes) {
+                if (i + 1 < line.length && line[i + 1] === '"') {
+                    // Escaped double quote
+                    currentField += char;
+                    i++; // Skip the next double quote
+                } else {
+                    inQuotes = false;
+                }
+            } else {
+                inQuotes = true;
+            }
+        } else if (char === ',' && !inQuotes) {
+            result.push(currentField);
+            currentField = '';
+        } else {
+            currentField += char;
+        }
+    }
+
+    if (currentField || inQuotes) {
+        throw new Error('Invalid CSV line');
+    }
+
+    result.push(currentField);
+    return result;
+}
+
+export { parseCsvLine };
+```

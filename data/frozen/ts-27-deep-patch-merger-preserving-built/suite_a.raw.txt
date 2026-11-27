@@ -1,0 +1,32 @@
+- Nested plain object fields merge deeply without mutating base or patch.
+- Arrays, Date instances, and RegExp values in patch replace the base value wholesale instead of merging properties.
+- DeepPatch<T> does not turn Date or function properties into partial empty objects at compile time.
+
+```ts
+test("Nested plain object fields merge deeply without mutating base or patch", () => {
+  const base = { a: { b: 1 } };
+  const patch = { a: { b: 2 } };
+  const result = applyDeepPatch(base, patch);
+  expect(result).toEqual({ a: { b: 2 } });
+  expect(base).toEqual({ a: { b: 1 } });
+  expect(patch).toEqual({ a: { b: 2 } });
+});
+
+test("Arrays, Date instances, and RegExp values in patch replace the base value wholesale instead of merging properties", () => {
+  const base = { a: [1, 2], b: new Date('2020-01-01'), c: /abc/ };
+  const patch = { a: [3, 4], b: new Date('2021-01-01'), c: /def/ };
+  const result = applyDeepPatch(base, patch);
+  expect(result).toEqual({ a: [3, 4], b: new Date('2021-01-01'), c: /def/ });
+  expect(base).toEqual({ a: [1, 2], b: new Date('2020-01-01'), c: /abc/ });
+  expect(patch).toEqual({ a: [3, 4], b: new Date('2021-01-01'), c: /def/ });
+});
+
+test("DeepPatch<T> does not turn Date or function properties into partial empty objects at compile time", () => {
+  const base = { a: new Date('2020-01-01'), b: () => {} };
+  const patch = { a: new Date('2021-01-01'), b: () => {} };
+  const result = applyDeepPatch(base, patch);
+  expect(result).toEqual({ a: new Date('2021-01-01'), b: () => {} });
+  expect(base).toEqual({ a: new Date('2020-01-01'), b: () => {} });
+  expect(patch).toEqual({ a: new Date('2021-01-01'), b: () => {} });
+});
+```

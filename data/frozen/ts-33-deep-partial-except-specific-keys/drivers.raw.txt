@@ -1,0 +1,31 @@
+```ts
+probe("basic usage", async () => {
+  type User = { id: string; profile: { name: string; age: number } };
+  type Result = DeepPartialExcept<User, "id">;
+  return Result;
+});
+
+probe("missing key in K", async () => {
+  type User = { id: string; profile: { name: string; age: number } };
+  type Result = DeepPartialExcept<User, "unknownKey">;
+  return Result;
+});
+
+probe("nested properties", async () => {
+  type User = { id: string; profile: { name: string; age: number } };
+  type Result = DeepPartialExcept<User, "id">;
+  return Result.profile;
+});
+
+probe("multiple keys", async () => {
+  type User = { id: string; type: string; profile: { name: string; age: number } };
+  type Result = DeepPartialExcept<User, "id" | "type">;
+  return Result;
+});
+
+probe("empty object", async () => {
+  type User = { id: string; profile: { name: string; age: number } };
+  type Result = DeepPartialExcept<User, "id">;
+  return {};
+});
+```

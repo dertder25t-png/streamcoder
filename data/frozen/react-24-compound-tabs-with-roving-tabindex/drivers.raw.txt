@@ -1,0 +1,57 @@
+```ts
+probe("renders tabs and panels", async () => {
+  render(<Tabs defaultValue="one">
+    <TabList aria-label="demo">
+      <Tab value="one">One</Tab>
+      <Tab value="two">Two</Tab>
+    </TabList>
+    <TabPanel value="one">Panel One</TabPanel>
+    <TabPanel value="two">Panel Two</TabPanel>
+  </Tabs>);
+  return snap();
+});
+
+probe("disables tabs", async () => {
+  render(<Tabs defaultValue="one">
+    <TabList aria-label="demo">
+      <Tab value="one" disabled>One</Tab>
+      <Tab value="two">Two</Tab>
+    </TabList>
+    <TabPanel value="one">Panel One</TabPanel>
+    <TabPanel value="two">Panel Two</TabPanel>
+  </Tabs>);
+  return snap();
+});
+
+probe("navigates with arrow keys", async () => {
+  render(<Tabs defaultValue="one">
+    <TabList aria-label="demo">
+      <Tab value="one">One</Tab>
+      <Tab value="two">Two</Tab>
+      <Tab value="three">Three</Tab>
+    </TabList>
+    <TabPanel value="one">Panel One</TabPanel>
+    <TabPanel value="two">Panel Two</TabPanel>
+    <TabPanel value="three">Panel Three</TabPanel>
+  </Tabs>);
+  fireEvent.keyDown(screen.getByRole("tab", { name: "Two" }), { key: "ArrowRight" });
+  fireEvent.keyDown(screen.getByRole("tab", { name: "Three" }), { key: "ArrowLeft" });
+  return snap();
+});
+
+probe("jumps to first and last enabled tab", async () => {
+  render(<Tabs defaultValue="one">
+    <TabList aria-label="demo">
+      <Tab value="one" disabled>One</Tab>
+      <Tab value="two">Two</Tab>
+      <Tab value="three">Three</Tab>
+    </TabList>
+    <TabPanel value="one">Panel One</TabPanel>
+    <TabPanel value="two">Panel Two</TabPanel>
+    <TabPanel value="three">Panel Three</TabPanel>
+  </Tabs>);
+  fireEvent.keyDown(screen.getByRole("tab", { name: "Two" }), { key: "Home" });
+  fireEvent.keyDown(screen.getByRole("tab", { name: "Three" }), { key: "End" });
+  return snap();
+});
+```

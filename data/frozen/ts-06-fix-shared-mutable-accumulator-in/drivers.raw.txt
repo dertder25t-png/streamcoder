@@ -1,0 +1,36 @@
+```ts
+probe("empty input", async () => {
+  return groupTransactionsByCurrency([]);
+});
+
+probe("single transaction", async () => {
+  const transaction: Transaction = { id: "1", currency: "USD", amountMinor: 100 };
+  return groupTransactionsByCurrency([transaction]);
+});
+
+probe("multiple transactions", async () => {
+  const transactions: Transaction[] = [
+    { id: "1", currency: "USD", amountMinor: 100 },
+    { id: "2", currency: "USD", amountMinor: 200 },
+    { id: "3", currency: "EUR", amountMinor: 50 },
+  ];
+  return groupTransactionsByCurrency(transactions);
+});
+
+probe("negative transaction", async () => {
+  const transactions: Transaction[] = [
+    { id: "1", currency: "USD", amountMinor: 100 },
+    { id: "2", currency: "USD", amountMinor: -50 },
+  ];
+  return groupTransactionsByCurrency(transactions);
+});
+
+probe("boundary values", async () => {
+  const transactions: Transaction[] = [
+    { id: "1", currency: "USD", amountMinor: 0 },
+    { id: "2", currency: "USD", amountMinor: 1 },
+    { id: "3", currency: "USD", amountMinor: 999999 },
+  ];
+  return groupTransactionsByCurrency(transactions);
+});
+```

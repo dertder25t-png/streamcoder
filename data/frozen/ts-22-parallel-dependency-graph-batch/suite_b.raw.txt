@@ -1,0 +1,37 @@
+- Test that an empty array returns an empty array.
+- Test that an array with a single task returns an array with a single wave containing that task.
+- Test that an array with tasks that have no dependencies returns an array with a single wave containing all tasks sorted lexicographically.
+- Test that an array with tasks that have dependencies returns an array with waves ordered correctly.
+- Test that an array with missing dependency IDs throws an Error.
+- Test that an array with duplicate task IDs throws an Error.
+- Test that an array with cyclic dependencies throws an Error.
+
+```ts
+test("returns an empty array for an empty input", () => {
+  expect(planExecutionBatches([])).toEqual([]);
+});
+
+test("returns an array with a single wave for a single task", () => {
+  expect(planExecutionBatches([{ id: "a", dependsOn: [] }])).toEqual([["a"]]);
+});
+
+test("returns an array with a single wave for tasks with no dependencies", () => {
+  expect(planExecutionBatches([{ id: "a", dependsOn: [] }, { id: "b", dependsOn: [] }])).toEqual([["a", "b"]]);
+});
+
+test("returns an array with waves ordered correctly for tasks with dependencies", () => {
+  expect(planExecutionBatches([{ id: "a", dependsOn: [] }, { id: "b", dependsOn: ["a"] }])).toEqual([["a"], ["b"]]);
+});
+
+test("throws an Error for missing dependency IDs", () => {
+  expect(() => planExecutionBatches([{ id: "a", dependsOn: ["b"] }])).toThrow("Task 'b' not found");
+});
+
+test("throws an Error for duplicate task IDs", () => {
+  expect(() => planExecutionBatches([{ id: "a", dependsOn: [] }, { id: "a", dependsOn: [] }])).toThrow("Duplicate task ID 'a'");
+});
+
+test("throws an Error for cyclic dependencies", () => {
+  expect(() => planExecutionBatches([{ id: "a", dependsOn: ["b"] }, { id: "b", dependsOn: ["a"] }])).toThrow("Cyclic dependency detected involving task 'a'");
+});
+```

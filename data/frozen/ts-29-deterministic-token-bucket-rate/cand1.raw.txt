@@ -1,0 +1,34 @@
+```ts
+interface TokenBucketOptions {
+  capacity: number;
+  refillPerSecond: number;
+  now: () => number;
+}
+
+export function createTokenBucket(options: TokenBucketOptions) {
+  let tokens = options.capacity;
+  let lastRefillTime = options.now();
+
+  function refill() {
+    const now = options.now();
+    const timeDelta = now - lastRefillTime;
+    if (timeDelta > 0) {
+      const refilledTokens = Math.floor(timeDelta * options.refillPerSecond);
+      tokens = Math.min(options.capacity, tokens + refilledTokens);
+      lastRefillTime = now;
+    }
+  }
+
+  return function tryConsume(cost: number = 1): { allowed: boolean; remaining: number; retryAfterMs: number } {
+    refill();
+
+    if (tokens >= cost) {
+      tokens -= cost;
+      return { allowed: true, remaining: tokens, retryAfterMs: 0 };
+    } else {
+      const retryAfterMs = Math.ceil((cost - tokens) / options.refillPerSecond * 1000);
+      return { allowed: false, remaining: tokens, retryAfterMs };
+    }
+  };
+}
+```

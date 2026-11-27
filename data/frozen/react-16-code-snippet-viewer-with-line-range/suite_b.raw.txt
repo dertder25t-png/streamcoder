@@ -1,0 +1,50 @@
+- Splits both \n and \r\n line endings and numbers lines starting at 1.
+- Highlights all individual lines and inclusive ranges listed in highlightLines while ignoring out-of-bounds line numbers.
+- Preserves leading whitespace on indented code lines.
+
+```tsx
+import React from 'react';
+import { render, screen, cleanup, act, waitFor } from '@testing-library/react';
+import HighlightedSnippet from './HighlightedSnippet';
+
+afterEach(cleanup);
+
+test("renders code with line numbers and highlights specified lines", async () => {
+  render(<HighlightedSnippet code="console.log('Hello');\nconsole.log('World');" highlightLines="1,3" />);
+  await waitFor(() => {
+    expect(screen.getByText('1. console.log(\'Hello\');')).toHaveAttribute('data-highlighted', 'true');
+    expect(screen.getByText('2. console.log(\'World\');')).not.toHaveAttribute('data-highlighted', 'true');
+    expect(screen.getByText('3. console.log(\'Hello\');')).toHaveAttribute('data-highlighted', 'true');
+  });
+});
+
+test("ignores out-of-bounds line numbers", async () => {
+  render(<HighlightedSnippet code="console.log('Hello');\nconsole.log('World');" highlightLines="1,5" />);
+  await waitFor(() => {
+    expect(screen.getByText('1. console.log(\'Hello\');')).toHaveAttribute('data-highlighted', 'true');
+    expect(screen.getByText('2. console.log(\'World\');')).not.toHaveAttribute('data-highlighted', 'true');
+  });
+});
+
+test("preserves leading whitespace on indented code lines", async () => {
+  render(<HighlightedSnippet code="  console.log('Hello');\n  console.log('World');" highlightLines="1" />);
+  await waitFor(() => {
+    expect(screen.getByText('  console.log(\'Hello\');')).toHaveAttribute('data-highlighted', 'true');
+  });
+});
+
+test("handles empty input", async () => {
+  render(<HighlightedSnippet code="" highlightLines="1" />);
+  await waitFor(() => {
+    expect(screen.queryByText('1.')).toBeNull();
+  });
+});
+
+test("handles invalid input", async () => {
+  render(<HighlightedSnippet code="console.log('Hello');\nconsole.log('World');" highlightLines="invalid" />);
+  await waitFor(() => {
+    expect(screen.getByText('1. console.log(\'Hello\');')).not.toHaveAttribute('data-highlighted', 'true');
+    expect(screen.getByText('2. console.log(\'World\');')).not.toHaveAttribute('data-highlighted', 'true');
+  });
+});
+```

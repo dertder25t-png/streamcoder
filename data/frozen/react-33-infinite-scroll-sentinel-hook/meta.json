@@ -1,0 +1,25 @@
+{
+ "id": "react-33-infinite-scroll-sentinel-hook",
+ "topic": "react",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "test failed: observes the element it is attached to; calls onIntersect only when the sentinel is int",
+  "test failed: disconnects when the ref element is removed",
+  "test failed: observes the element it is attached to; disconnects when the ref element is removed",
+  "test failed: observes the element it is attached to; calls onIntersect only when the sentinel is int"
+ ],
+ "cand_tokens": [
+  184,
+  210,
+  149,
+  177
+ ],
+ "gen_seconds": 34.1,
+ "type_only": false,
+ "errors": []
+}

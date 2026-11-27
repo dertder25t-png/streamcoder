@@ -1,0 +1,72 @@
+```ts
+probe("empty password", async () => {
+  render(<PasswordPolicyMeter onValidChange={() => {}} />);
+  await waitFor(() => {
+    expect(screen.getByRole("checkbox", { name: "at least 10 characters" })).toHaveAttribute("data-passed", "false");
+    expect(screen.getByRole("checkbox", { name: "an uppercase letter" })).toHaveAttribute("data-passed", "false");
+    expect(screen.getByRole("checkbox", { name: "a digit" })).toHaveAttribute("data-passed", "false");
+    expect(screen.getByRole("checkbox", { name: "a symbol" })).toHaveAttribute("data-passed", "false");
+  });
+  return snap();
+});
+
+probe("password with less than 10 characters", async () => {
+  render(<PasswordPolicyMeter onValidChange={() => {}} />);
+  fireEvent.change(screen.getByRole("textbox"), { target: { value: "short" } });
+  await waitFor(() => {
+    expect(screen.getByRole("checkbox", { name: "at least 10 characters" })).toHaveAttribute("data-passed", "false");
+    expect(screen.getByRole("checkbox", { name: "an uppercase letter" })).toHaveAttribute("data-passed", "false");
+    expect(screen.getByRole("checkbox", { name: "a digit" })).toHaveAttribute("data-passed", "false");
+    expect(screen.getByRole("checkbox", { name: "a symbol" })).toHaveAttribute("data-passed", "false");
+  });
+  return snap();
+});
+
+probe("password with uppercase letter", async () => {
+  render(<PasswordPolicyMeter onValidChange={() => {}} />);
+  fireEvent.change(screen.getByRole("textbox"), { target: { value: "Password" } });
+  await waitFor(() => {
+    expect(screen.getByRole("checkbox", { name: "at least 10 characters" })).toHaveAttribute("data-passed", "false");
+    expect(screen.getByRole("checkbox", { name: "an uppercase letter" })).toHaveAttribute("data-passed", "true");
+    expect(screen.getByRole("checkbox", { name: "a digit" })).toHaveAttribute("data-passed", "false");
+    expect(screen.getByRole("checkbox", { name: "a symbol" })).toHaveAttribute("data-passed", "false");
+  });
+  return snap();
+});
+
+probe("password with digit", async () => {
+  render(<PasswordPolicyMeter onValidChange={() => {}} />);
+  fireEvent.change(screen.getByRole("textbox"), { target: { value: "Password1" } });
+  await waitFor(() => {
+    expect(screen.getByRole("checkbox", { name: "at least 10 characters" })).toHaveAttribute("data-passed", "false");
+    expect(screen.getByRole("checkbox", { name: "an uppercase letter" })).toHaveAttribute("data-passed", "true");
+    expect(screen.getByRole("checkbox", { name: "a digit" })).toHaveAttribute("data-passed", "true");
+    expect(screen.getByRole("checkbox", { name: "a symbol" })).toHaveAttribute("data-passed", "false");
+  });
+  return snap();
+});
+
+probe("password with symbol", async () => {
+  render(<PasswordPolicyMeter onValidChange={() => {}} />);
+  fireEvent.change(screen.getByRole("textbox"), { target: { value: "Password!" } });
+  await waitFor(() => {
+    expect(screen.getByRole("checkbox", { name: "at least 10 characters" })).toHaveAttribute("data-passed", "false");
+    expect(screen.getByRole("checkbox", { name: "an uppercase letter" })).toHaveAttribute("data-passed", "true");
+    expect(screen.getByRole("checkbox", { name: "a digit" })).toHaveAttribute("data-passed", "false");
+    expect(screen.getByRole("checkbox", { name: "a symbol" })).toHaveAttribute("data-passed", "true");
+  });
+  return snap();
+});
+
+probe("valid password", async () => {
+  render(<PasswordPolicyMeter onValidChange={() => {}} />);
+  fireEvent.change(screen.getByRole("textbox"), { target: { value: "Password1!" } });
+  await waitFor(() => {
+    expect(screen.getByRole("checkbox", { name: "at least 10 characters" })).toHaveAttribute("data-passed", "true");
+    expect(screen.getByRole("checkbox", { name: "an uppercase letter" })).toHaveAttribute("data-passed", "true");
+    expect(screen.getByRole("checkbox", { name: "a digit" })).toHaveAttribute("data-passed", "true");
+    expect(screen.getByRole("checkbox", { name: "a symbol" })).toHaveAttribute("data-passed", "true");
+  });
+  return snap();
+});
+```

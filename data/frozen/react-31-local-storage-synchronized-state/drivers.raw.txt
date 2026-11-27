@@ -1,0 +1,24 @@
+```ts
+probe("initial value from localStorage", async () => {
+  localStorage.setItem("testKey", JSON.stringify("initialValue"));
+  const { getByRole } = render(<MyComponent />);
+  return getByRole("textbox").value;
+});
+
+probe("updates localStorage when state setter is invoked", async () => {
+  const { getByRole } = render(<MyComponent />);
+  fireEvent.change(getByRole("textbox"), { target: { value: "newValue" } });
+  await waitFor(() => expect(localStorage.getItem("testKey")).toBe(JSON.stringify("newValue")));
+  return getByRole("textbox").value;
+});
+
+probe("listens to window storage events and updates state", async () => {
+  const { getByRole } = render(<MyComponent />);
+  fireEvent.change(getByRole("textbox"), { target: { value: "newValue" } });
+  await waitFor(() => expect(localStorage.getItem("testKey")).toBe(JSON.stringify("newValue")));
+  localStorage.setItem("testKey", JSON.stringify("updatedValue"));
+  window.dispatchEvent(new StorageEvent("storage", { key: "testKey", newValue: "updatedValue" }));
+  await waitFor(() => expect(getByRole("textbox").value).toBe("updatedValue"));
+  return getByRole("textbox").value;
+});
+```

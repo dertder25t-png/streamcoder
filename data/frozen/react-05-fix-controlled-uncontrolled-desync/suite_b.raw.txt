@@ -1,0 +1,38 @@
+- In uncontrolled mode (checked undefined), clicking toggles internal state starting from defaultChecked ?? false and notifies onChange(next).
+- In controlled mode (checked provided), displayed state always reflects the prop and only changes when the parent updates checked.
+- Renders with role="switch" and accurate aria-checked attribute in both modes.
+
+```tsx
+import React from "react";
+import { render, screen, fireEvent, cleanup, act, waitFor } from "@testing-library/react";
+import SwitchControl from "./SwitchControl";
+
+afterEach(cleanup);
+
+test("uncontrolled mode: toggles internal state and notifies onChange", async () => {
+  const handleChange = vi.fn();
+  render(<SwitchControl defaultChecked={true} onChange={handleChange} />);
+  fireEvent.click(screen.getByRole("switch"));
+  await waitFor(() => expect(handleChange).toHaveBeenCalledWith(false));
+  fireEvent.click(screen.getByRole("switch"));
+  await waitFor(() => expect(handleChange).toHaveBeenCalledWith(true));
+});
+
+test("controlled mode: displayed state reflects the prop", async () => {
+  const handleChange = vi.fn();
+  render(<SwitchControl checked={true} onChange={handleChange} />);
+  expect(screen.getByRole("switch")).toHaveAttribute("aria-checked", "true");
+  render(<SwitchControl checked={false} onChange={handleChange} />);
+  expect(screen.getByRole("switch")).toHaveAttribute("aria-checked", "false");
+});
+
+test("controlled mode: only changes when the parent updates checked", async () => {
+  const handleChange = vi.fn();
+  const { rerender } = render(<SwitchControl checked={true} onChange={handleChange} />);
+  expect(screen.getByRole("switch")).toHaveAttribute("aria-checked", "true");
+  rerender(<SwitchControl checked={false} onChange={handleChange} />);
+  expect(screen.getByRole("switch")).toHaveAttribute("aria-checked", "false");
+  fireEvent.click(screen.getByRole("switch"));
+  await waitFor(() => expect(handleChange).toHaveBeenCalledWith(true));
+});
+```

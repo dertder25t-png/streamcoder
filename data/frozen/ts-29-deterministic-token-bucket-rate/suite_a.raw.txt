@@ -1,0 +1,48 @@
+- Starts full at capacity, refills continuously based on elapsed time from now(), and never exceeds capacity.
+- When insufficient tokens exist, does not deduct any tokens and returns accurate retryAfterMs rounded up to the nearest millisecond.
+- Handles clock regressions (if now() moves backwards) gracefully without generating negative tokens or NaN.
+
+```ts
+import { createTokenBucket } from './createTokenBucket'; // Assume this is the module under test
+
+test("starts full at capacity", () => {
+  const bucket = createTokenBucket({ capacity: 5, refillPerSecond: 1, now: () => 0 });
+  expect(bucket.tryConsume()).toEqual({ allowed: true, remaining: 5, retryAfterMs: 0 });
+});
+
+test("refills continuously based on elapsed time", () => {
+  const now = vi.fn(() => 0);
+  const bucket = createTokenBucket({ capacity: 5, refillPerSecond: 1, now });
+  expect(bucket.tryConsume()).toEqual({ allowed: true, remaining: 5, retryAfterMs: 0 });
+  now.mockReturnValue(1000); // 1 second later
+  expect(bucket.tryConsume()).toEqual({ allowed: true, remaining: 4, retryAfterMs: 0 });
+  now.mockReturnValue(2000); // 2 seconds later
+  expect(bucket.tryConsume()).toEqual({ allowed: true, remaining: 3, retryAfterMs: 0 });
+});
+
+test("does not exceed capacity", () => {
+  const now = vi.fn(() => 0);
+  const bucket = createTokenBucket({ capacity: 5, refillPerSecond: 1, now });
+  expect(bucket.tryConsume(6)).toEqual({ allowed: false, remaining: 5, retryAfterMs: 0 });
+  now.mockReturnValue(1000); // 1 second later
+  expect(bucket.tryConsume(6)).toEqual({ allowed: false, remaining: 5, retryAfterMs: 0 });
+});
+
+test("returns accurate retryAfterMs", () => {
+  const now = vi.fn(() => 0);
+  const bucket = createTokenBucket({ capacity: 5, refillPerSecond: 1, now });
+  expect(bucket.tryConsume(6)).toEqual({ allowed: false, remaining: 5, retryAfterMs: 0 });
+  now.mockReturnValue(1000); // 1 second later
+  expect(bucket.tryConsume()).toEqual({ allowed: true, remaining: 4, retryAfterMs: 0 });
+  now.mockReturnValue(2000); // 2 seconds later
+  expect(bucket.tryConsume()).toEqual({ allowed: true, remaining: 3, retryAfterMs: 0 });
+});
+
+test("handles clock regressions gracefully", () => {
+  const now = vi.fn(() => 0);
+  const bucket = createTokenBucket({ capacity: 5, refillPerSecond: 1, now });
+  expect(bucket.tryConsume()).toEqual({ allowed: true, remaining: 5, retryAfterMs: 0 });
+  now.mockReturnValue(-1000); // Clock regression
+  expect(bucket.tryConsume()).toEqual({ allowed: true, remaining: 5, retryAfterMs: 0 });
+});
+```

@@ -1,0 +1,11 @@
+- Keys specified in `K` remain required at the top level of the resulting type.
+- All other top-level and nested properties become optional.
+- Passing a key not present in `T` fails compilation.
+
+```ts
+type T1 = Expect<Equal<DeepPartialExcept<{ id: string; profile: { name: string; age: number } }, "id">, { id: string; profile?: { name?: string; age?: number } }>>;
+type T2 = Expect<Equal<DeepPartialExcept<{ id: string; profile: { name: string; age: number } }, "id" | "profile">, { id: string; profile?: { name?: string; age?: number } }>>;
+type T3 = Expect<Equal<DeepPartialExcept<{ id: string; profile: { name: string; age: number } }, "id" | "profile" | "unknown">, { id: string; profile?: { name?: string; age?: number } }>>;
+// @ts-expect-error
+type T4 = DeepPartialExcept<{ id: string; profile: { name: string; age: number } }, "unknown">;
+```

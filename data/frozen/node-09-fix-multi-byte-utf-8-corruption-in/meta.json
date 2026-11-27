@@ -1,0 +1,25 @@
+{
+ "id": "node-09-fix-multi-byte-utf-8-corruption-in",
+ "topic": "node",
+ "cand_hidden": [
+  false,
+  true,
+  true,
+  true
+ ],
+ "cand_hidden_err": [
+  "test failed: reconstructs 4-byte emoji and CJK split across 1-byte chunks; handles other chunk sizes",
+  "",
+  "",
+  ""
+ ],
+ "cand_tokens": [
+  186,
+  72,
+  130,
+  129
+ ],
+ "gen_seconds": 21.2,
+ "type_only": false,
+ "errors": []
+}

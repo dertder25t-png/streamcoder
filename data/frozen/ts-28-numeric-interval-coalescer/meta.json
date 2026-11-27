@@ -1,0 +1,25 @@
+{
+ "id": "ts-28-numeric-interval-coalescer",
+ "topic": "typescript",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "test failed: ignores empty intervals; throws RangeError on inverted intervals",
+  "test failed: coalesces overlapping and touching base intervals; coalesces touching base intervals be",
+  "type error: .runs/ts-28-numeric-interval-coalescer/solution.ts(5,21): error TS7006: Parameter 'a' im",
+  "test failed: coalesces overlapping and touching base intervals; splits a base interval around a cuto"
+ ],
+ "cand_tokens": [
+  417,
+  629,
+  505,
+  570
+ ],
+ "gen_seconds": 32.3,
+ "type_only": false,
+ "errors": []
+}

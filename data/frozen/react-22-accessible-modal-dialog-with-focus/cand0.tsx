@@ -1,0 +1,87 @@
+import React, { useRef, useEffect, useState } from 'react';
+
+interface AccessibleModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  children: React.ReactNode;
+}
+
+const AccessibleModal: React.FC<AccessibleModalProps> = ({ isOpen, onClose, title, children }) => {
+  const modalRef = useRef<HTMLDivElement>(null);
+  const [triggerRef, setTriggerRef] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      const modalElement = modalRef.current;
+      if (modalElement) {
+        modalElement.focus();
+        const focusableElements = modalElement.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        const firstFocusable = focusableElements[0] as HTMLElement;
+        const lastFocusable = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+          if (event.key === 'Tab') {
+            if (event.shiftKey) {
+              if (document.activeElement === firstFocusable) {
+                lastFocusable.focus();
+                event.preventDefault();
+              }
+            } else {
+              if (document.activeElement === lastFocusable) {
+                firstFocusable.focus();
+                event.preventDefault();
+              }
+            }
+          } else if (event.key === 'Escape') {
+            onClose();
+          }
+        };
+
+        const handleClickOutside = (event: MouseEvent) => {
+          if (modalElement && !modalElement.contains(event.target as Node)) {
+            onClose();
+          }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('click', handleClickOutside);
+
+        return () => {
+          document.removeEventListener('keydown', handleKeyDown);
+          document.removeEventListener('click', handleClickOutside);
+        };
+      }
+    }
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (isOpen) {
+      const trigger = document.activeElement as HTMLElement;
+      if (trigger) {
+        setTriggerRef(trigger);
+      }
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen && triggerRef) {
+      triggerRef.focus();
+    }
+  }, [isOpen, triggerRef]);
+
+  return (
+    <div
+      role={isOpen ? 'dialog' : undefined}
+      aria-modal={isOpen ? 'true' : undefined}
+      aria-labelledby={isOpen ? `modal-title-${title}` : undefined}
+      ref={modalRef}
+      style={{ display: isOpen ? 'block' : 'none' }}
+    >
+      <h2 id={`modal-title-${title}`}>{title}</h2>
+      {children}
+    </div>
+  );
+};
+
+export { AccessibleModal };

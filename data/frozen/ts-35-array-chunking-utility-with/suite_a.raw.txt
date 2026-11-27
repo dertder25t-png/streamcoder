@@ -1,0 +1,21 @@
+- Returns an array of arrays where each inner array contains up to `size` items of type `T`.
+- Throws a `RangeError` if `size` is less than 1.
+- Preserves the exact item type `T` in the return signature with zero `any` casts.
+
+```ts
+test("splits array into chunks of size N", () => {
+  const result = chunkArray([1, 2, 3, 4, 5], 2);
+  expect(result).toEqual([[1, 2], [3, 4], [5]]);
+});
+
+test("throws RangeError if size is less than 1", () => {
+  expect(() => chunkArray([1, 2, 3], 0)).toThrow(RangeError);
+  expect(() => chunkArray([1, 2, 3], -1)).toThrow(RangeError);
+});
+
+test("preserves the exact item type T in the return signature", () => {
+  const result = chunkArray(["a", "b", "c"], 1);
+  expect(result).toEqual([["a"], ["b"], ["c"]]);
+  expect(result[0][0]).toBeTypeOf("string");
+});
+```

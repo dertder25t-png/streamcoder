@@ -1,0 +1,19 @@
+import { resolve, isAbsolute, join } from 'path';
+
+export function resolveInsideRoot(rootDir: string, userPath: string): string {
+    if (userPath.includes('\0')) {
+        throw new Error('Path contains null byte');
+    }
+
+    const resolvedPath = resolve(rootDir, userPath);
+
+    if (!isAbsolute(resolvedPath)) {
+        throw new Error('Path is not absolute');
+    }
+
+    if (!resolvedPath.startsWith(rootDir)) {
+        throw new Error('Path is outside root directory');
+    }
+
+    return resolvedPath;
+}

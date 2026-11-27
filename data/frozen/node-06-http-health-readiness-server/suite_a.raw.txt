@@ -1,0 +1,119 @@
+- GET /live always returns HTTP 200 with Content-Type: application/json and {"status":"ok"}.
+- GET /ready returns 200 when checkReady() resolves true, and 503 when it resolves false or rejects.
+- Non-GET methods on /live or /ready return 405 with an Allow: GET header; unknown paths return 404 JSON.
+
+```ts
+import { createHealthServer } from './createHealthServer';
+import { createServer, IncomingMessage, ServerResponse } from 'http';
+import { promises as fs } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
+import { test, expect, vi } from 'vitest';
+
+test('GET /live returns 200 with {"status":"ok"}', async () => {
+  const dir = await fs.mkdtemp(join(tmpdir(), 'st-'));
+  const server = createHealthServer(() => Promise.resolve(true));
+  server.listen(0, () => {
+    const port = (server.address() as { port: number }).port;
+    const req = new IncomingMessage({ url: '/live', method: 'GET' });
+    const res = new ServerResponse(req);
+    server.emit('request', req, res);
+    res.on('end', () => {
+      expect(res.statusCode).toBe(200);
+      expect(res.getHeader('Content-Type')).toBe('application/json');
+      expect(JSON.parse(res.body.toString())).toEqual({ status: 'ok' });
+      server.close();
+      fs.rm(dir, { recursive: true });
+    });
+  });
+});
+
+test('GET /ready returns 200 when checkReady() resolves true', async () => {
+  const dir = await fs.mkdtemp(join(tmpdir(), 'st-'));
+  const server = createHealthServer(() => Promise.resolve(true));
+  server.listen(0, () => {
+    const port = (server.address() as { port: number }).port;
+    const req = new IncomingMessage({ url: '/ready', method: 'GET' });
+    const res = new ServerResponse(req);
+    server.emit('request', req, res);
+    res.on('end', () => {
+      expect(res.statusCode).toBe(200);
+      expect(res.getHeader('Content-Type')).toBe('application/json');
+      expect(JSON.parse(res.body.toString())).toEqual({ status: 'ok' });
+      server.close();
+      fs.rm(dir, { recursive: true });
+    });
+  });
+});
+
+test('GET /ready returns 503 when checkReady() resolves false', async () => {
+  const dir = await fs.mkdtemp(join(tmpdir(), 'st-'));
+  const server = createHealthServer(() => Promise.resolve(false));
+  server.listen(0, () => {
+    const port = (server.address() as { port: number }).port;
+    const req = new IncomingMessage({ url: '/ready', method: 'GET' });
+    const res = new ServerResponse(req);
+    server.emit('request', req, res);
+    res.on('end', () => {
+      expect(res.statusCode).toBe(503);
+      expect(res.getHeader('Content-Type')).toBe('application/json');
+      expect(JSON.parse(res.body.toString())).toEqual({ status: 'unavailable' });
+      server.close();
+      fs.rm(dir, { recursive: true });
+    });
+  });
+});
+
+test('GET /ready returns 503 when checkReady() rejects', async () => {
+  const dir = await fs.mkdtemp(join(tmpdir(), 'st-'));
+  const server = createHealthServer(() => Promise.reject(new Error('error')));
+  server.listen(0, () => {
+    const port = (server.address() as { port: number }).port;
+    const req = new IncomingMessage({ url: '/ready', method: 'GET' });
+    const res = new ServerResponse(req);
+    server.emit('request', req, res);
+    res.on('end', () => {
+      expect(res.statusCode).toBe(503);
+      expect(res.getHeader('Content-Type')).toBe('application/json');
+      expect(JSON.parse(res.body.toString())).toEqual({ status: 'unavailable' });
+      server.close();
+      fs.rm(dir, { recursive: true });
+    });
+  });
+});
+
+test('Non-GET methods on /live or /ready return 405 with Allow: GET', async () => {
+  const dir = await fs.mkdtemp(join(tmpdir(), 'st-'));
+  const server = createHealthServer(() => Promise.resolve(true));
+  server.listen(0, () => {
+    const port = (server.address() as { port: number }).port;
+    const req = new IncomingMessage({ url: '/live', method: 'POST' });
+    const res = new ServerResponse(req);
+    server.emit('request', req, res);
+    res.on('end', () => {
+      expect(res.statusCode).toBe(405);
+      expect(res.getHeader('Allow')).toBe('GET');
+      server.close();
+      fs.rm(dir, { recursive: true });
+    });
+  });
+});
+
+test('Unknown paths return 404 JSON', async () => {
+  const dir = await fs.mkdtemp(join(tmpdir(), 'st-'));
+  const server = createHealthServer(() => Promise.resolve(true));
+  server.listen(0, () => {
+    const port = (server.address() as { port: number }).port;
+    const req = new IncomingMessage({ url: '/unknown', method: 'GET' });
+    const res = new ServerResponse(req);
+    server.emit('request', req, res);
+    res.on('end', () => {
+      expect(res.statusCode).toBe(404);
+      expect(res.getHeader('Content-Type')).toBe('application/json');
+      expect(JSON.parse(res.body.toString())).toEqual({ error: 'Not Found' });
+      server.close();
+      fs.rm(dir, { recursive: true });
+    });
+  });
+});
+```

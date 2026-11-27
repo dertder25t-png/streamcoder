@@ -1,0 +1,34 @@
+```ts
+probe("empty stream", async () => {
+  const stream = new Readable();
+  return await readUtf8Stream(stream);
+});
+
+probe("single chunk", async () => {
+  const stream = new Readable();
+  stream.push(Buffer.from("Hello, world!"));
+  stream.push(null);
+  return await readUtf8Stream(stream);
+});
+
+probe("multi-byte character", async () => {
+  const stream = new Readable();
+  stream.push(Buffer.from("😊"));
+  stream.push(null);
+  return await readUtf8Stream(stream);
+});
+
+probe("split multi-byte character", async () => {
+  const stream = new Readable();
+  stream.push(Buffer.from("😊".slice(0, 2)));
+  stream.push(Buffer.from("😊".slice(2)));
+  stream.push(null);
+  return await readUtf8Stream(stream);
+});
+
+probe("error in stream", async () => {
+  const stream = new Readable();
+  stream.emit("error", new Error("Test error"));
+  return await readUtf8Stream(stream).catch(e => e.message);
+});
+```

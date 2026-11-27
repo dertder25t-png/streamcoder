@@ -1,0 +1,35 @@
+- Updating a nested leaf returns a new object with the updated value while leaving the input object untouched.
+- Untouched sibling branches retain exact referential equality (structural sharing).
+- Invalid dot paths or mismatched value types fail tsc --noEmit (verifiable via @ts-expect-error).
+- Runtime calls containing "__proto__", "constructor", or "prototype" throw an Error.
+
+```ts
+test("Updating a nested leaf returns a new object with the updated value while leaving the input object untouched", () => {
+  const obj = { a: { b: { c: 1 } } };
+  const newObj = setByPath(obj, "a.b.c", 2);
+  expect(newObj).toEqual({ a: { b: { c: 2 } } });
+  expect(obj).toEqual({ a: { b: { c: 1 } } });
+});
+
+test("Untouched sibling branches retain exact referential equality (structural sharing)", () => {
+  const obj = { a: { b: { c: 1 } }, d: { e: 2 } };
+  const newObj = setByPath(obj, "a.b.c", 2);
+  expect(newObj).toEqual({ a: { b: { c: 2 } }, d: { e: 2 } });
+  expect(newObj.d).toBe(obj.d);
+});
+
+test("Invalid dot paths or mismatched value types fail tsc --noEmit (verifiable via @ts-expect-error)", () => {
+  const obj = { a: { b: { c: 1 } } };
+  // @ts-expect-error
+  setByPath(obj, "a.b.d", 2);
+  // @ts-expect-error
+  setByPath(obj, "a.b.c", "2");
+});
+
+test("Runtime calls containing '__proto__', 'constructor', or 'prototype' throw an Error", () => {
+  const obj = { a: { b: { c: 1 } } };
+  expect(() => setByPath(obj, "__proto__", 2)).toThrow(Error);
+  expect(() => setByPath(obj, "constructor", 2)).toThrow(Error);
+  expect(() => setByPath(obj, "prototype", 2)).toThrow(Error);
+});
+```

@@ -1,0 +1,25 @@
+{
+ "id": "react-18-undoable-delete-list-with-per-item",
+ "topic": "react",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "test failed: each item has its own independent deadline; a later deletion does not postpone or cance",
+  "test failed: Undo cancels the deletion; a later deletion does not postpone or cancel an earlier one",
+  "type error:     Argument of type 'number | null' is not assignable to parameter of type 'number | un",
+  "test failed: a later deletion does not postpone or cancel an earlier one; invokes the latest onCommi"
+ ],
+ "cand_tokens": [
+  521,
+  438,
+  477,
+  481
+ ],
+ "gen_seconds": 48.9,
+ "type_only": false,
+ "errors": []
+}

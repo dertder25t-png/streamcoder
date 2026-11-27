@@ -1,0 +1,79 @@
+- Test that `s.string().parse` returns the correct type for valid input.
+- Test that `s.string().parse` returns an error for invalid input.
+- Test that `s.number().parse` returns the correct type for valid input.
+- Test that `s.number().parse` returns an error for invalid input.
+- Test that `s.boolean().parse` returns the correct type for valid input.
+- Test that `s.boolean().parse` returns an error for invalid input.
+- Test that `s.optional(s.string()).parse` returns the correct type for valid input.
+- Test that `s.optional(s.string()).parse` returns the correct type for undefined input.
+- Test that `s.object({ a: s.string(), b: s.number() }).parse` returns the correct type for valid input.
+- Test that `s.object({ a: s.string(), b: s.number() }).parse` returns an error for invalid input.
+- Test that `s.object({ a: s.string(), b: s.number() }).parse` returns an error for missing properties.
+- Test that `s.object({ a: s.string(), b: s.number() }).parse` returns an error for extra properties.
+- Test that `s.object({ a: s.optional(s.string()) }).parse` returns the correct type for undefined property.
+- Test that `s.object({ a: s.optional(s.string()) }).parse` returns the correct type for null property.
+- Test that `s.object({ a: s.optional(s.string()) }).parse` returns the correct type for undefined optional property.
+
+```ts
+import * as S from './schema';
+
+test('s.string().parse returns the correct type for valid input', () => {
+  expect(S.s.string().parse('hello')).toEqual({ ok: true, data: 'hello' });
+});
+
+test('s.string().parse returns an error for invalid input', () => {
+  expect(S.s.string().parse(123)).toEqual({ ok: false, errors: [{ path: '', message: 'Expected a string, got number' }] });
+});
+
+test('s.number().parse returns the correct type for valid input', () => {
+  expect(S.s.number().parse(123)).toEqual({ ok: true, data: 123 });
+});
+
+test('s.number().parse returns an error for invalid input', () => {
+  expect(S.s.number().parse('hello')).toEqual({ ok: false, errors: [{ path: '', message: 'Expected a number, got string' }] });
+});
+
+test('s.boolean().parse returns the correct type for valid input', () => {
+  expect(S.s.boolean().parse(true)).toEqual({ ok: true, data: true });
+});
+
+test('s.boolean().parse returns an error for invalid input', () => {
+  expect(S.s.boolean().parse('hello')).toEqual({ ok: false, errors: [{ path: '', message: 'Expected a boolean, got string' }] });
+});
+
+test('s.optional(s.string()).parse returns the correct type for valid input', () => {
+  expect(S.s.optional(S.s.string()).parse('hello')).toEqual({ ok: true, data: 'hello' });
+});
+
+test('s.optional(s.string()).parse returns the correct type for undefined input', () => {
+  expect(S.s.optional(S.s.string()).parse(undefined)).toEqual({ ok: true, data: undefined });
+});
+
+test('s.object({ a: s.string(), b: s.number() }).parse returns the correct type for valid input', () => {
+  expect(S.s.object({ a: S.s.string(), b: S.s.number() }).parse({ a: 'hello', b: 123 })).toEqual({ ok: true, data: { a: 'hello', b: 123 } });
+});
+
+test('s.object({ a: s.string(), b: s.number() }).parse returns an error for invalid input', () => {
+  expect(S.s.object({ a: S.s.string(), b: S.s.number() }).parse({ a: 'hello', b: '123' })).toEqual({ ok: false, errors: [{ path: 'b', message: 'Expected a number, got string' }] });
+});
+
+test('s.object({ a: s.string(), b: s.number() }).parse returns an error for missing properties', () => {
+  expect(S.s.object({ a: S.s.string(), b: S.s.number() }).parse({ a: 'hello' })).toEqual({ ok: false, errors: [{ path: 'b', message: 'Expected a number, got undefined' }] });
+});
+
+test('s.object({ a: s.string(), b: s.number() }).parse returns an error for extra properties', () => {
+  expect(S.s.object({ a: S.s.string(), b: S.s.number() }).parse({ a: 'hello', b: 123, c: 'extra' })).toEqual({ ok: false, errors: [{ path: 'c', message: 'Unexpected property' }] });
+});
+
+test('s.object({ a: s.optional(s.string()) }).parse returns the correct type for undefined property', () => {
+  expect(S.s.object({ a: S.s.optional(S.s.string()) }).parse({ a: undefined })).toEqual({ ok: true, data: { a: undefined } });
+});
+
+test('s.object({ a: s.optional(s.string()) }).parse returns the correct type for null property', () => {
+  expect(S.s.object({ a: S.s.optional(S.s.string()) }).parse({ a: null })).toEqual({ ok: true, data: { a: null } });
+});
+
+test('s.object({ a: s.optional(s.string()) }).parse returns the correct type for undefined optional property', () => {
+  expect(S.s.object({ a: S.s.optional(S.s.string()) }).parse({})).toEqual({ ok: true, data: {} });
+});
+```

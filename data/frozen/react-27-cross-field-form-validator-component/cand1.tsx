@@ -1,0 +1,126 @@
+import React, { useState } from 'react';
+
+interface DateRangeFormProps {
+  onSubmit: (startDate: string, endDate: string, label: string) => void;
+}
+
+const DateRangeForm: React.FC<DateRangeFormProps> = ({ onSubmit }) => {
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [label, setLabel] = useState<string>('');
+  const [startDateError, setStartDateError] = useState<string>('');
+  const [endDateError, setEndDateError] = useState<string>('');
+  const [labelError, setLabelError] = useState<string>('');
+
+  const validateForm = () => {
+    let isValid = true;
+
+    if (!startDate) {
+      setStartDateError('Start date is required');
+      isValid = false;
+    } else {
+      setStartDateError('');
+    }
+
+    if (!endDate) {
+      setEndDateError('End date is required');
+      isValid = false;
+    } else {
+      setEndDateError('');
+    }
+
+    if (!label) {
+      setLabelError('Label is required');
+      isValid = false;
+    } else {
+      setLabelError('');
+    }
+
+    if (endDate && startDate && new Date(endDate) < new Date(startDate)) {
+      setEndDateError('End date must be on or after start date');
+      isValid = false;
+    }
+
+    return isValid;
+  };
+
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (validateForm()) {
+      onSubmit(startDate, endDate, label);
+    }
+  };
+
+  const handleBlur = (field: string) => {
+    validateForm();
+  };
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>, field: string) => {
+    switch (field) {
+      case 'startDate':
+        setStartDate(event.target.value);
+        break;
+      case 'endDate':
+        setEndDate(event.target.value);
+        break;
+      case 'label':
+        setLabel(event.target.value);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const focusFirstInvalidField = () => {
+    if (startDateError) {
+      document.getElementById('startDate')?.focus();
+    } else if (endDateError) {
+      document.getElementById('endDate')?.focus();
+    } else if (labelError) {
+      document.getElementById('label')?.focus();
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label htmlFor="startDate">Start date</label>
+        <input
+          type="date"
+          id="startDate"
+          value={startDate}
+          onChange={(e) => handleInputChange(e, 'startDate')}
+          onBlur={() => handleBlur('startDate')}
+        />
+        {startDateError && <div id="startDateError">{startDateError}</div>}
+      </div>
+      <div>
+        <label htmlFor="endDate">End date</label>
+        <input
+          type="date"
+          id="endDate"
+          value={endDate}
+          onChange={(e) => handleInputChange(e, 'endDate')}
+          onBlur={() => handleBlur('endDate')}
+        />
+        {endDateError && <div id="endDateError">{endDateError}</div>}
+      </div>
+      <div>
+        <label htmlFor="label">Label</label>
+        <input
+          type="text"
+          id="label"
+          value={label}
+          onChange={(e) => handleInputChange(e, 'label')}
+          onBlur={() => handleBlur('label')}
+        />
+        {labelError && <div id="labelError">{labelError}</div>}
+      </div>
+      <button type="submit" name="Submit">
+        Submit
+      </button>
+    </form>
+  );
+};
+
+export { DateRangeForm };

@@ -1,0 +1,31 @@
+```ts
+probe("Step 1 is active initially", async () => {
+  render(<StepWizard steps={[{ id: "1", title: "Step 1", content: "Content 1" }]} onComplete={() => {}} />);
+  await waitFor(() => expect(screen.getByRole("button", { name: "Next" })).toBeEnabled());
+  return snap();
+});
+
+probe("Back button is disabled on step 1", async () => {
+  render(<StepWizard steps={[{ id: "1", title: "Step 1", content: "Content 1" }]} onComplete={() => {}} />);
+  await waitFor(() => expect(screen.getByRole("button", { name: "Back" })).toBeDisabled());
+  return snap();
+});
+
+probe("Next button is disabled when step is invalid", async () => {
+  render(<StepWizard steps={[{ id: "1", title: "Step 1", content: "Content 1", isValid: false }]} onComplete={() => {}} />);
+  await waitFor(() => expect(screen.getByRole("button", { name: "Next" })).toBeDisabled());
+  return snap();
+});
+
+probe("Finish button is enabled on last step when valid", async () => {
+  render(<StepWizard steps={[{ id: "1", title: "Step 1", content: "Content 1", isValid: true }]} onComplete={() => {}} />);
+  await waitFor(() => expect(screen.getByRole("button", { name: "Finish" })).toBeEnabled());
+  return snap();
+});
+
+probe("Finish button is disabled on last step when invalid", async () => {
+  render(<StepWizard steps={[{ id: "1", title: "Step 1", content: "Content 1", isValid: false }]} onComplete={() => {}} />);
+  await waitFor(() => expect(screen.getByRole("button", { name: "Finish" })).toBeDisabled());
+  return snap();
+});
+```

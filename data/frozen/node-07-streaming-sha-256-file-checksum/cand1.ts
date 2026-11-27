@@ -1,0 +1,15 @@
+import { createReadStream } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { promisify } from 'node:util';
+
+const pipeline = promisify(require('node:stream').pipeline);
+
+export async function hashFileStream(filePath: string): Promise<string> {
+  const hash = createHash('sha256');
+  try {
+    await pipeline(createReadStream(filePath), hash);
+    return hash.digest('hex');
+  } catch (error) {
+    throw error;
+  }
+}

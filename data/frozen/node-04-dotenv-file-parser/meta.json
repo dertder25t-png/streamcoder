@@ -1,0 +1,25 @@
+{
+ "id": "node-04-dotenv-file-parser",
+ "topic": "node",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/node-04-dotenv-file-parser/solution.ts(24,7): error TS2588: Cannot assign to 'trim",
+  "type error: .runs/node-04-dotenv-file-parser/solution.ts(36,11): error TS2322: Type 'string' is not ",
+  "type error: .runs/node-04-dotenv-file-parser/solution.ts(13,20): error TS2451: Cannot redeclare bloc",
+  "test failed: parses basic pairs, comments, blank lines and export prefixes; strips inline comments o"
+ ],
+ "cand_tokens": [
+  351,
+  290,
+  192,
+  221
+ ],
+ "gen_seconds": 29.7,
+ "type_only": false,
+ "errors": []
+}

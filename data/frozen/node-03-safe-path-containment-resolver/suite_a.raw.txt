@@ -1,0 +1,39 @@
+- Resolves valid relative paths to an absolute path under rootDir.
+- Rejects traversal escapes by throwing an Error.
+- Rejects absolute paths outside root by throwing an Error.
+- Rejects null bytes by throwing an Error.
+- Avoids the naive prefix trap.
+
+```ts
+import { resolveInsideRoot } from './resolveInsideRoot'; // Adjust the import path as necessary
+import { test, expect, vi } from 'vitest';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
+
+test("resolves valid relative paths", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const result = resolveInsideRoot(dir, "a/../b.txt");
+  expect(result).toBe(path.join(dir, "b.txt"));
+});
+
+test("rejects traversal escapes", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  expect(() => resolveInsideRoot(dir, "../secret")).toThrow(Error);
+});
+
+test("rejects absolute paths outside root", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  expect(() => resolveInsideRoot(dir, "/etc/passwd")).toThrow(Error);
+});
+
+test("rejects null bytes", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  expect(() => resolveInsideRoot(dir, "a\0b.txt")).toThrow(Error);
+});
+
+test("avoids the naive prefix trap", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  expect(() => resolveInsideRoot(dir, "../app-backup/data.txt")).toThrow(Error);
+});
+```

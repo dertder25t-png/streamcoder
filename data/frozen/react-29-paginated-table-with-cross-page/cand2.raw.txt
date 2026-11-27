@@ -1,0 +1,87 @@
+```tsx
+import React, { useState, useCallback } from 'react';
+
+interface PaginatedSelectorTableProps {
+  rows: { id: string; name: string }[];
+  pageSize: number;
+  onSelectionChange: (ids: string[]) => void;
+}
+
+const PaginatedSelectorTable: React.FC<PaginatedSelectorTableProps> = ({
+  rows,
+  pageSize,
+  onSelectionChange,
+}) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  const totalPages = Math.ceil(rows.length / pageSize);
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+  };
+
+  const handleSelectAllCurrentPage = () => {
+    const pageRows = rows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+    const pageIds = pageRows.map(row => row.id);
+    const newSelectedIds = selectedIds.includes(...pageIds)
+      ? selectedIds.filter(id => !pageIds.includes(id))
+      : [...selectedIds, ...pageIds];
+    setSelectedIds(newSelectedIds);
+    onSelectionChange(newSelectedIds);
+  };
+
+  const handleSelectRow = (id: string) => {
+    const newSelectedIds = selectedIds.includes(id)
+      ? selectedIds.filter(i => i !== id)
+      : [...selectedIds, id];
+    setSelectedIds(newSelectedIds);
+    onSelectionChange(newSelectedIds);
+  };
+
+  const handleClearAll = () => {
+    setSelectedIds([]);
+    onSelectionChange([]);
+  };
+
+  const currentPageRows = rows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  return (
+    <div>
+      <div>
+        <input
+          type="checkbox"
+          checked={currentPageRows.every(row => selectedIds.includes(row.id))}
+          onChange={handleSelectAllCurrentPage}
+          aria-label={`Select page ${currentPage}`}
+        />
+        <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}>
+          Prev
+        </button>
+        <button
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+        >
+          Next
+        </button>
+      </div>
+      <ul>
+        {currentPageRows.map(row => (
+          <li key={row.id}>
+            <input
+              type="checkbox"
+              checked={selectedIds.includes(row.id)}
+              onChange={() => handleSelectRow(row.id)}
+              aria-label={`Select ${row.name}`}
+            />
+            {row.name}
+          </li>
+        ))}
+      </ul>
+      <button onClick={handleClearAll}>Clear all ({selectedIds.length})</button>
+    </div>
+  );
+};
+
+export { PaginatedSelectorTable };
+```

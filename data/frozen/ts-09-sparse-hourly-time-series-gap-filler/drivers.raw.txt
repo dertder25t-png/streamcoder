@@ -1,0 +1,30 @@
+```ts
+probe("empty array", async () => {
+  return fillMissingHours([]);
+});
+
+probe("single point", async () => {
+  return fillMissingHours([{ hourMs: 1633072800000, value: 10 }]);
+});
+
+probe("missing hours", async () => {
+  return fillMissingHours([
+    { hourMs: 1633072800000, value: 10 },
+    { hourMs: 1633076400000, value: 20 }
+  ]);
+});
+
+probe("fillValue provided", async () => {
+  return fillMissingHours([
+    { hourMs: 1633072800000, value: 10 },
+    { hourMs: 1633076400000, value: 20 }
+  ], 5);
+});
+
+probe("negative fillValue", async () => {
+  return fillMissingHours([
+    { hourMs: 1633072800000, value: 10 },
+    { hourMs: 1633076400000, value: 20 }
+  ], -5);
+});
+```

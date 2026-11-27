@@ -1,0 +1,33 @@
+```ts
+probe("createHeaderMap with no entries", async () => {
+  const headerMap = createHeaderMap();
+  return headerMap.toRecord();
+});
+
+probe("set and get header", async () => {
+  const headerMap = createHeaderMap();
+  headerMap.set("Content-Type", "application/json");
+  return headerMap.get("content-type");
+});
+
+probe("has and delete header", async () => {
+  const headerMap = createHeaderMap();
+  headerMap.set("Content-Type", "application/json");
+  const has = headerMap.has("CONTENT-TYPE");
+  const deleted = headerMap.delete("content-type");
+  return { has, deleted };
+});
+
+probe("overwrite header with different casing", async () => {
+  const headerMap = createHeaderMap();
+  headerMap.set("Content-Type", "application/json");
+  headerMap.set("content-type", "application/xml");
+  return headerMap.toRecord();
+});
+
+probe("delete non-existent header", async () => {
+  const headerMap = createHeaderMap();
+  const deleted = headerMap.delete("content-type");
+  return deleted;
+});
+```

@@ -1,0 +1,25 @@
+{
+ "id": "ts-29-deterministic-token-bucket-rate",
+ "topic": "typescript",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/ts-29-deterministic-token-bucket-rate/solution.test.ts(71,21): error TS2339: Prope",
+  "type error: .runs/ts-29-deterministic-token-bucket-rate/solution.test.ts(71,21): error TS2339: Prope",
+  "type error: .runs/ts-29-deterministic-token-bucket-rate/solution.ts(1,10): error TS2305: Module '\"no",
+  "type error: .runs/ts-29-deterministic-token-bucket-rate/solution.ts(1,22): error TS2307: Cannot find"
+ ],
+ "cand_tokens": [
+  234,
+  249,
+  292,
+  280
+ ],
+ "gen_seconds": 41.4,
+ "type_only": false,
+ "errors": []
+}

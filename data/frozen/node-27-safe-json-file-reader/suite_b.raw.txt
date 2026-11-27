@@ -1,0 +1,74 @@
+- Test that `readJsonSafe` returns the fallback value if the file is missing.
+- Test that `readJsonSafe` returns the fallback value if the file is malformed.
+- Test that `readJsonSafe` returns the parsed JSON if the file is valid.
+- Test that `readJsonSafe` handles repeated calls correctly.
+- Test that `readJsonSafe` cleans up resources after each call.
+
+```ts
+import { readJsonSafe } from './readJsonSafe'; // Adjust the import path as necessary
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
+
+test('returns the fallback value if the file is missing', async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const filePath = path.join(dir, 'nonexistent.json');
+  const fallback = { key: 'value' };
+  const result = await readJsonSafe(filePath, fallback);
+  expect(result).toEqual(fallback);
+  await fs.promises.rm(dir, { recursive: true });
+});
+
+test('returns the fallback value if the file is malformed', async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const filePath = path.join(dir, 'malformed.json');
+  await fs.promises.writeFile(filePath, 'invalid json');
+  const fallback = { key: 'value' };
+  const result = await readJsonSafe(filePath, fallback);
+  expect(result).toEqual(fallback);
+  await fs.promises.rm(dir, { recursive: true });
+});
+
+test('returns the parsed JSON if the file is valid', async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const filePath = path.join(dir, 'valid.json');
+  const validJson = { key: 'value' };
+  await fs.promises.writeFile(filePath, JSON.stringify(validJson));
+  const result = await readJsonSafe(filePath, { key: 'default' });
+  expect(result).toEqual(validJson);
+  await fs.promises.rm(dir, { recursive: true });
+});
+
+test('handles repeated calls correctly', async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const filePath = path.join(dir, 'valid.json');
+  const validJson = { key: 'value' };
+  await fs.promises.writeFile(filePath, JSON.stringify(validJson));
+  const fallback = { key: 'default' };
+
+  const result1 = await readJsonSafe(filePath, fallback);
+  const result2 = await readJsonSafe(filePath, fallback);
+
+  expect(result1).toEqual(validJson);
+  expect(result2).toEqual(validJson);
+  await fs.promises.rm(dir, { recursive: true });
+});
+
+test('cleans up resources after each call', async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const filePath = path.join(dir, 'valid.json');
+  const validJson = { key: 'value' };
+  await fs.promises.writeFile(filePath, JSON.stringify(validJson));
+  const fallback = { key: 'default' };
+
+  await readJsonSafe(filePath, fallback);
+  await readJsonSafe(filePath, fallback);
+
+  try {
+    await fs.promises.access(dir);
+    throw new Error('Directory was not cleaned up');
+  } catch (error) {
+    expect(error.code).toBe('ENOENT');
+  }
+});
+```

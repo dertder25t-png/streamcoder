@@ -1,0 +1,25 @@
+{
+ "id": "ts-19-strongly-typed-event-bus-with-once",
+ "topic": "typescript",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/ts-19-strongly-typed-event-bus-with-once/solution.test.ts(167,5): error TS2578: Un",
+  "type error:             Type 'string' is not assignable to type 'Event'. |               'string' is",
+  "type error: .runs/ts-19-strongly-typed-event-bus-with-once/solution.ts(48,26): error TS2345: Argumen",
+  "type error: .runs/ts-19-strongly-typed-event-bus-with-once/solution.test.ts(167,5): error TS2578: Un"
+ ],
+ "cand_tokens": [
+  455,
+  313,
+  349,
+  554
+ ],
+ "gen_seconds": 46.5,
+ "type_only": false,
+ "errors": []
+}

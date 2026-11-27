@@ -1,0 +1,48 @@
+import React, { useState, useRef } from 'react';
+
+export const LimitedTextArea: React.FC<{
+  maxLength: number;
+  warnAt: number;
+  onSubmit: (value: string) => void;
+}> = ({ maxLength, warnAt, onSubmit }) => {
+  const [value, setValue] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setValue(event.target.value);
+  };
+
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+    const trimmedValue = value.trim();
+    if (trimmedValue && trimmedValue.length <= maxLength) {
+      onSubmit(trimmedValue);
+    }
+    setIsSubmitting(false);
+  };
+
+  const remaining = maxLength - value.length;
+  const isWarning = remaining <= warnAt;
+  const isError = remaining < 0;
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <textarea
+        value={value}
+        onChange={handleChange}
+        ref={textareaRef}
+        maxLength={maxLength}
+      />
+      <div>
+        {`${remaining} characters left`}
+        {isWarning && <span data-state="warning"> (warning)</span>}
+        {isError && <span data-state="error"> (error)</span>}
+      </div>
+      <button type="submit" disabled={isSubmitting || value.trim().length === 0 || value.length > maxLength}>
+        Submit
+      </button>
+    </form>
+  );
+};

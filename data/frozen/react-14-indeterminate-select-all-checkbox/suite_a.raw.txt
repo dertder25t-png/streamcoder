@@ -1,0 +1,49 @@
+- When some—but not all—options are selected, the master checkbox DOM property indeterminate is true and checked is false.
+- Clicking the master checkbox when none or some options are selected selects all enabled options; clicking when all are selected clears all.
+- Disabled options are never toggled by clicking "Select all" and do not block the remaining enabled options from reaching the all-selected state.
+
+```tsx
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import SelectAllGroup from './SelectAllGroup';
+
+test('indeterminate when some options are selected', async () => {
+  render(<SelectAllGroup options={[{ id: '1', label: 'Option 1' }, { id: '2', label: 'Option 2' }]} selectedIds={['1']} onChange={vi.fn()} />);
+  const masterCheckbox = screen.getByRole('checkbox', { name: 'Select all' });
+  expect(masterCheckbox.indeterminate).toBe(true);
+  expect(masterCheckbox.checked).toBe(false);
+});
+
+test('selects all enabled options when master is clicked and none are selected', async () => {
+  render(<SelectAllGroup options={[{ id: '1', label: 'Option 1' }, { id: '2', label: 'Option 2' }]} selectedIds={[]} onChange={vi.fn()} />);
+  const masterCheckbox = screen.getByRole('checkbox', { name: 'Select all' });
+  fireEvent.click(masterCheckbox);
+  await waitFor(() => {
+    expect(masterCheckbox.checked).toBe(true);
+    expect(screen.getByRole('checkbox', { name: 'Option 1' }).checked).toBe(true);
+    expect(screen.getByRole('checkbox', { name: 'Option 2' }).checked).toBe(true);
+  });
+});
+
+test('clears all when master is clicked and all are selected', async () => {
+  render(<SelectAllGroup options={[{ id: '1', label: 'Option 1' }, { id: '2', label: 'Option 2' }]} selectedIds={['1', '2']} onChange={vi.fn()} />);
+  const masterCheckbox = screen.getByRole('checkbox', { name: 'Select all' });
+  fireEvent.click(masterCheckbox);
+  await waitFor(() => {
+    expect(masterCheckbox.checked).toBe(false);
+    expect(screen.getByRole('checkbox', { name: 'Option 1' }).checked).toBe(false);
+    expect(screen.getByRole('checkbox', { name: 'Option 2' }).checked).toBe(false);
+  });
+});
+
+test('does not toggle disabled options when master is clicked', async () => {
+  render(<SelectAllGroup options={[{ id: '1', label: 'Option 1' }, { id: '2', label: 'Option 2', disabled: true }]} selectedIds={['1']} onChange={vi.fn()} />);
+  const masterCheckbox = screen.getByRole('checkbox', { name: 'Select all' });
+  fireEvent.click(masterCheckbox);
+  await waitFor(() => {
+    expect(masterCheckbox.checked).toBe(true);
+    expect(screen.getByRole('checkbox', { name: 'Option 1' }).checked).toBe(true);
+    expect(screen.getByRole('checkbox', { name: 'Option 2' }).checked).toBe(false);
+  });
+});
+```

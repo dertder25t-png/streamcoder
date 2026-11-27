@@ -1,0 +1,22 @@
+```typescript
+import { Readable } from "node:stream";
+
+export function readUtf8Stream(stream: Readable): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    const chunks: Uint8Array[] = [];
+    let totalLength = 0;
+
+    stream.on("data", (chunk: Buffer) => {
+      chunks.push(chunk);
+      totalLength += chunk.length;
+    });
+
+    stream.on("end", () => {
+      const buffer = Buffer.concat(chunks, totalLength);
+      resolve(buffer.toString("utf8"));
+    });
+
+    stream.on("error", reject);
+  });
+}
+```

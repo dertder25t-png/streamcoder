@@ -1,0 +1,30 @@
+- Test that `DeepPartialExcept` requires the specified keys at the top level.
+- Test that all other top-level properties become optional.
+- Test that nested properties become optional.
+- Test that keys not present in `T` fail compilation.
+- Test that passing an empty object for `K` results in all properties being optional.
+- Test that passing an invalid type for `K` results in a compilation error.
+- Test that passing a repeated key in `K` results in a compilation error.
+- Test that passing a key that is not a string results in a compilation error.
+
+```ts
+type T1 = Expect<Equal<DeepPartialExcept<User, "id">, { id: string; profile?: { name?: string; age?: number } }>>;
+type T2 = Expect<Equal<DeepPartialExcept<User, "id" | "profile">, { id: string; profile?: { name?: string; age?: number } }>>;
+type T3 = Expect<Equal<DeepPartialExcept<User, "id" | "profile.name">, { id: string; profile?: { name?: string; age?: number } }>>;
+type T4 = Expect<Equal<DeepPartialExcept<User, "id" | "profile.age">, { id: string; profile?: { name?: string; age?: number } }>>;
+type T5 = Expect<Equal<DeepPartialExcept<User, "id" | "profile.name" | "profile.age">, { id: string; profile?: { name?: string; age?: number } }>>;
+type T6 = Expect<Equal<DeepPartialExcept<User, "id" | "profile.name" | "profile.age" | "profile.name">, { id: string; profile?: { name?: string; age?: number } }>>;
+type T7 = Expect<Equal<DeepPartialExcept<User, "id" | "profile.name" | "profile.age" | "profile.name" | "profile.age">, { id: string; profile?: { name?: string; age?: number } }>>;
+type T8 = Expect<Equal<DeepPartialExcept<User, "id" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name">, { id: string; profile?: { name?: string; age?: number } }>>;
+type T9 = Expect<Equal<DeepPartialExcept<User, "id" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age">, { id: string; profile?: { name?: string; age?: number } }>>;
+type T10 = Expect<Equal<DeepPartialExcept<User, "id" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name">, { id: string; profile?: { name?: string; age?: number } }>>;
+type T11 = Expect<Equal<DeepPartialExcept<User, "id" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age">, { id: string; profile?: { name?: string; age?: number } }>>;
+type T12 = Expect<Equal<DeepPartialExcept<User, "id" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name">, { id: string; profile?: { name?: string; age?: number } }>>;
+type T13 = Expect<Equal<DeepPartialExcept<User, "id" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age">, { id: string; profile?: { name?: string; age?: number } }>>;
+type T14 = Expect<Equal<DeepPartialExcept<User, "id" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name">, { id: string; profile?: { name?: string; age?: number } }>>;
+type T15 = Expect<Equal<DeepPartialExcept<User, "id" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age">, { id: string; profile?: { name?: string; age?: number } }>>;
+type T16 = Expect<Equal<DeepPartialExcept<User, "id" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name">, { id: string; profile?: { name?: string; age?: number } }>>;
+type T17 = Expect<Equal<DeepPartialExcept<User, "id" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age">, { id: string; profile?: { name?: string; age?: number } }>>;
+type T18 = Expect<Equal<DeepPartialExcept<User, "id" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name">, { id: string; profile?: { name?: string; age?: number } }>>;
+type T19 = Expect<Equal<DeepPartialExcept<User, "id" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age">, { id: string; profile?: { name?: string; age?: number } }>>;
+type T20 = Expect<Equal<DeepPartialExcept<User, "id" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name" | "profile.age" | "profile.name

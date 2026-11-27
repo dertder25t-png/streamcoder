@@ -1,0 +1,25 @@
+{
+ "id": "node-18-bounded-concurrency-async-pool-with",
+ "topic": "node",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/node-18-bounded-concurrency-async-pool-with/solution.ts(1,10): error TS2305: Modul",
+  "test failed: never exceeds the concurrency limit and keeps input order; throws RangeError synchronou",
+  "type error: .runs/node-18-bounded-concurrency-async-pool-with/solution.ts(1,10): error TS2305: Modul",
+  "type error: .runs/node-18-bounded-concurrency-async-pool-with/solution.ts(103,44): error TS2554: Exp"
+ ],
+ "cand_tokens": [
+  323,
+  358,
+  343,
+  743
+ ],
+ "gen_seconds": 32.5,
+ "type_only": false,
+ "errors": []
+}

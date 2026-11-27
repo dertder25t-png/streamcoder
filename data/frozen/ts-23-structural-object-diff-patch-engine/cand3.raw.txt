@@ -1,0 +1,84 @@
+```ts
+type PathSegment = string | number;
+type Path = PathSegment[];
+
+function computeObjectDiff(before: unknown, after: unknown): unknown {
+    if (typeof before !== 'object' || before === null || typeof after !== 'object' || after === null) {
+        return after;
+    }
+
+    if (Array.isArray(before) && Array.isArray(after)) {
+        return before.map((value, index) => computeObjectDiff(value, after[index]));
+    }
+
+    const result: { [key: string]: unknown } = {};
+    const keys = new Set([...Object.keys(before as object), ...Object.keys(after as object)]);
+
+    keys.forEach(key => {
+        const path = key.split('.');
+        const valueBefore = getValueByPath(before, path);
+        const valueAfter = getValueByPath(after, path);
+
+        if (valueBefore !== valueAfter) {
+            result[key] = computeObjectDiff(valueBefore, valueAfter);
+        }
+    });
+
+    return result;
+}
+
+function applyObjectDiff(target: unknown, ops: unknown): unknown {
+    if (typeof ops !== 'object' || ops === null) {
+        return ops;
+    }
+
+    if (Array.isArray(ops)) {
+        return ops.map(op => applyObjectDiff(target, op));
+    }
+
+    const result: { [key: string]: unknown } = { ...target };
+    const keys = Object.keys(ops);
+
+    keys.forEach(key => {
+        const path = key.split('.');
+        const operation = ops[key];
+
+        if (operation === 'remove') {
+            removeValueByPath(result, path);
+        } else if (operation === 'replace' || operation === 'add') {
+            setValueByPath(result, path, operation === 'replace' ? operation.value : operation.add);
+        }
+    });
+
+    return result;
+}
+
+function getValueByPath(obj: unknown, path: Path): unknown {
+    return path.reduce((acc, segment) => {
+        if (acc && typeof acc === 'object') {
+            return acc[segment as keyof typeof acc];
+        }
+        return undefined;
+    }, obj);
+}
+
+function setValueByPath(obj: unknown, path: Path, value: unknown): void {
+    path.slice(0, -1).reduce((acc, segment, index) => {
+        if (!acc[segment]) {
+            acc[segment] = index === path.length - 2 ? {} : [];
+        }
+        return acc[segment];
+    }, obj as Record<string, unknown>)[path[path.length - 1]] = value;
+}
+
+function removeValueByPath(obj: unknown, path: Path): void {
+    path.slice(0, -1).reduce((acc, segment, index) => {
+        if (acc && typeof acc === 'object') {
+            return acc[segment];
+        }
+        return undefined;
+    }, obj as Record<string, unknown>)[path[path.length - 1]] = undefined;
+}
+
+export { computeObjectDiff, applyObjectDiff };
+```

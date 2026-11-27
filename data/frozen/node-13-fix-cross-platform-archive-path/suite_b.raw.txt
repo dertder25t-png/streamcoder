@@ -1,0 +1,32 @@
+- Converts all backslashes to forward slashes
+- Collapses duplicate slashes
+- Strips leading ./ or / prefixes
+- Throws an Error if any normalized entry contains a .. segment
+- Throws an Error if any normalized entry contains a Windows drive prefix like C:
+- Deduplicates identical normalized entries while preserving first-seen order
+
+```ts
+test("Converts backslashes to forward slashes", () => {
+  expect(normalizeArchivePaths(["C:\\path\\to\\file"])).toEqual(["C:/path/to/file"]);
+});
+
+test("Collapses duplicate slashes", () => {
+  expect(normalizeArchivePaths(["C:/path//to//file"])).toEqual(["C:/path/to/file"]);
+});
+
+test("Strips leading ./ or / prefixes", () => {
+  expect(normalizeArchivePaths(["./path/to/file", "/path/to/file"])).toEqual(["path/to/file", "path/to/file"]);
+});
+
+test("Throws an Error if any normalized entry contains a .. segment", () => {
+  expect(() => normalizeArchivePaths(["path/to/../file"])).toThrow("Invalid archive path: path/to/../file");
+});
+
+test("Throws an Error if any normalized entry contains a Windows drive prefix like C:", () => {
+  expect(() => normalizeArchivePaths(["C:/path/to/file"])).toThrow("Invalid archive path: C:/path/to/file");
+});
+
+test("Deduplicates identical normalized entries while preserving first-seen order", () => {
+  expect(normalizeArchivePaths(["path/to/file", "path/to/file"])).toEqual(["path/to/file"]);
+});
+```

@@ -1,0 +1,61 @@
+```ts
+probe("renders form with labels and inputs", async () => {
+  render(<DateRangeForm onSubmit={() => {}} />);
+  await waitFor(() => {
+    expect(screen.getByRole("textbox", { name: "Start date" })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "End date" })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Label" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Submit/ })).toBeInTheDocument();
+  });
+  return snap();
+});
+
+probe("displays error on empty input on blur", async () => {
+  render(<DateRangeForm onSubmit={() => {}} />);
+  fireEvent.blur(screen.getByRole("textbox", { name: "Start date" }));
+  fireEvent.blur(screen.getByRole("textbox", { name: "End date" }));
+  fireEvent.blur(screen.getByRole("textbox", { name: "Label" }));
+  await waitFor(() => {
+    expect(screen.getByRole("textbox", { name: "Start date" })).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("textbox", { name: "End date" })).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("textbox", { name: "Label" })).toHaveAttribute("aria-invalid", "true");
+  });
+  return snap();
+});
+
+probe("validates cross-field constraint endDate >= startDate", async () => {
+  render(<DateRangeForm onSubmit={() => {}} />);
+  fireEvent.change(screen.getByRole("textbox", { name: "Start date" }), { target: { value: "2024-01-10" } });
+  fireEvent.change(screen.getByRole("textbox", { name: "End date" }), { target: { value: "2023-12-31" } });
+  fireEvent.blur(screen.getByRole("textbox", { name: "End date" }));
+  await waitFor(() => {
+    expect(screen.getByRole("textbox", { name: "End date" })).toHaveAttribute("aria-invalid", "true");
+  });
+  return snap();
+});
+
+probe("clears error when input is corrected", async () => {
+  render(<DateRangeForm onSubmit={() => {}} />);
+  fireEvent.change(screen.getByRole("textbox", { name: "Start date" }), { target: { value: "2024-01-10" } });
+  fireEvent.change(screen.getByRole("textbox", { name: "End date" }), { target: { value: "2023-12-31" } });
+  fireEvent.blur(screen.getByRole("textbox", { name: "End date" }));
+  fireEvent.change(screen.getByRole("textbox", { name: "End date" }), { target: { value: "2024-01-11" } });
+  fireEvent.blur(screen.getByRole("textbox", { name: "End date" }));
+  await waitFor(() => {
+    expect(screen.getByRole("textbox", { name: "End date" })).not.toHaveAttribute("aria-invalid");
+  });
+  return snap();
+});
+
+probe("prevents submit on invalid form", async () => {
+  render(<DateRangeForm onSubmit={() => {}} />);
+  fireEvent.change(screen.getByRole("textbox", { name: "Start date" }), { target: { value: "2024-01-10" } });
+  fireEvent.change(screen.getByRole("textbox", { name: "End date" }), { target: { value: "2023-12-31" } });
+  fireEvent.click(screen.getByRole("button", { name: /Submit/ }));
+  await waitFor(() => {
+    expect(screen.getByRole("textbox", { name: "End date" })).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("textbox", { name: "End date" })).toHaveFocus();
+  });
+  return snap();
+});
+```

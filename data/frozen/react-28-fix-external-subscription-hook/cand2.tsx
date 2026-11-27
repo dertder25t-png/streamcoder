@@ -1,0 +1,20 @@
+import { useEffect, useState, useSyncExternalStore } from "react";
+
+export type Store<T> = {
+  subscribe: (callback: () => void) => () => void;
+  getSnapshot: () => T;
+};
+
+function subscribeCallback<T>(store: Store<T>, setSnapshot: React.Dispatch<React.SetStateAction<T>>) {
+  return () => setSnapshot(store.getSnapshot());
+}
+
+export function useExternalSnapshot<T>(store: Store<T>): T {
+  const snapshot = useSyncExternalStore(
+    store.subscribe,
+    store.getSnapshot,
+    () => store.getSnapshot()
+  );
+
+  return snapshot;
+}

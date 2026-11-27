@@ -1,0 +1,39 @@
+```ts
+probe("empty directories", async () => {
+  const dirA = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const dirB = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  return compareDirectories(dirA, dirB);
+});
+
+probe("single file added", async () => {
+  const dirA = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const dirB = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  await fs.promises.writeFile(path.join(dirB, "file.txt"), "content");
+  return compareDirectories(dirA, dirB);
+});
+
+probe("single file removed", async () => {
+  const dirA = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const dirB = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  await fs.promises.writeFile(path.join(dirA, "file.txt"), "content");
+  return compareDirectories(dirA, dirB);
+});
+
+probe("single file modified", async () => {
+  const dirA = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const dirB = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  await fs.promises.writeFile(path.join(dirA, "file.txt"), "content");
+  await fs.promises.writeFile(path.join(dirB, "file.txt"), "modified");
+  return compareDirectories(dirA, dirB);
+});
+
+probe("nested directories", async () => {
+  const dirA = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const dirB = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  await fs.promises.mkdir(path.join(dirA, "subdir"));
+  await fs.promises.writeFile(path.join(dirA, "subdir", "file.txt"), "content");
+  await fs.promises.mkdir(path.join(dirB, "subdir"));
+  await fs.promises.writeFile(path.join(dirB, "subdir", "file.txt"), "modified");
+  return compareDirectories(dirA, dirB);
+});
+```

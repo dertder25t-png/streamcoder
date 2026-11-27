@@ -1,0 +1,92 @@
+- Each rule item updates its data-passed="true" | "false" attribute immediately as the password changes.
+- onValidChange(boolean) fires whenever overall validity transitions between invalid and valid, without firing redundantly on every keystroke when validity did not change.
+- Whitespace-only characters do not count as symbols.
+- Edge case: empty or invalid input.
+- Edge case: boundaries (e.g., exactly 10 characters, missing a required character).
+- Edge case: repeated calls.
+- Cleanup: timers, listeners, files or other resources are cleaned up.
+
+```ts
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import PasswordPolicyMeter from './PasswordPolicyMeter';
+
+afterEach(cleanup);
+
+test("Each rule item updates its data-passed attribute immediately", async () => {
+  render(<PasswordPolicyMeter onValidChange={() => {}} />);
+  const passwordInput = screen.getByRole('textbox');
+  fireEvent.change(passwordInput, { target: { value: 'A1b2c3d4e5' } });
+  await waitFor(() => {
+    expect(screen.getByText('At least 10 characters')).toHaveAttribute('data-passed', 'true');
+    expect(screen.getByText('An uppercase letter')).toHaveAttribute('data-passed', 'true');
+    expect(screen.getByText('A digit')).toHaveAttribute('data-passed', 'true');
+    expect(screen.getByText('A symbol')).toHaveAttribute('data-passed', 'false');
+  });
+});
+
+test("onValidChange fires when overall validity transitions between invalid and valid", async () => {
+  const onValidChange = vi.fn();
+  render(<PasswordPolicyMeter onValidChange={onValidChange} />);
+  const passwordInput = screen.getByRole('textbox');
+  fireEvent.change(passwordInput, { target: { value: 'A1b2c3d4e5' } });
+  await waitFor(() => {
+    expect(onValidChange).toHaveBeenCalledWith(true);
+  });
+  fireEvent.change(passwordInput, { target: { value: 'A1b2c3d4' } });
+  await waitFor(() => {
+    expect(onValidChange).toHaveBeenCalledWith(false);
+  });
+  fireEvent.change(passwordInput, { target: { value: 'A1b2c3d4e5' } });
+  await waitFor(() => {
+    expect(onValidChange).toHaveBeenCalledWith(true);
+  });
+});
+
+test("Whitespace-only characters do not count as symbols", async () => {
+  render(<PasswordPolicyMeter onValidChange={() => {}} />);
+  const passwordInput = screen.getByRole('textbox');
+  fireEvent.change(passwordInput, { target: { value: 'A1b2c3d4e5 ' } });
+  await waitFor(() => {
+    expect(screen.getByText('A symbol')).toHaveAttribute('data-passed', 'false');
+  });
+});
+
+test("Edge case: empty or invalid input", async () => {
+  render(<PasswordPolicyMeter onValidChange={() => {}} />);
+  const passwordInput = screen.getByRole('textbox');
+  fireEvent.change(passwordInput, { target: { value: '' } });
+  await waitFor(() => {
+    expect(screen.getByText('At least 10 characters')).toHaveAttribute('data-passed', 'false');
+    expect(screen.getByText('An uppercase letter')).toHaveAttribute('data-passed', 'false');
+    expect(screen.getByText('A digit')).toHaveAttribute('data-passed', 'false');
+    expect(screen.getByText('A symbol')).toHaveAttribute('data-passed', 'false');
+  });
+});
+
+test("Edge case: boundaries (e.g., exactly 10 characters, missing a required character)", async () => {
+  render(<PasswordPolicyMeter onValidChange={() => {}} />);
+  const passwordInput = screen.getByRole('textbox');
+  fireEvent.change(passwordInput, { target: { value: 'A1b2c3d4e' } });
+  await waitFor(() => {
+    expect(screen.getByText('At least 10 characters')).toHaveAttribute('data-passed', 'false');
+  });
+  fireEvent.change(passwordInput, { target: { value: 'A1b2c3d4e5' } });
+  await waitFor(() => {
+    expect(screen.getByText('At least 10 characters')).toHaveAttribute('data-passed', 'true');
+  });
+});
+
+test("Edge case: repeated calls", async () => {
+  const onValidChange = vi.fn();
+  render(<PasswordPolicyMeter onValidChange={onValidChange} />);
+  const passwordInput = screen.getByRole('textbox');
+  fireEvent.change(passwordInput, { target: { value: 'A1b2c3d4e5' } });
+  await waitFor(() => {
+    expect(onValidChange).toHaveBeenCalledWith(true);
+  });
+  fireEvent.change(passwordInput, { target: { value: 'A1b2c3d4e5' } });
+  await waitFor(() => {
+    expect(onValidChange).toHaveBeenCalledWith(true);
+  });
+});
+```

@@ -1,0 +1,72 @@
+- Cycles through ascending → descending → none on repeated clicks of the same column, updating aria-sort on the active <th>.
+- Clicking a different column header immediately starts that new column in ascending order and resets the previous column's aria-sort.
+- Numeric columns sort numerically rather than alphabetically, and the original rows prop is never mutated.
+- Handles empty or invalid input gracefully.
+- Cleans up resources after each test.
+
+```tsx
+import React from 'react';
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import SortableTable from './SortableTable';
+
+afterEach(cleanup);
+
+test('cycles through ascending → descending → none on repeated clicks of the same column', async () => {
+  const columns = [{ key: 'name', label: 'Name' }];
+  const rows = [{ name: 'Alice' }, { name: 'Bob' }];
+  render(<SortableTable rows={rows} columns={columns} />);
+
+  const header = screen.getByRole('columnheader', { name: 'Name' });
+  fireEvent.click(header);
+  expect(header).toHaveAttribute('aria-sort', 'ascending');
+
+  fireEvent.click(header);
+  expect(header).toHaveAttribute('aria-sort', 'descending');
+
+  fireEvent.click(header);
+  expect(header).toHaveAttribute('aria-sort', 'none');
+});
+
+test('clicking a different column header immediately starts that new column in ascending order and resets the previous column\'s aria-sort', async () => {
+  const columns = [{ key: 'name', label: 'Name' }, { key: 'age', label: 'Age' }];
+  const rows = [{ name: 'Alice', age: 30 }, { name: 'Bob', age: 25 }];
+  render(<SortableTable rows={rows} columns={columns} />);
+
+  const nameHeader = screen.getByRole('columnheader', { name: 'Name' });
+  fireEvent.click(nameHeader);
+  expect(nameHeader).toHaveAttribute('aria-sort', 'ascending');
+
+  const ageHeader = screen.getByRole('columnheader', { name: 'Age' });
+  fireEvent.click(ageHeader);
+  expect(ageHeader).toHaveAttribute('aria-sort', 'ascending');
+  expect(nameHeader).toHaveAttribute('aria-sort', 'none');
+});
+
+test('numeric columns sort numerically rather than alphabetically', async () => {
+  const columns = [{ key: 'age', label: 'Age', numeric: true }];
+  const rows = [{ age: 30 }, { age: 25 }];
+  render(<SortableTable rows={rows} columns={columns} />);
+
+  const header = screen.getByRole('columnheader', { name: 'Age' });
+  fireEvent.click(header);
+  expect(header).toHaveAttribute('aria-sort', 'ascending');
+  expect(screen.getByText('25')).toBeInTheDocument();
+  expect(screen.getByText('30')).toBeInTheDocument();
+});
+
+test('handles empty or invalid input gracefully', async () => {
+  const columns = [];
+  const rows = [];
+  render(<SortableTable rows={rows} columns={columns} />);
+
+  expect(screen.queryByRole('table')).toBeNull();
+});
+
+test('cleans up resources after each test', async () => {
+  const columns = [{ key: 'name', label: 'Name' }];
+  const rows = [{ name: 'Alice' }, { name: 'Bob' }];
+  render(<SortableTable rows={rows} columns={columns} />);
+
+  // No specific cleanup needed for this test, as afterEach handles it
+});
+```

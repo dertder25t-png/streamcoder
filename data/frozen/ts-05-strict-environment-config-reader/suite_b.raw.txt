@@ -1,0 +1,60 @@
+- Test that missing required keys throw an Error with the missing key names.
+- Test that missing optional keys fall back to their declared default values.
+- Test that "int" values are parsed correctly and fall back to default if invalid.
+- Test that "boolean" values are parsed correctly and fall back to default if invalid.
+- Test that empty strings for required keys are treated as missing.
+- Test that the function handles empty input gracefully.
+- Test that the function handles invalid input gracefully.
+
+```ts
+test("missing required keys throw an Error with the missing key names", () => {
+  const env: Record<string, string | undefined> = {};
+  const spec = { key1: { type: "string", required: true } };
+  expect(() => readEnvConfig(env, spec)).toThrow("key1");
+});
+
+test("missing optional keys fall back to their declared default values", () => {
+  const env: Record<string, string | undefined> = {};
+  const spec = { key1: { type: "string", required: false, default: "default" } };
+  expect(readEnvConfig(env, spec)).toEqual({ key1: "default" });
+});
+
+test('"int" values are parsed correctly and fall back to default if invalid", () => {
+  const env: Record<string, string | undefined> = { key1: "123" };
+  const spec = { key1: { type: "int", required: true } };
+  expect(readEnvConfig(env, spec)).toEqual({ key1: 123 });
+
+  const env2: Record<string, string | undefined> = { key1: "12px" };
+  expect(() => readEnvConfig(env2, spec)).toThrow("key1");
+});
+
+test('"boolean" values are parsed correctly and fall back to default if invalid", () => {
+  const env: Record<string, string | undefined> = { key1: "true" };
+  const spec = { key1: { type: "boolean", required: true } };
+  expect(readEnvConfig(env, spec)).toEqual({ key1: true });
+
+  const env2: Record<string, string | undefined> = { key1: "false" };
+  expect(readEnvConfig(env2, spec)).toEqual({ key1: false });
+
+  const env3: Record<string, string | undefined> = { key1: "1" };
+  expect(() => readEnvConfig(env3, spec)).toThrow("key1");
+});
+
+test("empty strings for required keys are treated as missing", () => {
+  const env: Record<string, string | undefined> = { key1: "" };
+  const spec = { key1: { type: "string", required: true } };
+  expect(() => readEnvConfig(env, spec)).toThrow("key1");
+});
+
+test("the function handles empty input gracefully", () => {
+  const env: Record<string, string | undefined> = {};
+  const spec: Record<string, { type: "string" | "int" | "boolean"; required?: boolean; default?: string | number | boolean }> = {};
+  expect(readEnvConfig(env, spec)).toEqual({});
+});
+
+test("the function handles invalid input gracefully", () => {
+  const env: Record<string, string | undefined> = { key1: "invalid" };
+  const spec = { key1: { type: "int", required: true } };
+  expect(() => readEnvConfig(env, spec)).toThrow("key1");
+});
+```

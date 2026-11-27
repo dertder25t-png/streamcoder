@@ -1,0 +1,74 @@
+- Incrementing unreadCount re-renders only components subscribed to unreadCount, leaving useUserName and useStoreActions consumers with zero additional renders.
+- Updating userName similarly does not re-render useUnreadCount consumers.
+- All hooks throw a clear Error when invoked outside SplitStoreProvider.
+
+```tsx
+import React from 'react';
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import SplitStoreProvider, { useUserName, useUnreadCount, useStoreActions } from './SplitStoreProvider';
+
+afterEach(cleanup);
+
+test("useUnreadCount re-renders only when unreadCount changes", async () => {
+  const { rerender } = render(
+    <SplitStoreProvider initialUnreadCount={0}>
+      <div data-testid="unreadCount">{useUnreadCount()}</div>
+      <div data-testid="userName">{useUserName()}</div>
+      <button onClick={() => useStoreActions().incrementUnread()}>Increment Unread</button>
+    </SplitStoreProvider>
+  );
+
+  expect(screen.getByTestId('unreadCount')).toHaveTextContent('0');
+  expect(screen.getByTestId('userName')).toHaveTextContent('');
+
+  fireEvent.click(screen.getByText('Increment Unread'));
+  await waitFor(() => expect(screen.getByTestId('unreadCount')).toHaveTextContent('1'));
+  expect(screen.getByTestId('userName')).toHaveTextContent('');
+});
+
+test("useUserName does not re-render when unreadCount changes", async () => {
+  const { rerender } = render(
+    <SplitStoreProvider initialUnreadCount={0}>
+      <div data-testid="unreadCount">{useUnreadCount()}</div>
+      <div data-testid="userName">{useUserName()}</div>
+      <button onClick={() => useStoreActions().incrementUnread()}>Increment Unread</button>
+    </SplitStoreProvider>
+  );
+
+  expect(screen.getByTestId('unreadCount')).toHaveTextContent('0');
+  expect(screen.getByTestId('userName')).toHaveTextContent('');
+
+  fireEvent.click(screen.getByText('Increment Unread'));
+  await waitFor(() => expect(screen.getByTestId('unreadCount')).toHaveTextContent('1'));
+  expect(screen.getByTestId('userName')).toHaveTextContent('');
+});
+
+test("useStoreActions does not re-render when unreadCount changes", async () => {
+  const { rerender } = render(
+    <SplitStoreProvider initialUnreadCount={0}>
+      <div data-testid="unreadCount">{useUnreadCount()}</div>
+      <div data-testid="userName">{useUserName()}</div>
+      <button onClick={() => useStoreActions().incrementUnread()}>Increment Unread</button>
+    </SplitStoreProvider>
+  );
+
+  expect(screen.getByTestId('unreadCount')).toHaveTextContent('0');
+  expect(screen.getByTestId('userName')).toHaveTextContent('');
+
+  fireEvent.click(screen.getByText('Increment Unread'));
+  await waitFor(() => expect(screen.getByTestId('unreadCount')).toHaveTextContent('1'));
+  expect(screen.getByTestId('userName')).toHaveTextContent('');
+});
+
+test("useUserName throws an error when invoked outside SplitStoreProvider", () => {
+  expect(() => useUserName()).toThrowError("Store hooks must be used inside <SplitStoreProvider>");
+});
+
+test("useUnreadCount throws an error when invoked outside SplitStoreProvider", () => {
+  expect(() => useUnreadCount()).toThrowError("Store hooks must be used inside <SplitStoreProvider>");
+});
+
+test("useStoreActions throws an error when invoked outside SplitStoreProvider", () => {
+  expect(() => useStoreActions()).toThrowError("Store hooks must be used inside <SplitStoreProvider>");
+});
+```

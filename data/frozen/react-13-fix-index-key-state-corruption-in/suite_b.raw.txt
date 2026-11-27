@@ -1,0 +1,76 @@
+- Moving an item up or down moves both the item label and its local draft comment together.
+- Move Up is disabled on the first row and Move Down is disabled on the last row.
+- Deleting a row removes its draft comment without shifting comments onto neighboring rows.
+
+```tsx
+import React from "react";
+import { render, screen, fireEvent, cleanup, act, waitFor } from "@testing-library/react";
+import "@testing-library/jest-dom/extend-expect";
+import PriorityQueueList from "./PriorityQueueList";
+
+afterEach(cleanup);
+
+test("Moving an item up or down moves both the item label and its local draft comment together", async () => {
+  const items = [
+    { id: "1", label: "Item 1" },
+    { id: "2", label: "Item 2" },
+    { id: "3", label: "Item 3" },
+  ];
+
+  render(<PriorityQueueList items={items} />);
+
+  const draftInput = screen.getByRole("textbox", { name: "Draft comment" });
+  fireEvent.change(draftInput, { target: { value: "Draft 2" } });
+
+  const moveUpButton = screen.getByRole("button", { name: "Move Up" });
+  fireEvent.click(moveUpButton);
+
+  await waitFor(() => {
+    expect(screen.getByRole("textbox", { name: "Draft comment" })).toHaveValue("Draft 2");
+  });
+
+  const moveDownButton = screen.getByRole("button", { name: "Move Down" });
+  fireEvent.click(moveDownButton);
+
+  await waitFor(() => {
+    expect(screen.getByRole("textbox", { name: "Draft comment" })).toHaveValue("Draft 2");
+  });
+});
+
+test("Move Up is disabled on the first row and Move Down is disabled on the last row", async () => {
+  const items = [
+    { id: "1", label: "Item 1" },
+    { id: "2", label: "Item 2" },
+    { id: "3", label: "Item 3" },
+  ];
+
+  render(<PriorityQueueList items={items} />);
+
+  const moveUpButton = screen.getByRole("button", { name: "Move Up" });
+  expect(moveUpButton).toBeDisabled();
+
+  const moveDownButton = screen.getByRole("button", { name: "Move Down" });
+  fireEvent.click(screen.getByRole("button", { name: "Move Down" }));
+  expect(moveDownButton).toBeDisabled();
+});
+
+test("Deleting a row removes its draft comment without shifting comments onto neighboring rows", async () => {
+  const items = [
+    { id: "1", label: "Item 1" },
+    { id: "2", label: "Item 2" },
+    { id: "3", label: "Item 3" },
+  ];
+
+  render(<PriorityQueueList items={items} />);
+
+  const draftInput = screen.getByRole("textbox", { name: "Draft comment" });
+  fireEvent.change(draftInput, { target: { value: "Draft 2" } });
+
+  const deleteButton = screen.getByRole("button", { name: "Delete" });
+  fireEvent.click(deleteButton);
+
+  await waitFor(() => {
+    expect(screen.queryByRole("textbox", { name: "Draft comment" })).toBeNull();
+  });
+});
+```

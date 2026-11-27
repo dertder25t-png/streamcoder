@@ -1,0 +1,51 @@
+- Deletes file and returns `true`, or returns `false` if `ENOENT` occurs.
+
+```ts
+test("deletes existing file and returns true", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const filePath = path.join(dir, "test.txt");
+  await fs.promises.writeFile(filePath, "test content");
+
+  const result = await removeFileSafe(filePath);
+  expect(result).toBe(true);
+  await expect(fs.promises.access(filePath)).rejects.toThrow("ENOENT");
+});
+
+test("returns false if file does not exist", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const filePath = path.join(dir, "nonexistent.txt");
+
+  const result = await removeFileSafe(filePath);
+  expect(result).toBe(false);
+});
+
+test("deletes file in subdirectory and returns true", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const subDir = await fs.promises.mkdir(path.join(dir, "subdir"));
+  const filePath = path.join(subDir, "test.txt");
+  await fs.promises.writeFile(filePath, "test content");
+
+  const result = await removeFileSafe(filePath);
+  expect(result).toBe(true);
+  await expect(fs.promises.access(filePath)).rejects.toThrow("ENOENT");
+});
+
+test("returns false if file in subdirectory does not exist", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const subDir = await fs.promises.mkdir(path.join(dir, "subdir"));
+  const filePath = path.join(subDir, "nonexistent.txt");
+
+  const result = await removeFileSafe(filePath);
+  expect(result).toBe(false);
+});
+
+test("deletes file with special characters and returns true", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const filePath = path.join(dir, "test!@#$%^&*().txt");
+  await fs.promises.writeFile(filePath, "test content");
+
+  const result = await removeFileSafe(filePath);
+  expect(result).toBe(true);
+  await expect(fs.promises.access(filePath)).rejects.toThrow("ENOENT");
+});
+```

@@ -1,0 +1,37 @@
+```ts
+probe("basic options", async () => {
+  const result = parseCliArgs(["--port", "8080", "--verbose"], { port: { type: "number" }, verbose: { type: "boolean" } });
+  return result;
+});
+
+probe("short alias", async () => {
+  const result = parseCliArgs(["-p", "8080", "--verbose"], { port: { type: "number", alias: "p" }, verbose: { type: "boolean" } });
+  return result;
+});
+
+probe("default value", async () => {
+  const result = parseCliArgs([], { port: { type: "number", default: 3000 } });
+  return result;
+});
+
+probe("unknown flag", async () => {
+  try {
+    parseCliArgs(["--unknown"], { port: { type: "number" } });
+  } catch (error) {
+    return error;
+  }
+});
+
+probe("no value for valued option", async () => {
+  try {
+    parseCliArgs(["--port"], { port: { type: "number" } });
+  } catch (error) {
+    return error;
+  }
+});
+
+probe("positional args", async () => {
+  const result = parseCliArgs(["--port", "8080", "arg1", "arg2"], { port: { type: "number" } });
+  return result;
+});
+```

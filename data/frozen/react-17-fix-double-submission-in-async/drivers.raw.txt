@@ -1,0 +1,34 @@
+```ts
+probe("Single click", async () => {
+  const { unmount } = render(<SubmitOnceButton onAction={vi.fn()} label="Submit" />);
+  fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "Submit" })).toBeEnabled());
+  unmount();
+  return snap();
+});
+
+probe("Rapid double clicks", async () => {
+  const onAction = vi.fn();
+  render(<SubmitOnceButton onAction={onAction} label="Submit" />);
+  fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+  fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+  await waitFor(() => expect(onAction).toHaveBeenCalledTimes(1));
+  return snap();
+});
+
+probe("Pending state", async () => {
+  const onAction = vi.fn().mockImplementation(() => new Promise(() => {}));
+  render(<SubmitOnceButton onAction={onAction} label="Submit" />);
+  fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "Submit" })).toHaveTextContent("Working..."));
+  return snap();
+});
+
+probe("Pending state after rejection", async () => {
+  const onAction = vi.fn().mockImplementation(() => Promise.reject(new Error("Rejected")));
+  render(<SubmitOnceButton onAction={onAction} label="Submit" />);
+  fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "Submit" })).toHaveTextContent("Submit"));
+  return snap();
+});
+```

@@ -1,0 +1,36 @@
+- Overlapping or touching base intervals coalesce cleanly before or during subtraction.
+- A cutout strictly inside a base interval splits it into two disjoint intervals.
+- Cutouts covering the entire base yield [].
+- Empty intervals where start === end are ignored.
+- Inverted intervals (start > end) throw a RangeError.
+- Edge cases: empty or invalid input.
+- Cleanup: repeated calls, and that resources are cleaned up.
+
+```ts
+test("Overlapping or touching base intervals coalesce", () => {
+  expect(subtractIntervals([[0, 5), [5, 10)], [[3, 8)])).toEqual([[0, 10)]);
+});
+
+test("A cutout strictly inside a base interval splits it into two disjoint intervals", () => {
+  expect(subtractIntervals([[0, 10)], [[2, 7)])).toEqual([[0, 2), [7, 10)]);
+});
+
+test("Cutouts covering the entire base yield []", () => {
+  expect(subtractIntervals([[0, 10)], [[0, 10]])).toEqual([]);
+});
+
+test("Empty intervals where start === end are ignored", () => {
+  expect(subtractIntervals([[0, 0], [5, 10]], [[2, 7)])).toEqual([[5, 10)]);
+});
+
+test("Inverted intervals (start > end) throw a RangeError", () => {
+  expect(() => subtractIntervals([[0, 10]], [[5, 0]])).toThrow(RangeError);
+});
+
+test("Edge cases: empty or invalid input", () => {
+  expect(subtractIntervals([], [[2, 7]])).toEqual([]);
+  expect(subtractIntervals([[0, 10]], [])).toEqual([[0, 10]]);
+  expect(() => subtractIntervals([[0, 10]], [[10, 0]])).toThrow(RangeError);
+  expect(() => subtractIntervals([[0, 10]], [[-1, 5]])).toThrow(RangeError);
+});
+```

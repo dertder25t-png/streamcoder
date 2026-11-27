@@ -1,0 +1,46 @@
+- values contains all unwrapped ok: true payloads in original order
+- errors contains all ok: false errors in original order
+- Falsy payloads (0, "", false, null) are preserved in both arrays
+- TypeScript narrows values to T[] and errors to E[] with zero type assertions at the call site
+
+```ts
+test("values contains all unwrapped ok: true payloads in original order", () => {
+  const results: Result<number, string>[] = [
+    { ok: true, value: 1 },
+    { ok: false, error: "error1" },
+    { ok: true, value: 2 },
+    { ok: false, error: "error2" },
+  ];
+  const { values, errors } = partitionResults(results);
+  expect(values).toEqual([1, 2]);
+  expect(errors).toEqual(["error1", "error2"]);
+});
+
+test("errors contains all ok: false errors in original order", () => {
+  const results: Result<number, string>[] = [
+    { ok: true, value: 1 },
+    { ok: false, error: "error1" },
+    { ok: true, value: 2 },
+    { ok: false, error: "error2" },
+  ];
+  const { values, errors } = partitionResults(results);
+  expect(values).toEqual([1, 2]);
+  expect(errors).toEqual(["error1", "error2"]);
+});
+
+test("Falsy payloads (0, "", false, null) are preserved in both arrays", () => {
+  const results: Result<number | string | boolean | null, string>[] = [
+    { ok: true, value: 0 },
+    { ok: false, error: "error1" },
+    { ok: true, value: "" },
+    { ok: false, error: "error2" },
+    { ok: true, value: false },
+    { ok: false, error: "error3" },
+    { ok: true, value: null },
+    { ok: false, error: "error4" },
+  ];
+  const { values, errors } = partitionResults(results);
+  expect(values).toEqual([0, "", false, null]);
+  expect(errors).toEqual(["error1", "error2", "error3", "error4"]);
+});
+```

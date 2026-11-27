@@ -1,0 +1,27 @@
+function compareSemverCore(a: string, b: string): -1 | 0 | 1 {
+  const cleanVersion = (version: string) => {
+    if (!/^\d+\.\d+\.\d+$/.test(version)) {
+      throw new Error('Invalid version format');
+    }
+    return version.replace(/^v/, '');
+  };
+
+  const normalizeVersion = (version: string) => {
+    return version.split('.').map(segment => parseInt(segment, 10));
+  };
+
+  const versionA = normalizeVersion(cleanVersion(a));
+  const versionB = normalizeVersion(cleanVersion(b));
+
+  for (let i = 0; i < 3; i++) {
+    if (versionA[i] < versionB[i]) {
+      return -1;
+    } else if (versionA[i] > versionB[i]) {
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
+export { compareSemverCore };

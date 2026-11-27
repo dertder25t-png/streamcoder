@@ -1,0 +1,68 @@
+- Handles both \n and \r\n endings
+- Preserves = characters inside values
+- Strips inline # comments only outside quotes
+- Double-quoted values expand \n to real newlines
+- Single-quoted values treat \n literally
+- Unquoted values trim surrounding whitespace while quoted values preserve interior spaces
+
+```ts
+test("Handles both \n and \r\n endings", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const filePath = path.join(dir, "test.env");
+  await fs.promises.writeFile(filePath, `KEY=VALUE\nKEY2=VALUE2\r\nKEY3=VALUE3`);
+
+  const result = await parseDotEnv(await fs.promises.readFile(filePath, "utf8"));
+
+  expect(result).toEqual({ KEY: "VALUE", KEY2: "VALUE2", KEY3: "VALUE3" });
+});
+
+test("Preserves = characters inside values", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const filePath = path.join(dir, "test.env");
+  await fs.promises.writeFile(filePath, `KEY=VALUE=VALUE2`);
+
+  const result = await parseDotEnv(await fs.promises.readFile(filePath, "utf8"));
+
+  expect(result).toEqual({ KEY: "VALUE=VALUE2" });
+});
+
+test("Strips inline # comments only outside quotes", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const filePath = path.join(dir, "test.env");
+  await fs.promises.writeFile(filePath, `KEY=VALUE #comment\nKEY2="VALUE #comment"`);
+
+  const result = await parseDotEnv(await fs.promises.readFile(filePath, "utf8"));
+
+  expect(result).toEqual({ KEY: "VALUE", KEY2: "VALUE #comment" });
+});
+
+test("Double-quoted values expand \n to real newlines", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const filePath = path.join(dir, "test.env");
+  await fs.promises.writeFile(filePath, `KEY="VALUE\nnewline"`);
+
+  const result = await parseDotEnv(await fs.promises.readFile(filePath, "utf8"));
+
+  expect(result).toEqual({ KEY: "VALUE\nnewline" });
+});
+
+test("Single-quoted values treat \n literally", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const filePath = path.join(dir, "test.env");
+  await fs.promises.writeFile(filePath, `KEY='VALUE\nnewline'`);
+
+  const result = await parseDotEnv(await fs.promises.readFile(filePath, "utf8"));
+
+  expect(result).toEqual({ KEY: "VALUE\nnewline" });
+});
+
+test("Unquoted values trim surrounding whitespace while quoted values preserve interior spaces", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const filePath = path.join(dir, "test.env");
+  await fs.promises.writeFile(filePath, ` KEY = VALUE  \nKEY2=" VALUE 2 "`);
+
+  const result = await parseDotEnv(await fs.promises.readFile(filePath, "utf8"));
+
+  expect(result).toEqual({ KEY: "VALUE", KEY2: " VALUE 2 " });
+});
+```

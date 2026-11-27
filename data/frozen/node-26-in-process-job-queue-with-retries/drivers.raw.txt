@@ -1,0 +1,40 @@
+```ts
+probe("createJobQueue with default values", async () => {
+  const jobQueue = createJobQueue({ concurrency: 2, maxRetries: 3, processor: async () => {}, onDeadLetter: () => {} });
+  return jobQueue;
+});
+
+probe("enqueue jobs", async () => {
+  const jobQueue = createJobQueue({ concurrency: 2, maxRetries: 3, processor: async () => {}, onDeadLetter: () => {} });
+  jobQueue.enqueue({ id: 1 });
+  jobQueue.enqueue({ id: 2 });
+  jobQueue.enqueue({ id: 3 });
+  return jobQueue;
+});
+
+probe("drain job queue", async () => {
+  const jobQueue = createJobQueue({ concurrency: 2, maxRetries: 3, processor: async () => {}, onDeadLetter: () => {} });
+  jobQueue.enqueue({ id: 1 });
+  jobQueue.enqueue({ id: 2 });
+  jobQueue.enqueue({ id: 3 });
+  await jobQueue.drain();
+  return jobQueue;
+});
+
+probe("stats of job queue", async () => {
+  const jobQueue = createJobQueue({ concurrency: 2, maxRetries: 3, processor: async () => {}, onDeadLetter: () => {} });
+  jobQueue.enqueue({ id: 1 });
+  jobQueue.enqueue({ id: 2 });
+  jobQueue.enqueue({ id: 3 });
+  const stats = jobQueue.stats();
+  return stats;
+});
+
+probe("enqueue with invalid payload", async () => {
+  const jobQueue = createJobQueue({ concurrency: 2, maxRetries: 3, processor: async () => {}, onDeadLetter: () => {} });
+  jobQueue.enqueue(null);
+  jobQueue.enqueue(undefined);
+  jobQueue.enqueue({});
+  return jobQueue;
+});
+```

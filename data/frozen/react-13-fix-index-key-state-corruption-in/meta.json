@@ -1,0 +1,25 @@
+{
+ "id": "react-13-fix-index-key-state-corruption-in",
+ "topic": "react",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/react-13-fix-index-key-state-corruption-in/solution.test.tsx(53,29): error TS2322:",
+  "type error: .runs/react-13-fix-index-key-state-corruption-in/solution.test.tsx(53,29): error TS2322:",
+  "type error: .runs/react-13-fix-index-key-state-corruption-in/solution.test.tsx(53,29): error TS2322:",
+  "type error: .runs/react-13-fix-index-key-state-corruption-in/solution.test.tsx(53,29): error TS2322:"
+ ],
+ "cand_tokens": [
+  429,
+  445,
+  408,
+  429
+ ],
+ "gen_seconds": 54.0,
+ "type_only": false,
+ "errors": []
+}

@@ -1,0 +1,20 @@
+import { cloneDeep } from 'lodash';
+
+export function sortRecordsByKeys<T>(
+  items: readonly T[],
+  specs: readonly { key: keyof T; direction?: "asc" | "desc" }[]
+): T[] {
+  return cloneDeep(items).sort((a, b) => {
+    for (const { key, direction = 'asc' } of specs) {
+      const aValue = a[key];
+      const bValue = b[key];
+
+      if (aValue < bValue) {
+        return direction === 'asc' ? -1 : 1;
+      } else if (aValue > bValue) {
+        return direction === 'asc' ? 1 : -1;
+      }
+    }
+    return 0;
+  });
+}

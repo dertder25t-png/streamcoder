@@ -1,0 +1,42 @@
+import { promises as fsp, stat } from "node:fs";
+
+export interface FileCacheOptions {
+  maxBytes: number;
+  readFile?: (path: string) => Promise<Buffer>;
+}
+
+export function createFileCache(options: FileCacheOptions) {
+  const doRead = options.readFile ?? ((p: string) => fsp.readFile(p));
+  const cache = new Map<string, { data: Buffer; mtimeMs: number; size: number }>();
+  let totalBytes = 0;
+
+  async function evictLRU() {
+    if (totalBytes <= options.maxBytes) return;
+    const lruEntry = Array.from(cache.entries()).sort((a, b) => a[1].mtimeMs - b[1].mtimeMs)[0];
+    totalBytes -= lruEntry[1].size;
+    cache.delete(lruEntry[0]);
+  }
+
+  return {
+    async read(path: string): Promise<Buffer> {
+      const entry = cache.get(path);
+      if (entry) {
+        const { data, mtimeMs, size } = entry;
+        if (mtimeMs === (await stat(path)).mtimeMs && size === (await fsp.readFile(path)).length) {
+          return data;
+        }
+        cache.delete(path);
+      }
+
+      const data = await doRead(path);
+      const { mtimeMs, size } = await stat(path);
+      if (size > options.maxBytes) {
+        return data;
+      }
+      cache.set(path, { data, mtimeMs, size });
+      totalBytes += size;
+      await evictLRU();
+      return data;
+    },
+  };
+}

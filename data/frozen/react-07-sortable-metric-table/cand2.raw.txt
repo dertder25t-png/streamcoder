@@ -1,0 +1,80 @@
+```tsx
+import React, { useState, useEffect } from 'react';
+
+interface Column {
+  key: string;
+  label: string;
+  numeric?: boolean;
+}
+
+interface Row extends Record<string, string | number> {}
+
+export const SortableTable: React.FC<{ rows: Row[]; columns: Column[] }> = ({ rows, columns }) => {
+  const [sortedRows, setSortedRows] = useState<Row[]>(rows);
+  const [sortOrder, setSortOrder] = useState<{ [key: string]: 'asc' | 'desc' | null }>({});
+  const [lastSortedColumn, setLastSortedColumn] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSortedRows(rows);
+  }, [rows]);
+
+  const handleSort = (key: string) => {
+    if (key === lastSortedColumn) {
+      if (sortOrder[key] === 'asc') {
+        setSortOrder({ ...sortOrder, [key]: 'desc' });
+      } else if (sortOrder[key] === 'desc') {
+        setSortOrder({ ...sortOrder, [key]: null });
+      } else {
+        setSortOrder({ ...sortOrder, [key]: 'asc' });
+      }
+    } else {
+      setSortOrder({ [key]: 'asc', ...Object.fromEntries(Object.keys(sortOrder).map(k => [k, null])) });
+      setLastSortedColumn(key);
+    }
+
+    const newRows = [...sortedRows];
+    newRows.sort((a, b) => {
+      const aValue = a[key];
+      const bValue = b[key];
+      if (sortOrder[key] === 'asc') {
+        return columns.find(col => col.key === key)?.numeric
+          ? (aValue as number) - (bValue as number)
+          : aValue.toString().localeCompare(bValue.toString(), undefined, { numeric: true });
+      } else if (sortOrder[key] === 'desc') {
+        return columns.find(col => col.key === key)?.numeric
+          ? (bValue as number) - (aValue as number)
+          : bValue.toString().localeCompare(aValue.toString(), undefined, { numeric: true });
+      }
+      return 0;
+    });
+    setSortedRows(newRows);
+  };
+
+  return (
+    <table>
+      <thead>
+        <tr>
+          {columns.map(col => (
+            <th
+              key={col.key}
+              onClick={() => handleSort(col.key)}
+              aria-sort={sortOrder[col.key] || 'none'}
+            >
+              {col.label}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {sortedRows.map((row, index) => (
+          <tr key={index}>
+            {columns.map(col => (
+              <td key={col.key}>{row[col.key]}</td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+};
+```

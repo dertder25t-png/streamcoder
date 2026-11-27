@@ -1,0 +1,27 @@
+import { strict as assert } from 'node:assert';
+
+function normalizePath(path: string): string {
+  if (path.includes('..') || path.includes(':')) {
+    throw new Error('Invalid path');
+  }
+  return path.replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/+/g, '/');
+}
+
+export function normalizeArchivePaths(rawPaths: readonly string[]): string[] {
+  const normalizedSet = new Set<string>();
+  const result: string[] = [];
+
+  for (const path of rawPaths) {
+    const normalizedPath = normalizePath(path);
+    if (!normalizedSet.has(normalizedPath)) {
+      normalizedSet.add(normalizedPath);
+      result.push(normalizedPath);
+    }
+  }
+
+  return result;
+}
+
+// Test cases
+assert.deepEqual(normalizeArchivePaths(["a\\b", "c/./d", "e//f", "g/..", "h:C:"]), ["a/b", "c/d", "e/f", "h"]);
+assert.throws(() => normalizeArchivePaths(["a\\..", "b:c:"]), Error);

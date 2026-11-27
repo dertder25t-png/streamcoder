@@ -1,0 +1,118 @@
+- Two identical concurrent requests sharing an Idempotency-Key execute the handler only once and both receive the same response.
+- Reusing an existing key with a different request body hash returns HTTP 409 Conflict instead of replaying or re-executing.
+- If the handler fails with HTTP 5xx or throws, the key is not permanently locked so clients can safely retry.
+- Empty or invalid input (e.g., missing `idempotency-key` header) should return an appropriate error.
+- Boundary conditions (e.g., very large or small `ttlMs`) should be handled gracefully.
+- Timers, listeners, files, or other resources should be cleaned up after each test.
+
+```ts
+import { createIdempotencyWrapper } from './createIdempotencyWrapper'; // Adjust the import path as necessary
+import { IncomingMessage, ServerResponse } from 'http';
+import { promises as fs } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
+
+test('Two identical concurrent requests sharing an Idempotency-Key execute the handler only once and both receive the same response', async () => {
+  const dir = await fs.mkdtemp(join(tmpdir(), 'st-'));
+  const handler = vi.fn(async (req: IncomingMessage, res: ServerResponse) => {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ message: 'Hello, world!' }));
+  });
+  const wrapper = createIdempotencyWrapper({ ttlMs: 1000, now: () => Date.now() })(handler);
+
+  const req1 = new IncomingMessage({ httpVersion: '1.1', headers: { 'idempotency-key': 'test-key' } });
+  const res1 = new ServerResponse(req1);
+  await wrapper(req1, res1);
+
+  const req2 = new IncomingMessage({ httpVersion: '1.1', headers: { 'idempotency-key': 'test-key' } });
+  const res2 = new ServerResponse(req2);
+  await wrapper(req2, res2);
+
+  expect(handler).toHaveBeenCalledTimes(1);
+  expect(res1.statusCode).toBe(200);
+  expect(res2.statusCode).toBe(200);
+  expect(res1.getHeader('Content-Type')).toBe('application/json');
+  expect(res2.getHeader('Content-Type')).toBe('application/json');
+  expect(JSON.parse(res1.readableToString())).toEqual({ message: 'Hello, world!' });
+  expect(JSON.parse(res2.readableToString())).toEqual({ message: 'Hello, world!' });
+});
+
+test('Reusing an existing key with a different request body hash returns HTTP 409 Conflict instead of replaying or re-executing', async () => {
+  const dir = await fs.mkdtemp(join(tmpdir(), 'st-'));
+  const handler = vi.fn(async (req: IncomingMessage, res: ServerResponse) => {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ message: 'Hello, world!' }));
+  });
+  const wrapper = createIdempotencyWrapper({ ttlMs: 1000, now: () => Date.now() })(handler);
+
+  const req1 = new IncomingMessage({ httpVersion: '1.1', headers: { 'idempotency-key': 'test-key' } });
+  const res1 = new ServerResponse(req1);
+  await wrapper(req1, res1);
+
+  const req2 = new IncomingMessage({ httpVersion: '1.1', headers: { 'idempotency-key': 'test-key' } });
+  req2.on('data', () => {});
+  const res2 = new ServerResponse(req2);
+  await wrapper(req2, res2);
+
+  expect(handler).toHaveBeenCalledTimes(1);
+  expect(res1.statusCode).toBe(200);
+  expect(res2.statusCode).toBe(409);
+});
+
+test('If the handler fails with HTTP 5xx or throws, the key is not permanently locked so clients can safely retry', async () => {
+  const dir = await fs.mkdtemp(join(tmpdir(), 'st-'));
+  const handler = vi.fn(async (req: IncomingMessage, res: ServerResponse) => {
+    throw new Error('Handler error');
+  });
+  const wrapper = createIdempotencyWrapper({ ttlMs: 1000, now: () => Date.now() })(handler);
+
+  const req1 = new IncomingMessage({ httpVersion: '1.1', headers: { 'idempotency-key': 'test-key' } });
+  const res1 = new ServerResponse(req1);
+  await wrapper(req1, res1);
+
+  const req2 = new IncomingMessage({ httpVersion: '1.1', headers: { 'idempotency-key': 'test-key' } });
+  const res2 = new ServerResponse(req2);
+  await wrapper(req2, res2);
+
+  expect(handler).toHaveBeenCalledTimes(2);
+  expect(res1.statusCode).toBe(500);
+  expect(res2.statusCode).toBe(500);
+});
+
+test('Empty or invalid input (e.g., missing `idempotency-key` header) should return an appropriate error', async () => {
+  const dir = await fs.mkdtemp(join(tmpdir(), 'st-'));
+  const handler = vi.fn(async (req: IncomingMessage, res: ServerResponse) => {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ message: 'Hello, world!' }));
+  });
+  const wrapper = createIdempotencyWrapper({ ttlMs: 1000, now: () => Date.now() })(handler);
+
+  const req1 = new IncomingMessage({ httpVersion: '1.1' });
+  const res1 = new ServerResponse(req1);
+  await wrapper(req1, res1);
+
+  expect(handler).not.toHaveBeenCalled();
+  expect(res1.statusCode).toBe(400);
+});
+
+test('Boundary conditions (e.g., very large or small `ttlMs`) should be handled gracefully', async () => {
+  const dir = await fs.mkdtemp(join(tmpdir(), 'st-'));
+  const handler = vi.fn(async (req: IncomingMessage, res: ServerResponse) => {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ message: 'Hello, world!' }));
+  });
+  const wrapper = createIdempotencyWrapper({ ttlMs: 1, now: () => Date.now() })(handler);
+
+  const req1 = new IncomingMessage({ httpVersion: '1.1', headers: { 'idempotency-key': 'test-key' } });
+  const res1 = new ServerResponse(req1);
+  await wrapper(req1, res1);
+
+  const req2 = new IncomingMessage({ httpVersion: '1.1', headers: { 'idempotency-key': 'test-key' } });
+  const res2 = new ServerResponse(req2);
+  await wrapper(req2, res2);
+
+  expect(handler).toHaveBeenCalledTimes(2);
+  expect(res1.statusCode).toBe(200);
+  expect(res2.statusCode).toBe(200);
+});
+```

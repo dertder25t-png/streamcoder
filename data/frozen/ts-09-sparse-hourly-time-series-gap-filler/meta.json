@@ -1,0 +1,25 @@
+{
+ "id": "ts-09-sparse-hourly-time-series-gap-filler",
+ "topic": "typescript",
+ "cand_hidden": [
+  true,
+  true,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "",
+  "",
+  "type error: .runs/ts-09-sparse-hourly-time-series-gap-filler/solution.ts(1,27): error TS2307: Cannot",
+  "type error: .runs/ts-09-sparse-hourly-time-series-gap-filler/solution.ts(1,27): error TS2307: Cannot"
+ ],
+ "cand_tokens": [
+  173,
+  234,
+  244,
+  184
+ ],
+ "gen_seconds": 57.3,
+ "type_only": false,
+ "errors": []
+}

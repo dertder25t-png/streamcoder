@@ -1,0 +1,35 @@
+```ts
+/**
+ * Linearly maps finite numbers from their input min–max range into [targetMin, targetMax].
+ * @param values - The array of numbers to normalize.
+ * @param targetMin - The minimum value of the target range (default is 0).
+ * @param targetMax - The maximum value of the target range (default is 1).
+ * @returns An array of normalized numbers.
+ * @throws RangeError if NaN, Infinity, or targetMin > targetMax.
+ */
+export function normalizeScores(
+  values: readonly number[],
+  targetMin: number = 0,
+  targetMax: number = 1
+): number[] {
+  if (values.length === 0) return [];
+
+  const finiteValues = values.filter((v) => !isNaN(v) && v !== Infinity && v !== -Infinity);
+  if (finiteValues.length === 0) return values.map(() => targetMin);
+
+  const minValue = Math.min(...finiteValues);
+  const maxValue = Math.max(...finiteValues);
+
+  if (minValue === maxValue) return values.map(() => targetMin);
+
+  if (targetMin > targetMax) {
+    throw new RangeError('targetMin must be less than or equal to targetMax');
+  }
+
+  return values.map((v) => 
+    isNaN(v) || v === Infinity || v === -Infinity 
+      ? targetMin 
+      : ((v - minValue) / (maxValue - minValue)) * (targetMax - targetMin) + targetMin
+  );
+}
+```

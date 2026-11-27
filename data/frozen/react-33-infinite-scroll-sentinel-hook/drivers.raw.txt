@@ -1,0 +1,32 @@
+```ts
+probe("initial render", async () => {
+  const { getByRole } = render(<div ref={useInfiniteScroll(() => {})}>Content</div>);
+  return snap();
+});
+
+probe("intersecting sentinel", async () => {
+  const onIntersect = vi.fn();
+  const { getByRole } = render(<div ref={useInfiniteScroll(onIntersect)}><div role="sentinel"></div>Content</div>);
+  fireEvent.scroll(window, { target: { scrollTop: 1000 } });
+  await waitFor(() => expect(onIntersect).toHaveBeenCalled());
+  return snap();
+});
+
+probe("disconnects on unmount", async () => {
+  const onIntersect = vi.fn();
+  const { getByRole, unmount } = render(<div ref={useInfiniteScroll(onIntersect)}><div role="sentinel"></div>Content</div>);
+  unmount();
+  fireEvent.scroll(window, { target: { scrollTop: 1000 } });
+  await waitFor(() => expect(onIntersect).not.toHaveBeenCalled());
+  return snap();
+});
+
+probe("disconnects on ref change", async () => {
+  const onIntersect = vi.fn();
+  const { getByRole, rerender } = render(<div ref={useInfiniteScroll(onIntersect)}><div role="sentinel"></div>Content</div>);
+  rerender(<div ref={useInfiniteScroll(onIntersect)}><div role="sentinel"></div>More Content</div>);
+  fireEvent.scroll(window, { target: { scrollTop: 1000 } });
+  await waitFor(() => expect(onIntersect).not.toHaveBeenCalled());
+  return snap();
+});
+```

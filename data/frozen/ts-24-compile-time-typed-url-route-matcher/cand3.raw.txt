@@ -1,0 +1,28 @@
+```ts
+import { decodeURIComponent } from 'node:util';
+
+type MatchResult<T extends string> = T extends `/${infer Params}` ? Params extends `${infer Param}/` ? { [K in Param as K extends `:${infer Name}` ? Name : never]: string } & MatchResult<`/${Params}`> : Record<never, never> : Record<never, never>;
+
+function createRouteMatcher<P extends string>(pattern: P): (path: string) => MatchResult<P> | null {
+    const regex = pattern.replace(/\/:/g, '\/([^/]+)').replace(/\/\//g, '\/');
+    const keys: (string | undefined)[] = pattern.match(/\/:(\w+)/g)?.map(k => k.slice(2)) || [];
+
+    return (path) => {
+        const match = path.match(new RegExp(`^${regex}$`));
+        if (!match) return null;
+
+        const params: { [key: string]: string } = {};
+        keys.forEach((key, index) => {
+            if (key) {
+                const value = decodeURIComponent(match[index + 1] || '');
+                if (value.includes('%')) return null; // Malformed percent encoding
+                params[key] = value;
+            }
+        });
+
+        return params as MatchResult<P>;
+    };
+}
+
+export { createRouteMatcher };
+```

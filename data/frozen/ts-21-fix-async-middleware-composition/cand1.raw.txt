@@ -1,0 +1,40 @@
+```typescript
+type Middleware<Ctx> = (ctx: Ctx, next: () => Promise<void>) => Promise<void> | void;
+
+class MiddlewareError extends Error {
+  constructor(message: string) {
+    super(message);
+    Object.setPrototypeOf(this, MiddlewareError.prototype);
+  }
+}
+
+export function composeMiddleware<Ctx>(
+  middlewares: readonly Middleware<Ctx>[],
+): (ctx: Ctx) => Promise<void> {
+  return async (ctx: Ctx): Promise<void> => {
+    let nextCalled = false;
+
+    const dispatch = async (i: number): Promise<void> => {
+      const fn = middlewares[i];
+      if (!fn) return;
+      try {
+        if (nextCalled) {
+          throw new MiddlewareError("next() called multiple times");
+        }
+        nextCalled = true;
+        await fn(ctx, () => dispatch(i + 1));
+        nextCalled = false;
+      } catch (err) {
+        throw err;
+      }
+    };
+
+    try {
+      await dispatch(0);
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  };
+}
+```

@@ -1,0 +1,30 @@
+```ts
+probe("Select all when none selected", async () => {
+  render(<SelectAllGroup options={[]} selectedIds={[]} onChange={vi.fn()} />);
+  fireEvent.click(screen.getByRole("checkbox", { name: "Select all" }));
+  return snap();
+});
+
+probe("Select all when some selected", async () => {
+  render(<SelectAllGroup options={[{ id: "1", label: "Option 1" }, { id: "2", label: "Option 2" }]} selectedIds={["1"]} onChange={vi.fn()} />);
+  fireEvent.click(screen.getByRole("checkbox", { name: "Select all" }));
+  return snap();
+});
+
+probe("Clear all when all selected", async () => {
+  render(<SelectAllGroup options={[{ id: "1", label: "Option 1" }, { id: "2", label: "Option 2" }]} selectedIds={["1", "2"]} onChange={vi.fn()} />);
+  fireEvent.click(screen.getByRole("checkbox", { name: "Select all" }));
+  return snap();
+});
+
+probe("Indeterminate when some selected", async () => {
+  render(<SelectAllGroup options={[{ id: "1", label: "Option 1" }, { id: "2", label: "Option 2" }]} selectedIds={["1"]} onChange={vi.fn()} />);
+  return snap();
+});
+
+probe("Disabled options do not block selection", async () => {
+  render(<SelectAllGroup options={[{ id: "1", label: "Option 1" }, { id: "2", label: "Option 2", disabled: true }]} selectedIds={[]} onChange={vi.fn()} />);
+  fireEvent.click(screen.getByRole("checkbox", { name: "Select all" }));
+  return snap();
+});
+```

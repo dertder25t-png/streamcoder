@@ -1,0 +1,40 @@
+```ts
+probe("file exists and is valid JSON", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const filePath = path.join(dir, "test.json");
+  await fs.promises.writeFile(filePath, '{"key": "value"}');
+  const result = await readJsonSafe<{ key: string }>(filePath, { key: "default" });
+  return result;
+});
+
+probe("file exists but is malformed JSON", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const filePath = path.join(dir, "test.json");
+  await fs.promises.writeFile(filePath, '{"key": "value"');
+  const result = await readJsonSafe<{ key: string }>(filePath, { key: "default" });
+  return result;
+});
+
+probe("file does not exist", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const filePath = path.join(dir, "nonexistent.json");
+  const result = await readJsonSafe<{ key: string }>(filePath, { key: "default" });
+  return result;
+});
+
+probe("fallback is used", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const filePath = path.join(dir, "test.json");
+  await fs.promises.writeFile(filePath, '{"key": "value"}');
+  const result = await readJsonSafe<{ key: string }>(filePath, { key: "default" });
+  return result;
+});
+
+probe("empty file", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const filePath = path.join(dir, "test.json");
+  await fs.promises.writeFile(filePath, '');
+  const result = await readJsonSafe<{ key: string }>(filePath, { key: "default" });
+  return result;
+});
+```

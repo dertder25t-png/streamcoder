@@ -1,0 +1,38 @@
+```tsx
+import { useState, useEffect } from "react";
+
+export function SwitchControl({
+  checked,
+  defaultChecked,
+  onChange,
+}: {
+  checked?: boolean;
+  defaultChecked?: boolean;
+  onChange?: (next: boolean) => void;
+}) {
+  const [isOn, setIsOn] = useState(checked ?? defaultChecked ?? false);
+
+  useEffect(() => {
+    if (checked !== undefined) {
+      setIsOn(checked);
+    }
+  }, [checked]);
+
+  const toggle = () => {
+    const next = !isOn;
+    setIsOn(next);
+    onChange?.(next);
+  };
+
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={isOn}
+      onClick={toggle}
+    >
+      {isOn ? "On" : "Off"}
+    </button>
+  );
+}
+```

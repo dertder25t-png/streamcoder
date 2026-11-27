@@ -1,0 +1,25 @@
+```ts
+probe("empty array", async () => {
+  return normalizeArchivePaths([]);
+});
+
+probe("single valid path", async () => {
+  return normalizeArchivePaths(["/path/to/file"]);
+});
+
+probe("multiple valid paths", async () => {
+  return normalizeArchivePaths(["/path/to/file", "/another/path"]);
+});
+
+probe("backslashes and leading ./", async () => {
+  return normalizeArchivePaths(["C:\\path\\to\\file", "./another/path"]);
+});
+
+probe("duplicate slashes", async () => {
+  return normalizeArchivePaths(["/path//to//file"]);
+});
+
+probe("parent traversal entry", async () => {
+  return normalizeArchivePaths(["/path/../to/file"]);
+});
+```

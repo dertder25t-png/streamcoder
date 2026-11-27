@@ -1,0 +1,25 @@
+import { promises as fs } from "node:fs";
+
+export async function readExistingFiles(paths: readonly string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  const results = await Promise.allSettled(
+    paths.map(async (p) => {
+      try {
+        return { path: p, content: await fs.readFile(p, "utf8") };
+      } catch (error: unknown) {
+        if (error instanceof Error && error.code === "ENOENT") {
+          return { path: p, content: undefined };
+        }
+        throw error;
+      }
+    }),
+  );
+
+  for (const result of results) {
+    if (result.status === "fulfilled" && result.value.content !== undefined) {
+      out.set(result.value.path, result.value.content);
+    }
+  }
+
+  return out;
+}

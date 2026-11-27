@@ -1,0 +1,46 @@
+- Attaches an `IntersectionObserver` to the returned callback ref element.
+- Triggers `onIntersect` when the sentinel enters the viewport intersection.
+- Disconnects the observer cleanly on unmount or ref change.
+
+```tsx
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import { useInfiniteScroll } from './useInfiniteScroll';
+
+test("Attaches an IntersectionObserver to the returned callback ref element", async () => {
+  const onIntersect = vi.fn();
+  const { getByRole } = render(<div ref={useInfiniteScroll(onIntersect)} />);
+  const sentinel = getByRole('button'); // Assuming the sentinel is a button for simplicity
+  fireEvent.scroll(window, { target: { scrollTop: 1000 } });
+  await waitFor(() => expect(onIntersect).toHaveBeenCalled());
+});
+
+test("Triggers onIntersect when the sentinel enters the viewport intersection", async () => {
+  const onIntersect = vi.fn();
+  const { getByRole } = render(<div ref={useInfiniteScroll(onIntersect)} />);
+  const sentinel = getByRole('button'); // Assuming the sentinel is a button for simplicity
+  fireEvent.scroll(window, { target: { scrollTop: 1000 } });
+  await waitFor(() => expect(onIntersect).toHaveBeenCalled());
+});
+
+test("Disconnects the observer cleanly on unmount", async () => {
+  const onIntersect = vi.fn();
+  const { getByRole, unmount } = render(<div ref={useInfiniteScroll(onIntersect)} />);
+  const sentinel = getByRole('button'); // Assuming the sentinel is a button for simplicity
+  fireEvent.scroll(window, { target: { scrollTop: 1000 } });
+  await waitFor(() => expect(onIntersect).toHaveBeenCalled());
+  unmount();
+  fireEvent.scroll(window, { target: { scrollTop: 2000 } });
+  await waitFor(() => expect(onIntersect).toHaveBeenCalledTimes(1));
+});
+
+test("Disconnects the observer cleanly on ref change", async () => {
+  const onIntersect = vi.fn();
+  const { getByRole, rerender } = render(<div ref={useInfiniteScroll(onIntersect)} />);
+  const sentinel = getByRole('button'); // Assuming the sentinel is a button for simplicity
+  fireEvent.scroll(window, { target: { scrollTop: 1000 } });
+  await waitFor(() => expect(onIntersect).toHaveBeenCalled());
+  rerender(<div ref={useInfiniteScroll(onIntersect)} />);
+  fireEvent.scroll(window, { target: { scrollTop: 2000 } });
+  await waitFor(() => expect(onIntersect).toHaveBeenCalledTimes(1));
+});
+```

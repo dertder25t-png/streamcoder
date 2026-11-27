@@ -1,0 +1,25 @@
+- Every task appears in a wave strictly after all of its dependencies, with task IDs sorted lexicographically within each wave for determinism.
+- Missing dependency IDs or duplicate task IDs throw a descriptive Error.
+- Cyclic dependencies throw an Error whose message identifies at least one task participating in the cycle.
+
+```ts
+test("tasks with no dependencies are in the first wave", () => {
+  expect(planExecutionBatches([{ id: "a", dependsOn: [] }, { id: "b", dependsOn: [] }])).toEqual([["a", "b"]]);
+});
+
+test("tasks with dependencies are ordered correctly", () => {
+  expect(planExecutionBatches([{ id: "b", dependsOn: ["a"] }])).toEqual([["a"], ["b"]]);
+});
+
+test("missing dependency throws an error", () => {
+  expect(() => planExecutionBatches([{ id: "b", dependsOn: ["a"] }])).toThrowError("Task 'b' depends on missing task 'a'");
+});
+
+test("duplicate task ID throws an error", () => {
+  expect(() => planExecutionBatches([{ id: "a", dependsOn: [] }, { id: "a", dependsOn: [] }])).toThrowError("Duplicate task ID 'a'");
+});
+
+test("cyclic dependency throws an error", () => {
+  expect(() => planExecutionBatches([{ id: "a", dependsOn: ["b"] }, { id: "b", dependsOn: ["a"] }])).toThrowError("Cyclic dependency detected involving task 'a'");
+});
+```

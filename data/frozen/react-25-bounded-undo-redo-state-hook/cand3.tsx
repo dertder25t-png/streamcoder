@@ -1,0 +1,78 @@
+import { useState, useCallback, useRef } from 'react';
+
+interface UndoableState<T> {
+  state: T;
+  set: (next: T | ((prev: T) => T)) => void;
+  undo: () => void;
+  redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  reset: () => void;
+}
+
+export function useUndoableState<T>(initialValue: T, maxHistory: number = 50): UndoableState<T> {
+  const [history, setHistory] = useState<{ past: T[], present: T, future: T[] }>({ past: [], present: initialValue, future: [] });
+  const historyRef = useRef<{ past: T[], present: T, future: T[] }>({ past: [], present: initialValue, future: [] });
+  historyRef.current = history;
+
+  const set = useCallback((next: T | ((prev: T) => T)) => {
+    const { past, present, future } = historyRef.current;
+    let newPresent: T;
+
+    if (typeof next === 'function') {
+      newPresent = next(present);
+    } else {
+      newPresent = next;
+    }
+
+    if (Object.is(present, newPresent)) {
+      return;
+    }
+
+    setHistory(prevHistory => {
+      const newPast = [...prevHistory.past, present];
+      if (newPast.length > maxHistory) {
+        newPast.shift();
+      }
+      return { past: newPast, present: newPresent, future: [] };
+    });
+  }, [maxHistory]);
+
+  const undo = useCallback(() => {
+    if (historyRef.current.past.length === 0) return;
+
+    const { past, present, future } = historyRef.current;
+    setHistory(prevHistory => {
+      const newPast = [...prevHistory.past.slice(0, -1)];
+      const newPresent = prevHistory.past[prevHistory.past.length - 1];
+      const newFuture = [present, ...prevHistory.future];
+      return { past: newPast, present: newPresent, future: newFuture };
+    });
+  }, []);
+
+  const redo = useCallback(() => {
+    if (historyRef.current.future.length === 0) return;
+
+    const { past, present, future } = historyRef.current;
+    setHistory(prevHistory => {
+      const newPast = [...prevHistory.past, present];
+      const newPresent = prevHistory.future[0];
+      const newFuture = prevHistory.future.slice(1);
+      return { past: newPast, present: newPresent, future: newFuture };
+    });
+  }, []);
+
+  const reset = useCallback(() => {
+    setHistory({ past: [], present: initialValue, future: [] });
+  }, [initialValue]);
+
+  return {
+    state: historyRef.current.present,
+    set,
+    undo,
+    redo,
+    canUndo: historyRef.current.past.length > 0,
+    canRedo: historyRef.current.future.length > 0,
+    reset,
+  };
+}

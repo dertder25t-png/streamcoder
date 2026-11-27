@@ -1,0 +1,25 @@
+{
+ "id": "ts-18-type-safe-immutable-deep-path",
+ "topic": "typescript",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/ts-18-type-safe-immutable-deep-path/solution.ts(33,21): error TS1205: Re-exporting",
+  "type error: .runs/ts-18-type-safe-immutable-deep-path/solution.ts(33,21): error TS1205: Re-exporting",
+  "type error: .runs/ts-18-type-safe-immutable-deep-path/solution.test.ts(2,27): error TS2306: File '/h",
+  "type error: .runs/ts-18-type-safe-immutable-deep-path/solution.test.ts(2,27): error TS2306: File '/h"
+ ],
+ "cand_tokens": [
+  330,
+  350,
+  582,
+  473
+ ],
+ "gen_seconds": 32.4,
+ "type_only": false,
+ "errors": []
+}

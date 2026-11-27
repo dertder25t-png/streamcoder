@@ -1,0 +1,42 @@
+- Splits both \n and \r\n line endings and numbers lines starting at 1.
+- Highlights all individual lines and inclusive ranges listed in highlightLines while ignoring out-of-bounds line numbers.
+- Preserves leading whitespace on indented code lines.
+
+```tsx
+import React from 'react';
+import { render, screen, cleanup } from '@testing-library/react';
+import HighlightedSnippet from './HighlightedSnippet';
+
+afterEach(cleanup);
+
+test("numbers lines starting at 1", () => {
+  render(<HighlightedSnippet code="console.log('Hello');\nconsole.log('World');" />);
+  expect(screen.getByText("1. console.log('Hello');")).toBeInTheDocument();
+  expect(screen.getByText("2. console.log('World');")).toBeInTheDocument();
+});
+
+test("highlights individual lines", () => {
+  render(<HighlightedSnippet code="console.log('Hello');\nconsole.log('World');" highlightLines="2" />);
+  expect(screen.getByText("1. console.log('Hello');")).not.toHaveAttribute('data-highlighted');
+  expect(screen.getByText("2. console.log('World');")).toHaveAttribute('data-highlighted', 'true');
+});
+
+test("highlights inclusive ranges", () => {
+  render(<HighlightedSnippet code="console.log('Hello');\nconsole.log('World');\nconsole.log('Foo');" highlightLines="2-3" />);
+  expect(screen.getByText("1. console.log('Hello');")).not.toHaveAttribute('data-highlighted');
+  expect(screen.getByText("2. console.log('World');")).toHaveAttribute('data-highlighted', 'true');
+  expect(screen.getByText("3. console.log('Foo');")).toHaveAttribute('data-highlighted', 'true');
+});
+
+test("ignores out-of-bounds line numbers", () => {
+  render(<HighlightedSnippet code="console.log('Hello');\nconsole.log('World');" highlightLines="1,5" />);
+  expect(screen.getByText("1. console.log('Hello');")).toHaveAttribute('data-highlighted', 'true');
+  expect(screen.getByText("2. console.log('World');")).not.toHaveAttribute('data-highlighted');
+});
+
+test("preserves leading whitespace on indented code lines", () => {
+  render(<HighlightedSnippet code="  console.log('Hello');\n  console.log('World');" highlightLines="2" />);
+  expect(screen.getByText("  console.log('Hello');")).not.toHaveAttribute('data-highlighted');
+  expect(screen.getByText("  console.log('World');")).toHaveAttribute('data-highlighted', 'true');
+});
+```

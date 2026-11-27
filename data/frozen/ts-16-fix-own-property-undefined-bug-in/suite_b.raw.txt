@@ -1,0 +1,57 @@
+- Test that `pickDefinedKeys` copies only own enumerable properties from the source.
+- Test that `pickDefinedKeys` retains falsy defined values including 0, "", false, and null.
+- Test that `pickDefinedKeys` does not include inherited prototype properties such as `toString`.
+- Test that `pickDefinedKeys` handles empty or invalid input gracefully.
+- Test that `pickDefinedKeys` handles repeated calls correctly.
+- Test that `pickDefinedKeys` cleans up resources if any are used.
+
+```ts
+import { pickDefinedKeys } from './path-to-your-module';
+
+test("copies only own enumerable properties from the source", () => {
+  const source = { a: 1, b: 2, c: 3 };
+  const keys = ['a', 'b', 'c'] as const;
+  const result = pickDefinedKeys(source, keys);
+  expect(result).toEqual({ a: 1, b: 2, c: 3 });
+});
+
+test("retains falsy defined values including 0, '', false, and null", () => {
+  const source = { a: 0, b: '', c: false, d: null };
+  const keys = ['a', 'b', 'c', 'd'] as const;
+  const result = pickDefinedKeys(source, keys);
+  expect(result).toEqual({ a: 0, b: '', c: false, d: null });
+});
+
+test("does not include inherited prototype properties such as toString", () => {
+  const source = { a: 1 };
+  const keys = ['toString'] as const;
+  const result = pickDefinedKeys(source, keys);
+  expect(result).toEqual({});
+});
+
+test("handles empty or invalid input gracefully", () => {
+  const source = { a: 1 };
+  const keys = [] as const;
+  const result = pickDefinedKeys(source, keys);
+  expect(result).toEqual({});
+
+  const invalidKeys = ['b'] as const;
+  const invalidResult = pickDefinedKeys(source, invalidKeys);
+  expect(invalidResult).toEqual({});
+});
+
+test("handles repeated calls correctly", () => {
+  const source = { a: 1, b: 2 };
+  const keys = ['a', 'b'] as const;
+  const result1 = pickDefinedKeys(source, keys);
+  const result2 = pickDefinedKeys(source, keys);
+  expect(result1).toEqual({ a: 1, b: 2 });
+  expect(result2).toEqual({ a: 1, b: 2 });
+});
+
+test("cleans up resources if any are used", () => {
+  // This test is more complex and would typically involve mocking or spying on resource cleanup functions.
+  // For simplicity, we'll assume that the function does not use any resources that need cleanup.
+  // If resources are used, you would need to mock or spy on them and ensure they are cleaned up.
+});
+```

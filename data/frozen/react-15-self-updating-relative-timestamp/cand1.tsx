@@ -1,0 +1,25 @@
+import React, { useEffect, useRef } from 'react';
+
+export const TimeAgoLabel: React.FC<{ timestampMs: number; now?: () => number }> = ({ timestampMs, now = Date.now }) => {
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const updateLabel = () => {
+      const timeAgo = Math.floor((now() - timestampMs) / 1000);
+      const label = timeAgo < 60 ? 'just now' : timeAgo < 3600 ? `${Math.floor(timeAgo / 60)}m ago` : `${Math.floor(timeAgo / 3600)}h ago`;
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      intervalRef.current = setInterval(updateLabel, 30000);
+      return label;
+    };
+
+    const label = updateLabel();
+    const timeAgoElement = <time dateTime={new Date(timestampMs).toISOString()}>{label}</time>;
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    };
+  }, [timestampMs, now]);
+
+  return <time dateTime={new Date(timestampMs).toISOString()}>{updateLabel()}</time>;
+};

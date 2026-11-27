@@ -1,0 +1,64 @@
+- Test that computeObjectDiff correctly computes the difference between two plain objects.
+- Test that applyObjectDiff correctly applies the computed difference to a target object.
+- Test that applyObjectDiff distinguishes between a missing key and a key explicitly set to null.
+- Test that applyObjectDiff handles keys containing dots or slashes correctly.
+- Test that applyObjectDiff does not mutate the original before object.
+- Test that applyObjectDiff handles empty or invalid input gracefully.
+- Test that repeated calls to applyObjectDiff produce the expected results.
+- Test that applyObjectDiff cleans up resources properly.
+
+```ts
+import { computeObjectDiff, applyObjectDiff } from './module';
+
+test('computeObjectDiff correctly computes the difference between two plain objects', () => {
+  const before = { a: 1, b: { c: 2 } };
+  const after = { a: 1, b: { c: 3, d: 4 } };
+  const expectedDiff = { b: { c: 3, d: 4 } };
+  expect(computeObjectDiff(before, after)).toEqual(expectedDiff);
+});
+
+test('applyObjectDiff correctly applies the computed difference to a target object', () => {
+  const before = { a: 1, b: { c: 2 } };
+  const after = { a: 1, b: { c: 3, d: 4 } };
+  const diff = computeObjectDiff(before, after);
+  const target = { a: 1, b: { c: 2 } };
+  applyObjectDiff(target, diff);
+  expect(target).toEqual(after);
+});
+
+test('applyObjectDiff distinguishes between a missing key and a key explicitly set to null', () => {
+  const before = { a: 1, b: null };
+  const after = { a: 1 };
+  const diff = computeObjectDiff(before, after);
+  const target = { a: 1, b: null };
+  applyObjectDiff(target, diff);
+  expect(target).toEqual(after);
+});
+
+test('applyObjectDiff handles keys containing dots or slashes correctly', () => {
+  const before = { 'a.b': 1, 'c/d': 2 };
+  const after = { 'a.b': 3, 'c/d': 4 };
+  const diff = computeObjectDiff(before, after);
+  const target = { 'a.b': 1, 'c/d': 2 };
+  applyObjectDiff(target, diff);
+  expect(target).toEqual(after);
+});
+
+test('applyObjectDiff does not mutate the original before object', () => {
+  const before = { a: 1, b: { c: 2 } };
+  const after = { a: 1, b: { c: 3, d: 4 } };
+  const diff = computeObjectDiff(before, after);
+  const target = { a: 1, b: { c: 2 } };
+  applyObjectDiff(target, diff);
+  expect(before).toEqual({ a: 1, b: { c: 2 } });
+});
+
+test('applyObjectDiff handles empty or invalid input gracefully', () => {
+  const before = {};
+  const after = { a: 1 };
+  const diff = computeObjectDiff(before, after);
+  const target = {};
+  applyObjectDiff(target, diff);
+  expect(target).toEqual(after);
+});
+```

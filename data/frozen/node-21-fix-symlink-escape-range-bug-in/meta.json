@@ -1,0 +1,25 @@
+{
+ "id": "node-21-fix-symlink-escape-range-bug-in",
+ "topic": "node",
+ "cand_hidden": [
+  false,
+  true,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "test failed: answers HEAD with the same headers as GET and no body",
+  "",
+  "test failed: returns 403 for symlinks that point outside the root",
+  "test failed: answers HEAD with the same headers as GET and no body; returns 404 for missing files an"
+ ],
+ "cand_tokens": [
+  284,
+  328,
+  270,
+  300
+ ],
+ "gen_seconds": 47.6,
+ "type_only": false,
+ "errors": []
+}

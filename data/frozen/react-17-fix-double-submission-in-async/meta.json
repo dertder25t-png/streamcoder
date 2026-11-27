@@ -1,0 +1,25 @@
+{
+ "id": "react-17-fix-double-submission-in-async",
+ "topic": "react",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "test failed: two synchronous rapid clicks call onAction exactly once",
+  "test failed: two synchronous rapid clicks call onAction exactly once",
+  "type error: .runs/react-17-fix-double-submission-in-async/solution.tsx(20,13): error TS2304: Cannot ",
+  "test failed: two synchronous rapid clicks call onAction exactly once"
+ ],
+ "cand_tokens": [
+  185,
+  185,
+  171,
+  170
+ ],
+ "gen_seconds": 24.5,
+ "type_only": false,
+ "errors": []
+}

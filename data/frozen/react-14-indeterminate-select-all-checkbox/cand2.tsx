@@ -1,0 +1,68 @@
+import React, { useState, useEffect } from 'react';
+
+interface Option {
+  id: string;
+  label: string;
+  disabled?: boolean;
+}
+
+interface SelectAllGroupProps {
+  options: Option[];
+  selectedIds: string[];
+  onChange: (nextIds: string[]) => void;
+}
+
+export const SelectAllGroup: React.FC<SelectAllGroupProps> = ({ options, selectedIds, onChange }) => {
+  const [allChecked, setAllChecked] = useState(false);
+  const [someChecked, setSomeChecked] = useState(false);
+
+  useEffect(() => {
+    const allEnabled = options.filter(option => !option.disabled);
+    const allSelected = allEnabled.every(option => selectedIds.includes(option.id));
+    const someSelected = allEnabled.some(option => selectedIds.includes(option.id));
+
+    setAllChecked(allSelected);
+    setSomeChecked(someSelected);
+  }, [options, selectedIds]);
+
+  const handleAllChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const nextIds = event.target.checked
+      ? options.filter(option => !option.disabled).map(option => option.id)
+      : [];
+    onChange(nextIds);
+  };
+
+  return (
+    <div>
+      <label>
+        <input
+          type="checkbox"
+          checked={allChecked}
+          indeterminate={someChecked}
+          onChange={handleAllChange}
+          aria-label="Select all"
+        />
+        Select all
+      </label>
+      {options.map(option => (
+        <div key={option.id}>
+          <label>
+            <input
+              type="checkbox"
+              checked={selectedIds.includes(option.id)}
+              onChange={(event) => {
+                if (event.target.checked) {
+                  onChange([...selectedIds, option.id]);
+                } else {
+                  onChange(selectedIds.filter(id => id !== option.id));
+                }
+              }}
+              disabled={option.disabled}
+            />
+            {option.label}
+          </label>
+        </div>
+      ))}
+    </div>
+  );
+};

@@ -1,0 +1,53 @@
+import React, { useState, useEffect } from 'react';
+
+export function SelectAllGroup({ options, selectedIds, onChange }: { options: { id: string; label: string; disabled?: boolean }[], selectedIds: string[], onChange: (nextIds: string[]) => void }) {
+    const [allSelected, setAllSelected] = useState(false);
+    const [someSelected, setSomeSelected] = useState(false);
+
+    useEffect(() => {
+        const enabledOptions = options.filter(opt => !opt.disabled);
+        const allEnabledSelected = enabledOptions.every(opt => selectedIds.includes(opt.id));
+        const someEnabledSelected = enabledOptions.some(opt => selectedIds.includes(opt.id));
+
+        setAllSelected(allEnabledSelected);
+        setSomeSelected(someEnabledSelected);
+    }, [options, selectedIds]);
+
+    const handleSelectAllChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const newSelectedIds = event.target.checked ? options.filter(opt => !opt.disabled).map(opt => opt.id) : [];
+        onChange(newSelectedIds);
+    };
+
+    return (
+        <div>
+            <label>
+                <input
+                    type="checkbox"
+                    checked={allSelected}
+                    indeterminate={someSelected}
+                    onChange={handleSelectAllChange}
+                    aria-label="Select all"
+                />
+                Select all
+            </label>
+            {options.map(opt => (
+                <div key={opt.id}>
+                    <label>
+                        <input
+                            type="checkbox"
+                            checked={selectedIds.includes(opt.id)}
+                            onChange={(event) => {
+                                const newSelectedIds = event.target.checked
+                                    ? [...selectedIds, opt.id]
+                                    : selectedIds.filter(id => id !== opt.id);
+                                onChange(newSelectedIds);
+                            }}
+                            disabled={opt.disabled}
+                        />
+                        {opt.label}
+                    </label>
+                </div>
+            ))}
+        </div>
+    );
+}

@@ -1,0 +1,53 @@
+```ts
+probe("write simple JSON", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const filePath = path.join(dir, "test.json");
+  const data = { name: "John", age: 30 };
+  await writeJsonAtomic(filePath, data);
+  const content = await fs.promises.readFile(filePath, 'utf8');
+  return content;
+});
+
+probe("write complex JSON", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const filePath = path.join(dir, "test.json");
+  const data = { users: [{ name: "Alice", age: 25 }, { name: "Bob", age: 35 }] };
+  await writeJsonAtomic(filePath, data);
+  const content = await fs.promises.readFile(filePath, 'utf8');
+  return content;
+});
+
+probe("write empty JSON", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const filePath = path.join(dir, "test.json");
+  const data = {};
+  await writeJsonAtomic(filePath, data);
+  const content = await fs.promises.readFile(filePath, 'utf8');
+  return content;
+});
+
+probe("write with circular reference", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const filePath = path.join(dir, "test.json");
+  const data: { a: any } = { a: null };
+  data.a = data;
+  try {
+    await writeJsonAtomic(filePath, data);
+  } catch (e) {
+    return e;
+  }
+  return null;
+});
+
+probe("write to non-existent directory", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const filePath = path.join(dir, "non-existent", "test.json");
+  const data = { name: "John", age: 30 };
+  try {
+    await writeJsonAtomic(filePath, data);
+  } catch (e) {
+    return e;
+  }
+  return null;
+});
+```

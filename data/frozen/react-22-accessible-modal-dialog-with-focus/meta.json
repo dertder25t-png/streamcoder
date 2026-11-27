@@ -1,0 +1,25 @@
+{
+ "id": "react-22-accessible-modal-dialog-with-focus",
+ "topic": "react",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "test failed: renders nothing when closed; moves focus into the dialog on open",
+  "test failed: Escape calls onClose and restores focus to the trigger; backdrop click calls onClose an",
+  "type error: .runs/react-22-accessible-modal-dialog-with-focus/solution.tsx(80,8): error TS2352: Conv",
+  "test failed: moves focus into the dialog on open; Tab on the last focusable wraps to the first; Shif"
+ ],
+ "cand_tokens": [
+  570,
+  693,
+  590,
+  596
+ ],
+ "gen_seconds": 40.2,
+ "type_only": false,
+ "errors": []
+}

@@ -1,0 +1,35 @@
+```ts
+// nested-object-update.ts
+import { isPlainObject } from 'lodash';
+
+type DotPath<T> = T extends object ? {
+  [K in keyof T & string]: K extends `${infer P}.${infer R}` ? P extends infer P1 ? R extends infer R1 ? (P1 extends keyof T ? DotPath<T[P1]> : never) : never : never : T[K] extends object ? DotPath<T[K]> : K;
+} : never;
+
+type PathValue<T, P extends DotPath<T>> = P extends `${infer K}.${infer R}` ? K extends keyof T ? R extends infer R1 ? T[K] extends object ? PathValue<T[K], R1> : never : never : never : P extends keyof T ? T[P] : never;
+
+function setByPath<T, P extends DotPath<T>>(obj: T, path: P, value: PathValue<T, P>): T {
+  if (path.includes("__proto__") || path.includes("constructor") || path.includes("prototype")) {
+    throw new Error("Invalid path");
+  }
+
+  const paths = path.split('.');
+  const key = paths.pop() as keyof T;
+  const parent = paths.reduce((acc, curr) => acc[curr] as any, obj);
+
+  if (!isPlainObject(parent) || !paths.every(p => isPlainObject(parent[p]))) {
+    throw new Error("Invalid path");
+  }
+
+  if (typeof parent[key] !== typeof value) {
+    throw new Error("Mismatched value type");
+  }
+
+  return {
+    ...obj,
+    [key]: value,
+  };
+}
+
+export { setByPath, DotPath, PathValue };
+```

@@ -1,0 +1,42 @@
+- Displays "{remaining} characters left" accurately as the user types, including negative counts if pasted text exceeds maxLength.
+- Marks the counter with data-state="warning" when remaining characters are at or below warnAt, and data-state="error" when below zero.
+- Disables the submit button when the trimmed value is empty or exceeds maxLength, and calls onSubmit(value) otherwise.
+
+```tsx
+import React from 'react';
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import LimitedTextArea from './LimitedTextArea';
+
+afterEach(cleanup);
+
+test("displays remaining characters accurately", async () => {
+  const onSubmit = vi.fn();
+  render(<LimitedTextArea maxLength={10} warnAt={5} onSubmit={onSubmit} />);
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Hello' } });
+  expect(screen.getByText('5 characters left')).toBeInTheDocument();
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Hello World' } });
+  expect(screen.getByText('-1 characters left')).toBeInTheDocument();
+});
+
+test("marks counter with data-state when at or below warnAt", async () => {
+  const onSubmit = vi.fn();
+  render(<LimitedTextArea maxLength={10} warnAt={5} onSubmit={onSubmit} />);
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Hello' } });
+  expect(screen.getByText('5 characters left')).toHaveAttribute('data-state', 'warning');
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Hello World' } });
+  expect(screen.getByText('-1 characters left')).toHaveAttribute('data-state', 'error');
+});
+
+test("disables submit button when trimmed value is empty or exceeds maxLength", async () => {
+  const onSubmit = vi.fn();
+  render(<LimitedTextArea maxLength={10} warnAt={5} onSubmit={onSubmit} />);
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: '' } });
+  expect(screen.getByRole('button')).toBeDisabled();
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Hello World' } });
+  expect(screen.getByRole('button')).toBeDisabled();
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Hello' } });
+  expect(screen.getByRole('button')).toBeEnabled();
+  fireEvent.click(screen.getByRole('button'));
+  expect(onSubmit).toHaveBeenCalledWith('Hello');
+});
+```

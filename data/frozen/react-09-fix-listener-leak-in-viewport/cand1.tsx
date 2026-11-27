@@ -1,0 +1,23 @@
+import { useState, useEffect } from "react";
+
+export function ViewportBadge() {
+  const [kind, setKind] = useState("desktop");
+
+  useEffect(() => {
+    const handleResize = () => {
+      const w = window.innerWidth;
+      if (w <= 640) setKind("mobile");
+      else if (w <= 1024) setKind("tablet");
+      else setKind("desktop");
+    };
+
+    window.addEventListener("resize", handleResize);
+    handleResize(); // Initialize on mount
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
+  return <span>{kind}</span>;
+}

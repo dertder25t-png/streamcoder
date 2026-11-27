@@ -1,0 +1,45 @@
+- Concurrent calls for the same key share the exact same pending promise.
+- If fn rejects, the key is evicted immediately so subsequent calls retry fresh.
+- Resolved values expire after ttlMs and evict oldest entries when maxEntries is exceeded.
+
+```ts
+test("concurrent calls for the same key share the exact same pending promise", async () => {
+  const fn = vi.fn(async () => "result");
+  const memoizedFn = memoizeAsync(fn, { ttlMs: 1000, maxEntries: 10 });
+
+  const promise1 = memoizedFn("key");
+  const promise2 = memoizedFn("key");
+
+  expect(fn).toBeCalledTimes(1);
+  expect(promise1).toBe(promise2);
+
+  await promise1;
+  expect(fn).toBeCalledTimes(1);
+});
+
+test("if fn rejects, the key is evicted immediately so subsequent calls retry fresh", async () => {
+  const fn = vi.fn(async () => Promise.reject("error"));
+  const memoizedFn = memoizeAsync(fn, { ttlMs: 1000, maxEntries: 10 });
+
+  await expect(memoizedFn("key")).rejects.toEqual("error");
+  expect(fn).toBeCalledTimes(1);
+
+  await expect(memoizedFn("key")).rejects.toEqual("error");
+  expect(fn).toBeCalledTimes(2);
+});
+
+test("resolved values expire after ttlMs and evict oldest entries when maxEntries is exceeded", async () => {
+  const fn = vi.fn(async () => "result");
+  const memoizedFn = memoizeAsync(fn, { ttlMs: 100, maxEntries: 2, now: vi.fn(() => Date.now()) });
+
+  const promise1 = memoizedFn("key1");
+  vi.advanceTimersByTime(150);
+  const promise2 = memoizedFn("key2");
+  vi.advanceTimersByTime(150);
+  const promise3 = memoizedFn("key1");
+
+  expect(fn).toBeCalledTimes(3);
+  expect(promise1).toBe(promise3);
+  expect(promise2).not.toBe(promise3);
+});
+```

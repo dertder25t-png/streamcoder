@@ -1,0 +1,21 @@
+```tsx
+import { useState } from 'react';
+
+export function useWizard(totalSteps: number): { step: number; next: () => void; prev: () => void; goTo: (s: number) => void } {
+  const [step, setStep] = useState(0);
+
+  const next = () => {
+    setStep((prevStep) => Math.min(prevStep + 1, totalSteps - 1));
+  };
+
+  const prev = () => {
+    setStep((prevStep) => Math.max(prevStep - 1, 0));
+  };
+
+  const goTo = (index: number) => {
+    setStep((prevStep) => Math.min(Math.max(index, 0), totalSteps - 1));
+  };
+
+  return { step, next, prev, goTo };
+}
+```

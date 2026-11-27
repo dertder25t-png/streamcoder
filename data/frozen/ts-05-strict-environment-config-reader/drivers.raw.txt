@@ -1,0 +1,73 @@
+```ts
+probe("required string missing", async () => {
+  const env = {};
+  const spec = { key: { type: "string", required: true } };
+  return readEnvConfig(env, spec);
+});
+
+probe("required string valid", async () => {
+  const env = { key: "value" };
+  const spec = { key: { type: "string", required: true } };
+  return readEnvConfig(env, spec);
+});
+
+probe("optional string default", async () => {
+  const env = {};
+  const spec = { key: { type: "string", required: false, default: "default" } };
+  return readEnvConfig(env, spec);
+});
+
+probe("optional string valid", async () => {
+  const env = { key: "value" };
+  const spec = { key: { type: "string", required: false, default: "default" } };
+  return readEnvConfig(env, spec);
+});
+
+probe("required int missing", async () => {
+  const env = {};
+  const spec = { key: { type: "int", required: true } };
+  return readEnvConfig(env, spec);
+});
+
+probe("required int valid", async () => {
+  const env = { key: "123" };
+  const spec = { key: { type: "int", required: true } };
+  return readEnvConfig(env, spec);
+});
+
+probe("optional int default", async () => {
+  const env = {};
+  const spec = { key: { type: "int", required: false, default: 456 } };
+  return readEnvConfig(env, spec);
+});
+
+probe("optional int valid", async () => {
+  const env = { key: "789" };
+  const spec = { key: { type: "int", required: false, default: 456 } };
+  return readEnvConfig(env, spec);
+});
+
+probe("required boolean missing", async () => {
+  const env = {};
+  const spec = { key: { type: "boolean", required: true } };
+  return readEnvConfig(env, spec);
+});
+
+probe("required boolean valid", async () => {
+  const env = { key: "true" };
+  const spec = { key: { type: "boolean", required: true } };
+  return readEnvConfig(env, spec);
+});
+
+probe("optional boolean default", async () => {
+  const env = {};
+  const spec = { key: { type: "boolean", required: false, default: false } };
+  return readEnvConfig(env, spec);
+});
+
+probe("optional boolean valid", async () => {
+  const env = { key: "false" };
+  const spec = { key: { type: "boolean", required: false, default: false } };
+  return readEnvConfig(env, spec);
+});
+```

@@ -1,0 +1,45 @@
+- Collects all chunks into a unified Buffer.
+
+```ts
+import { Readable } from 'node:stream';
+import { streamToBuffer } from './streamToBuffer'; // Adjust the import path as necessary
+
+test("Collects all chunks into a unified Buffer", async () => {
+  const stream = new Readable({
+    read() {
+      this.push('Hello');
+      this.push(' ');
+      this.push('World');
+      this.push(null);
+    }
+  });
+
+  const buffer = await streamToBuffer(stream);
+  expect(buffer.toString()).toBe('Hello World');
+});
+
+test("Handles empty stream", async () => {
+  const stream = new Readable({
+    read() {
+      this.push(null);
+    }
+  });
+
+  const buffer = await streamToBuffer(stream);
+  expect(buffer.toString()).toBe('');
+});
+
+test("Handles large stream", async () => {
+  const largeData = 'a'.repeat(1024 * 1024); // 1MB of 'a'
+  const stream = new Readable({
+    read() {
+      this.push(largeData);
+      this.push(null);
+    }
+  });
+
+  const buffer = await streamToBuffer(stream);
+  expect(buffer.length).toBe(largeData.length);
+  expect(buffer.toString()).toBe(largeData);
+});
+```

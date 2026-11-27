@@ -1,0 +1,25 @@
+{
+ "id": "ts-14-template-variable-interpolator",
+ "topic": "typescript",
+ "cand_hidden": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "cand_hidden_err": [
+  "test failed: strict mode throws an Error naming the missing variable; does not treat inherited objec",
+  "test failed: replaces placeholders, allowing inner whitespace; stringifies numbers and keeps falsy v",
+  "",
+  "test failed: strict mode throws an Error naming the missing variable; does not treat inherited objec"
+ ],
+ "cand_tokens": [
+  148,
+  165,
+  138,
+  158
+ ],
+ "gen_seconds": 29.3,
+ "type_only": false,
+ "errors": []
+}

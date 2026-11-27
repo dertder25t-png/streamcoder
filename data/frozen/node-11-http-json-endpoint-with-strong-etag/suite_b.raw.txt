@@ -1,0 +1,112 @@
+- Returns 200 with Content-Type: application/json, ETag, and the JSON body on normal requests.
+- Returns 304 Not Modified with an empty body and the matching ETag header when If-None-Match matches (including comma-separated ETag lists or *).
+- Returns 200 with a fresh ETag as soon as getConfig() returns modified content.
+- Handles empty or invalid input gracefully.
+- Cleans up resources like timers, listeners, and files after tests.
+
+```ts
+import { createConfigHandler } from './createConfigHandler'; // Adjust the import path as necessary
+import { test, expect, vi, afterEach, beforeEach, describe } from 'vitest';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
+
+describe('createConfigHandler', () => {
+  let dir: string;
+  let getConfig: () => unknown;
+
+  beforeEach(async () => {
+    dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+    getConfig = vi.fn();
+  });
+
+  afterEach(async () => {
+    await fs.promises.rm(dir, { recursive: true, force: true });
+  });
+
+  test('returns 200 with Content-Type: application/json, ETag, and the JSON body on normal requests', async () => {
+    const config = { key: 'value' };
+    getConfig.mockReturnValue(config);
+
+    const handler = createConfigHandler(getConfig);
+    const req = { headers: {} } as any;
+    const res = {
+      statusCode: 0,
+      statusMessage: '',
+      setHeader: vi.fn(),
+      end: vi.fn(),
+    } as any;
+
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'application/json');
+    expect(res.setHeader).toHaveBeenCalledWith('ETag', expect.any(String));
+    expect(res.end).toHaveBeenCalledWith(JSON.stringify(config));
+  });
+
+  test('returns 304 Not Modified with an empty body and the matching ETag header when If-None-Match matches', async () => {
+    const config = { key: 'value' };
+    getConfig.mockReturnValue(config);
+
+    const handler = createConfigHandler(getConfig);
+    const req = { headers: { 'If-None-Match': 'W/"etag"' } } as any;
+    const res = {
+      statusCode: 0,
+      statusMessage: '',
+      setHeader: vi.fn(),
+      end: vi.fn(),
+    } as any;
+
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(304);
+    expect(res.setHeader).toHaveBeenCalledWith('ETag', 'W/"etag"');
+    expect(res.end).toHaveBeenCalledWith('');
+  });
+
+  test('returns 200 with a fresh ETag as soon as getConfig() returns modified content', async () => {
+    const config1 = { key: 'value' };
+    const config2 = { key: 'new value' };
+    getConfig.mockReturnValueOnce(config1).mockReturnValueOnce(config2);
+
+    const handler = createConfigHandler(getConfig);
+    const req = { headers: {} } as any;
+    const res = {
+      statusCode: 0,
+      statusMessage: '',
+      setHeader: vi.fn(),
+      end: vi.fn(),
+    } as any;
+
+    await handler(req, res);
+    expect(res.statusCode).toBe(200);
+    expect(res.setHeader).toHaveBeenCalledWith('ETag', expect.any(String));
+
+    await handler(req, res);
+    expect(res.statusCode).toBe(200);
+    expect(res.setHeader).toHaveBeenCalledWith('ETag', expect.any(String));
+    expect(res.setHeader).toHaveBeenCalledWith('ETag', expect.any(String)).not.toBe(res.setHeader.mock.calls[0][1]);
+  });
+
+  test('handles empty or invalid input gracefully', async () => {
+    getConfig.mockReturnValue(null);
+
+    const handler = createConfigHandler(getConfig);
+    const req = { headers: {} } as any;
+    const res = {
+      statusCode: 0,
+      statusMessage: '',
+      setHeader: vi.fn(),
+      end: vi.fn(),
+    } as any;
+
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'application/json');
+    expect(res.setHeader).toHaveBeenCalledWith('ETag', expect.any(String));
+    expect(res.end).toHaveBeenCalledWith(JSON.stringify({}));
+  });
+});
+```

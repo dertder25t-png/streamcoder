@@ -1,0 +1,77 @@
+```typescript
+import { promises as fsp } from "node:fs";
+import { performance } from "node:perf_hooks";
+
+export interface FileCacheOptions {
+  maxBytes: number;
+  readFile?: (path: string) => Promise<Buffer>;
+}
+
+interface CachedFile {
+  buffer: Buffer;
+  size: number;
+  mtimeMs: number;
+  lastAccessed: number;
+}
+
+export function createFileCache(options: FileCacheOptions) {
+  const doRead = options.readFile ?? ((p: string) => fsp.readFile(p));
+  const cache = new Map<string, CachedFile>();
+  let totalSize = 0;
+
+  async function evictLeastRecentlyUsed() {
+    const sortedKeys = Array.from(cache.keys()).sort(
+      (a, b) => cache.get(a)!.lastAccessed - cache.get(b)!.lastAccessed
+    );
+    for (const key of sortedKeys) {
+      const file = cache.get(key)!;
+      if (totalSize - file.size <= options.maxBytes) {
+        break;
+      }
+      totalSize -= file.size;
+      cache.delete(key);
+    }
+  }
+
+  async function read(path: string): Promise<Buffer> {
+    const hit = cache.get(path);
+    if (hit) {
+      hit.lastAccessed = performance.now();
+      return Buffer.from(hit.buffer);
+    }
+
+    let data: Buffer;
+    try {
+      data = await doRead(path);
+    } catch (err) {
+      throw new Error(`Failed to read file at ${path}: ${err}`);
+    }
+
+    const stat = await fsp.stat(path);
+    const fileSize = data.length;
+    const fileMtimeMs = stat.mtimeMs;
+
+    if (fileSize > options.maxBytes) {
+      return data;
+    }
+
+    if (totalSize + fileSize > options.maxBytes) {
+      await evictLeastRecentlyUsed();
+    }
+
+    totalSize += fileSize;
+    cache.set(path, {
+      buffer: data,
+      size: fileSize,
+      mtimeMs: fileMtimeMs,
+      lastAccessed: performance.now(),
+    });
+
+    return Buffer.from(data);
+  }
+
+  return {
+    async read,
+  };
+}
+```

@@ -1,0 +1,25 @@
+{
+ "id": "ts-24-compile-time-typed-url-route-matcher",
+ "topic": "typescript",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/ts-24-compile-time-typed-url-route-matcher/solution.ts(21,16): error TS7053: Eleme",
+  "type error: .runs/ts-24-compile-time-typed-url-route-matcher/solution.ts(8,19): error TS1005: ':' ex",
+  "type error: .runs/ts-24-compile-time-typed-url-route-matcher/solution.ts(26,11): error TS7053: Eleme",
+  "type error: .runs/ts-24-compile-time-typed-url-route-matcher/solution.test.ts(26,28): error TS2339: "
+ ],
+ "cand_tokens": [
+  266,
+  425,
+  301,
+  284
+ ],
+ "gen_seconds": 40.3,
+ "type_only": false,
+ "errors": []
+}

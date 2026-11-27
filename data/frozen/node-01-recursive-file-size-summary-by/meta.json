@@ -1,0 +1,25 @@
+{
+ "id": "node-01-recursive-file-size-summary-by",
+ "topic": "node",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/node-01-recursive-file-size-summary-by/solution.ts(32,11): error TS18046: 'error' ",
+  "test failed: groups extensionless files and dotfiles under (no-ext)",
+  "test failed: aggregates nested directories with lowercase extension keys; groups extensionless files",
+  "type error: .runs/node-01-recursive-file-size-summary-by/solution.ts(26,13): error TS2588: Cannot as"
+ ],
+ "cand_tokens": [
+  286,
+  231,
+  243,
+  300
+ ],
+ "gen_seconds": 40.0,
+ "type_only": false,
+ "errors": []
+}

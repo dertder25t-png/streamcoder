@@ -1,0 +1,43 @@
+```ts
+probe("compresses a file", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const srcPath = path.join(dir, "source.txt");
+  const destPath = path.join(dir, "source.txt.gz");
+  await fs.promises.writeFile(srcPath, "Hello, world!");
+  await compressFileSafe(srcPath, destPath);
+  const decompressed = await fs.promises.readFile(destPath, "utf8");
+  await fs.promises.unlink(srcPath);
+  await fs.promises.unlink(destPath);
+  return decompressed;
+});
+
+probe("rejects on read error", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const srcPath = path.join(dir, "source.txt");
+  const destPath = path.join(dir, "source.txt.gz");
+  await fs.promises.writeFile(srcPath, "Hello, world!");
+  const error = await compressFileSafe(srcPath, destPath, { signal: new AbortSignal() });
+  await fs.promises.unlink(srcPath);
+  return error;
+});
+
+probe("rejects on write error", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const srcPath = path.join(dir, "source.txt");
+  const destPath = path.join(dir, "source.txt.gz");
+  await fs.promises.writeFile(srcPath, "Hello, world!");
+  const error = await compressFileSafe(srcPath, destPath, { signal: new AbortSignal() });
+  await fs.promises.unlink(srcPath);
+  return error;
+});
+
+probe("rejects on abort", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const srcPath = path.join(dir, "source.txt");
+  const destPath = path.join(dir, "source.txt.gz");
+  await fs.promises.writeFile(srcPath, "Hello, world!");
+  const error = await compressFileSafe(srcPath, destPath, { signal: new AbortSignal() });
+  await fs.promises.unlink(srcPath);
+  return error;
+});
+```

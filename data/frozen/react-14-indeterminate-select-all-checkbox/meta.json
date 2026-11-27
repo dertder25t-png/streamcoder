@@ -1,0 +1,25 @@
+{
+ "id": "react-14-indeterminate-select-all-checkbox",
+ "topic": "react",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/react-14-indeterminate-select-all-checkbox/solution.tsx(50,11): error TS2322: Type",
+  "type error: .runs/react-14-indeterminate-select-all-checkbox/solution.tsx(36,9): error TS2322: Type ",
+  "type error: .runs/react-14-indeterminate-select-all-checkbox/solution.tsx(41,11): error TS2322: Type",
+  "type error: .runs/react-14-indeterminate-select-all-checkbox/solution.tsx(27,21): error TS2322: Type"
+ ],
+ "cand_tokens": [
+  454,
+  369,
+  410,
+  391
+ ],
+ "gen_seconds": 50.5,
+ "type_only": false,
+ "errors": []
+}

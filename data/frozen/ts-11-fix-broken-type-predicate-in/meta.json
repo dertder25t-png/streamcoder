@@ -1,0 +1,25 @@
+{
+ "id": "ts-11-fix-broken-type-predicate-in",
+ "topic": "typescript",
+ "cand_hidden": [
+  true,
+  false,
+  true,
+  false
+ ],
+ "cand_hidden_err": [
+  "",
+  "type error: .runs/ts-11-fix-broken-type-predicate-in/solution.ts(1,31): error TS2307: Cannot find mo",
+  "",
+  "test failed: rejects wrong type, bad id and bad amounts"
+ ],
+ "cand_tokens": [
+  139,
+  144,
+  140,
+  131
+ ],
+ "gen_seconds": 31.4,
+ "type_only": false,
+ "errors": []
+}

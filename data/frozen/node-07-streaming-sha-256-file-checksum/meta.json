@@ -1,0 +1,25 @@
+{
+ "id": "node-07-streaming-sha-256-file-checksum",
+ "topic": "node",
+ "cand_hidden": [
+  true,
+  true,
+  true,
+  true
+ ],
+ "cand_hidden_err": [
+  "",
+  "",
+  "",
+  ""
+ ],
+ "cand_tokens": [
+  127,
+  109,
+  115,
+  109
+ ],
+ "gen_seconds": 27.8,
+ "type_only": false,
+ "errors": []
+}

@@ -1,0 +1,61 @@
+```ts
+probe("on and once return idempotent unsubscribe functions", async () => {
+  const bus = createTypedBus<{ click: number; reset: void }>();
+  const clickHandler = () => {};
+  const resetHandler = () => {};
+
+  const clickUnsubscribe = bus.on("click", clickHandler);
+  const resetUnsubscribe = bus.once("reset", resetHandler);
+
+  clickUnsubscribe();
+  clickUnsubscribe(); // Should not affect other listeners
+
+  resetUnsubscribe();
+  resetUnsubscribe(); // Should not affect other listeners
+
+  return { clickUnsubscribe, resetUnsubscribe };
+});
+
+probe("listeners are called with correct payloads", async () => {
+  const bus = createTypedBus<{ click: number; reset: void }>();
+  const clickHandler = vi.fn();
+  const resetHandler = vi.fn();
+
+  bus.on("click", clickHandler);
+  bus.once("reset", resetHandler);
+
+  bus.emit("click", 42);
+  bus.emit("reset");
+
+  return { clickHandler, resetHandler };
+});
+
+probe("listeners are not called with incorrect payloads", async () => {
+  const bus = createTypedBus<{ click: number; reset: void }>();
+  const clickHandler = vi.fn();
+  const resetHandler = vi.fn();
+
+  bus.on("click", clickHandler);
+  bus.once("reset", resetHandler);
+
+  bus.emit("click", "not a number"); // Should not call clickHandler
+  bus.emit("reset", 42); // Should not call resetHandler
+
+  return { clickHandler, resetHandler };
+});
+
+probe("listeners added or removed during emit do not disrupt other listeners", async () => {
+  const bus = createTypedBus<{ click: number; reset: void }>();
+  const clickHandler = vi.fn();
+  const resetHandler = vi.fn();
+
+  bus.on("click", clickHandler);
+  bus.once("reset", resetHandler);
+
+  bus.emit("click", 42);
+  bus.on("click", () => clickHandler(100)); // Should not affect the first clickHandler call
+  bus.emit("reset");
+
+  return { clickHandler, resetHandler };
+});
+```

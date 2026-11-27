@@ -1,0 +1,39 @@
+```ts
+probe("string", async () => {
+  const schema = S.string();
+  return schema.parse("hello");
+});
+
+probe("number", async () => {
+  const schema = S.number();
+  return schema.parse(42);
+});
+
+probe("boolean", async () => {
+  const schema = S.boolean();
+  return schema.parse(true);
+});
+
+probe("optional", async () => {
+  const schema = S.optional(S.string());
+  return schema.parse(undefined);
+});
+
+probe("object", async () => {
+  const schema = S.object({
+    name: S.string(),
+    age: S.number(),
+  });
+  return schema.parse({ name: "John", age: 30 });
+});
+
+probe("nested object", async () => {
+  const schema = S.object({
+    address: S.object({
+      city: S.string(),
+      zip: S.string(),
+    }),
+  });
+  return schema.parse({ address: { city: "New York", zip: "10001" } });
+});
+```

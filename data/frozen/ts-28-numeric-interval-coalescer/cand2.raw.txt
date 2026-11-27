@@ -1,0 +1,66 @@
+```ts
+function coalesceIntervals(intervals: readonly [number, number][]): [number, number][] {
+    const coalesced: [number, number][] = [];
+    let currentInterval: [number, number] | null = null;
+
+    intervals.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+
+    for (const [start, end] of intervals) {
+        if (start >= end) {
+            throw new RangeError('Inverted interval [start, end)');
+        }
+
+        if (currentInterval) {
+            if (start < currentInterval[1]) {
+                currentInterval[1] = Math.max(currentInterval[1], end);
+            } else {
+                coalesced.push(currentInterval);
+                currentInterval = [start, end];
+            }
+        } else {
+            currentInterval = [start, end];
+        }
+    }
+
+    if (currentInterval) {
+        coalesced.push(currentInterval);
+    }
+
+    return coalesced;
+}
+
+export function subtractIntervals(base: readonly [number, number][], cutouts: readonly [number, number][]): [number, number][] {
+    const coalescedBase = coalesceIntervals(base);
+    const coalescedCutouts = coalesceIntervals(cutouts);
+    const result: [number, number][] = [];
+
+    for (const [baseStart, baseEnd] of coalescedBase) {
+        let cutoutIndex = 0;
+        let currentCutout = coalescedCutouts[cutoutIndex];
+
+        while (currentCutout && currentCutout[1] <= baseStart) {
+            cutoutIndex++;
+            currentCutout = coalescedCutouts[cutoutIndex];
+        }
+
+        while (currentCutout && currentCutout[0] < baseEnd) {
+            if (currentCutout[0] < baseStart) {
+                result.push([baseStart, currentCutout[0]]);
+            }
+
+            if (currentCutout[1] > baseEnd) {
+                result.push([baseEnd, currentCutout[1]]);
+            }
+
+            cutoutIndex++;
+            currentCutout = coalescedCutouts[cutoutIndex];
+        }
+
+        if (!currentCutout || currentCutout[0] >= baseEnd) {
+            result.push([baseStart, baseEnd]);
+        }
+    }
+
+    return result;
+}
+```

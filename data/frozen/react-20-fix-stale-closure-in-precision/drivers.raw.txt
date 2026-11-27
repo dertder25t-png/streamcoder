@@ -1,0 +1,36 @@
+```ts
+probe("Start and Stop", async () => {
+  vi.useFakeTimers();
+  render(<PrecisionTimer />);
+  fireEvent.click(screen.getByRole("button", { name: "Start" }));
+  vi.advanceTimersByTime(2000);
+  fireEvent.click(screen.getByRole("button", { name: "Pause" }));
+  vi.advanceTimersByTime(1000);
+  fireEvent.click(screen.getByRole("button", { name: "Resume" }));
+  vi.advanceTimersByTime(2000);
+  fireEvent.click(screen.getByRole("button", { name: "Pause" }));
+  return snap();
+});
+
+probe("Lap", async () => {
+  vi.useFakeTimers();
+  render(<PrecisionTimer />);
+  fireEvent.click(screen.getByRole("button", { name: "Start" }));
+  vi.advanceTimersByTime(1000);
+  fireEvent.click(screen.getByRole("button", { name: "Lap" }));
+  vi.advanceTimersByTime(2000);
+  fireEvent.click(screen.getByRole("button", { name: "Lap" }));
+  return snap();
+});
+
+probe("Reset", async () => {
+  vi.useFakeTimers();
+  render(<PrecisionTimer />);
+  fireEvent.click(screen.getByRole("button", { name: "Start" }));
+  vi.advanceTimersByTime(1000);
+  fireEvent.click(screen.getByRole("button", { name: "Lap" }));
+  vi.advanceTimersByTime(2000);
+  fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+  return snap();
+});
+```

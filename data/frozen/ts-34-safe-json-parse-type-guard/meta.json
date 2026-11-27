@@ -1,0 +1,25 @@
+{
+ "id": "ts-34-safe-json-parse-type-guard",
+ "topic": "typescript",
+ "cand_hidden": [
+  true,
+  true,
+  false,
+  true
+ ],
+ "cand_hidden_err": [
+  "",
+  "",
+  "type error: .runs/ts-34-safe-json-parse-type-guard/solution.ts(1,10): error TS2305: Module '\"node:ut",
+  ""
+ ],
+ "cand_tokens": [
+  69,
+  64,
+  81,
+  97
+ ],
+ "gen_seconds": 21.4,
+ "type_only": false,
+ "errors": []
+}

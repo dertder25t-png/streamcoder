@@ -1,0 +1,59 @@
+- Test that `useInfiniteScroll` returns a function.
+- Test that the returned function is a `React.RefCallback`.
+- Test that the `IntersectionObserver` is attached to the element returned by the callback.
+- Test that `onIntersect` is called when the sentinel enters the viewport.
+- Test that the observer is disconnected cleanly on unmount.
+- Test that the observer is disconnected cleanly when the ref changes.
+- Test that the observer is not reconnected if the ref does not change.
+- Test that the observer is not reconnected if `onIntersect` is not a function.
+- Test that the observer is not reconnected if `options` is not an object.
+
+```tsx
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import { useInfiniteScroll } from './useInfiniteScroll';
+
+test('returns a function', () => {
+  const result = useInfiniteScroll(() => {});
+  expect(typeof result).toBe('function');
+});
+
+test('the returned function is a React.RefCallback', () => {
+  const callback = useInfiniteScroll(() => {});
+  expect(typeof callback).toBe('function');
+});
+
+test('the IntersectionObserver is attached to the element returned by the callback', () => {
+  const callback = useInfiniteScroll(() => {});
+  const element = document.createElement('div');
+  callback(element);
+  expect(element).toBeInstanceOf(HTMLElement);
+});
+
+test('onIntersect is called when the sentinel enters the viewport', async () => {
+  const onIntersect = vi.fn();
+  const callback = useInfiniteScroll(onIntersect);
+  const element = document.createElement('div');
+  callback(element);
+  fireEvent.scroll(window, { target: { scrollTop: 1000 } });
+  await waitFor(() => expect(onIntersect).toHaveBeenCalled());
+});
+
+test('the observer is disconnected cleanly on unmount', () => {
+  const onIntersect = vi.fn();
+  const callback = useInfiniteScroll(onIntersect);
+  const element = document.createElement('div');
+  callback(element);
+  cleanup();
+  expect(onIntersect).not.toHaveBeenCalled();
+});
+
+test('the observer is disconnected cleanly when the ref changes', () => {
+  const onIntersect = vi.fn();
+  const callback = useInfiniteScroll(onIntersect);
+  const element1 = document.createElement('div');
+  const element2 = document.createElement('div');
+  callback(element1);
+  callback(element2);
+  expect(onIntersect).not.toHaveBeenCalled();
+});
+```

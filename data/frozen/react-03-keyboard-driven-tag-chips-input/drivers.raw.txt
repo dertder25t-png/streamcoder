@@ -1,0 +1,35 @@
+```ts
+probe("Add tag with Enter", async () => {
+  render(<TagChipsInput value={[]} onChange={vi.fn()} />);
+  fireEvent.change(screen.getByRole("textbox"), { target: { value: "  tag1  " } });
+  fireEvent.keyDown(screen.getByRole("textbox"), { key: "Enter" });
+  return snap();
+});
+
+probe("Add tag with comma", async () => {
+  render(<TagChipsInput value={[]} onChange={vi.fn()} />);
+  fireEvent.change(screen.getByRole("textbox"), { target: { value: "  tag2,  " } });
+  fireEvent.keyDown(screen.getByRole("textbox"), { key: "Comma" });
+  return snap();
+});
+
+probe("Remove tag with Backspace", async () => {
+  render(<TagChipsInput value={["tag3"]} onChange={vi.fn()} />);
+  fireEvent.keyDown(screen.getByRole("textbox"), { key: "Backspace" });
+  return snap();
+});
+
+probe("Ignore empty tag", async () => {
+  render(<TagChipsInput value={[]} onChange={vi.fn()} />);
+  fireEvent.change(screen.getByRole("textbox"), { target: { value: "  " } });
+  fireEvent.keyDown(screen.getByRole("textbox"), { key: "Enter" });
+  return snap();
+});
+
+probe("Ignore duplicate tag", async () => {
+  render(<TagChipsInput value={["tag4"]} onChange={vi.fn()} />);
+  fireEvent.change(screen.getByRole("textbox"), { target: { value: "  tag4  " } });
+  fireEvent.keyDown(screen.getByRole("textbox"), { key: "Enter" });
+  return snap();
+});
+```

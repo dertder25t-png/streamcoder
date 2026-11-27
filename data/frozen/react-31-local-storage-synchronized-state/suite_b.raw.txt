@@ -1,0 +1,50 @@
+- Reads initial value from `localStorage` or falls back to `initialValue`.
+- Updates `localStorage` when state setter is invoked.
+- Listens to window `storage` events and updates state if another tab modifies the same key.
+- Handles empty or invalid input for `key`.
+- Handles repeated calls with the same `key`.
+- Cleans up event listeners and timers when the component unmounts.
+
+```tsx
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import { useLocalStorageState } from './useLocalStorageState';
+
+afterEach(cleanup);
+
+test("reads initial value from localStorage or falls back to initialValue", async () => {
+  localStorage.setItem('testKey', JSON.stringify('initialValueFromStorage'));
+  render(<div>{useLocalStorageState('testKey', 'initialValue')[0]}</div>);
+  await waitFor(() => expect(screen.getByText('initialValueFromStorage')).toBeInTheDocument());
+});
+
+test("updates localStorage when state setter is invoked", async () => {
+  render(<div>{useLocalStorageState('testKey', 'initialValue')[1]('newValue')}</div>);
+  await waitFor(() => expect(localStorage.getItem('testKey')).toBe(JSON.stringify('newValue')));
+});
+
+test("listens to window storage events and updates state if another tab modifies the same key", async () => {
+  const { getByText } = render(<div>{useLocalStorageState('testKey', 'initialValue')[0]}</div>);
+  await waitFor(() => expect(screen.getByText('initialValue')).toBeInTheDocument());
+
+  // Simulate another tab changing the value
+  fireEvent(window, new StorageEvent('storage', { key: 'testKey', newValue: JSON.stringify('newValueFromAnotherTab') }));
+
+  await waitFor(() => expect(getByText('newValueFromAnotherTab')).toBeInTheDocument());
+});
+
+test("handles empty or invalid input for key", async () => {
+  render(<div>{useLocalStorageState('', 'initialValue')[0]}</div>);
+  await waitFor(() => expect(screen.getByText('initialValue')).toBeInTheDocument());
+
+  render(<div>{useLocalStorageState(' ', 'initialValue')[0]}</div>);
+  await waitFor(() => expect(screen.getByText('initialValue')).toBeInTheDocument());
+});
+
+test("handles repeated calls with the same key", async () => {
+  const { getByText } = render(<div>{useLocalStorageState('testKey', 'initialValue')[0]}</div>);
+  await waitFor(() => expect(screen.getByText('initialValue')).toBeInTheDocument());
+
+  render(<div>{useLocalStorageState('testKey', 'initialValue')[0]}</div>);
+  await waitFor(() => expect(screen.getByText('initialValue')).toBeInTheDocument());
+});
+```

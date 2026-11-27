@@ -1,0 +1,71 @@
+- Clicking a flag reflects the new state synchronously before onToggle resolves.
+- If onToggle rejects, only that specific flag reverts to its confirmed state and displays an error notice, without disrupting other concurrently toggled flags.
+- Prevents overlapping requests on the same flag while its toggle is in flight, while allowing independent flags to toggle concurrently.
+- Handles empty or invalid input gracefully.
+- Cleans up resources after each test.
+
+```tsx
+import React from 'react';
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import { OptimisticFeatureFlags } from './OptimisticFeatureFlags'; // Adjust the import path as necessary
+
+afterEach(cleanup);
+
+test('clicking a flag reflects the new state synchronously before onToggle resolves', async () => {
+  const flags = [{ id: 'flag1', label: 'Flag 1', enabled: false }];
+  const onToggle = vi.fn();
+
+  render(<OptimisticFeatureFlags flags={flags} onToggle={onToggle} />);
+
+  const checkbox = screen.getByRole('checkbox', { name: 'Flag 1' });
+  fireEvent.click(checkbox);
+
+  expect(checkbox).toBeChecked();
+  expect(onToggle).toHaveBeenCalledWith('flag1', true);
+});
+
+test('if onToggle rejects, only that specific flag reverts to its confirmed state and displays an error notice', async () => {
+  const flags = [{ id: 'flag1', label: 'Flag 1', enabled: false }];
+  const onToggle = vi.fn().mockRejectedValue(new Error('Failed to update'));
+
+  render(<OptimisticFeatureFlags flags={flags} onToggle={onToggle} />);
+
+  const checkbox = screen.getByRole('checkbox', { name: 'Flag 1' });
+  fireEvent.click(checkbox);
+
+  expect(checkbox).not.toBeChecked();
+  await waitFor(() => expect(screen.getByRole('alert', { name: 'Failed to update' })).toBeInTheDocument());
+});
+
+test('prevents overlapping requests on the same flag while its toggle is in flight', async () => {
+  const flags = [{ id: 'flag1', label: 'Flag 1', enabled: false }];
+  const onToggle = vi.fn().mockResolvedValue();
+
+  render(<OptimisticFeatureFlags flags={flags} onToggle={onToggle} />);
+
+  const checkbox = screen.getByRole('checkbox', { name: 'Flag 1' });
+  fireEvent.click(checkbox);
+  fireEvent.click(checkbox);
+
+  expect(onToggle).toHaveBeenCalledTimes(1);
+});
+
+test('handles empty or invalid input gracefully', () => {
+  const flags = [];
+  const onToggle = vi.fn();
+
+  render(<OptimisticFeatureFlags flags={flags} onToggle={onToggle} />);
+
+  expect(screen.queryByRole('checkbox')).toBeNull();
+  expect(onToggle).not.toHaveBeenCalled();
+});
+
+test('cleans up resources after each test', () => {
+  const flags = [{ id: 'flag1', label: 'Flag 1', enabled: false }];
+  const onToggle = vi.fn();
+
+  render(<OptimisticFeatureFlags flags={flags} onToggle={onToggle} />);
+
+  expect(screen.getByRole('checkbox', { name: 'Flag 1' })).toBeInTheDocument();
+});
+```

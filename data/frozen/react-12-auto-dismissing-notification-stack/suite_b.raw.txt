@@ -1,0 +1,62 @@
+- Each toast triggers onDismiss(id) once its duration elapses or when its close button is clicked.
+- Hovering over a toast (mouseEnter) pauses its countdown, and leaving (mouseLeave) resumes it without firing early.
+- Toasts with durationMs: 0 persist until dismissed manually.
+- Empty or invalid input (toasts: undefined, null, empty array, etc.) should render nothing.
+- Repeated calls with the same toasts should not create duplicate timers or listeners.
+- Timers, listeners, and other resources are cleaned up when the component unmounts.
+
+```tsx
+import React from 'react';
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import { ToastList } from './ToastList'; // Adjust the import path as necessary
+
+afterEach(cleanup);
+
+test('renders nothing with empty or invalid input', () => {
+  render(<ToastList toasts={undefined} onDismiss={vi.fn()} />);
+  expect(screen.queryByRole('button')).toBeNull();
+
+  render(<ToastList toasts={null} onDismiss={vi.fn()} />);
+  expect(screen.queryByRole('button')).toBeNull();
+
+  render(<ToastList toasts={[]} onDismiss={vi.fn()} />);
+  expect(screen.queryByRole('button')).toBeNull();
+});
+
+test('renders toasts and handles dismissals', async () => {
+  const onDismiss = vi.fn();
+  render(<ToastList toasts={[{ id: '1', message: 'Toast 1' }, { id: '2', message: 'Toast 2' }]} onDismiss={onDismiss} />);
+  expect(screen.getByText('Toast 1')).toBeInTheDocument();
+  expect(screen.getByText('Toast 2')).toBeInTheDocument();
+
+  fireEvent.click(screen.getByText('Toast 1'));
+  expect(onDismiss).toHaveBeenCalledWith('1');
+
+  fireEvent.click(screen.getByText('Toast 2'));
+  expect(onDismiss).toHaveBeenCalledWith('2');
+});
+
+test('pauses and resumes countdown on hover', async () => {
+  vi.useFakeTimers();
+  const onDismiss = vi.fn();
+  render(<ToastList toasts={[{ id: '1', message: 'Toast 1', durationMs: 1000 }]} onDismiss={onDismiss} />);
+  expect(screen.getByText('Toast 1')).toBeInTheDocument();
+
+  fireEvent.mouseEnter(screen.getByText('Toast 1'));
+  vi.advanceTimersByTime(500);
+  expect(onDismiss).not.toHaveBeenCalled();
+
+  fireEvent.mouseLeave(screen.getByText('Toast 1'));
+  vi.advanceTimersByTime(500);
+  expect(onDismiss).toHaveBeenCalled();
+});
+
+test('toasts with durationMs: 0 persist until dismissed manually', async () => {
+  const onDismiss = vi.fn();
+  render(<ToastList toasts={[{ id: '1', message: 'Toast 1', durationMs: 0 }]} onDismiss={onDismiss} />);
+  expect(screen.getByText('Toast 1')).toBeInTheDocument();
+
+  fireEvent.click(screen.getByText('Toast 1'));
+  expect(onDismiss).toHaveBeenCalledWith('1');
+});
+```

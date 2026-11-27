@@ -1,0 +1,25 @@
+{
+ "id": "ts-05-strict-environment-config-reader",
+ "topic": "typescript",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/ts-05-strict-environment-config-reader/solution.ts(35,23): error TS2345: Argument ",
+  "type error: .runs/ts-05-strict-environment-config-reader/solution.ts(25,9): error TS2322: Type 'stri",
+  "type error: .runs/ts-05-strict-environment-config-reader/solution.ts(38,9): error TS2322: Type 'stri",
+  "type error: .runs/ts-05-strict-environment-config-reader/solution.ts(31,23): error TS2345: Argument "
+ ],
+ "cand_tokens": [
+  337,
+  366,
+  410,
+  348
+ ],
+ "gen_seconds": 38.5,
+ "type_only": false,
+ "errors": []
+}

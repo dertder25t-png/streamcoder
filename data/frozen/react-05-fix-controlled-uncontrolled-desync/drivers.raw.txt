@@ -1,0 +1,36 @@
+```ts
+probe("uncontrolled mode", async () => {
+  render(<SwitchControl defaultChecked={true} onChange={vi.fn()} />);
+  fireEvent.click(screen.getByRole("switch"));
+  await waitFor(() => expect(screen.getByRole("switch")).toHaveAttribute("aria-checked", "false"));
+  fireEvent.click(screen.getByRole("switch"));
+  await waitFor(() => expect(screen.getByRole("switch")).toHaveAttribute("aria-checked", "true"));
+  return snap();
+});
+
+probe("controlled mode, initial checked", async () => {
+  const handleChange = vi.fn();
+  render(<SwitchControl checked={true} onChange={handleChange} />);
+  fireEvent.click(screen.getByRole("switch"));
+  await waitFor(() => expect(handleChange).toHaveBeenCalledWith(false));
+  return snap();
+});
+
+probe("controlled mode, initial unchecked", async () => {
+  const handleChange = vi.fn();
+  render(<SwitchControl checked={false} onChange={handleChange} />);
+  fireEvent.click(screen.getByRole("switch"));
+  await waitFor(() => expect(handleChange).toHaveBeenCalledWith(true));
+  return snap();
+});
+
+probe("controlled mode, update checked", async () => {
+  const handleChange = vi.fn();
+  render(<SwitchControl checked={true} onChange={handleChange} />);
+  fireEvent.click(screen.getByRole("switch"));
+  await waitFor(() => expect(handleChange).toHaveBeenCalledWith(false));
+  render(<SwitchControl checked={false} onChange={handleChange} />);
+  await waitFor(() => expect(screen.getByRole("switch")).toHaveAttribute("aria-checked", "false"));
+  return snap();
+});
+```

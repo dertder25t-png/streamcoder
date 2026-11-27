@@ -1,0 +1,48 @@
+```typescript
+import { promises as fsp } from "node:fs";
+
+export interface FileCacheOptions {
+  maxBytes: number;
+  readFile?: (path: string) => Promise<Buffer>;
+}
+
+interface CachedFile {
+  data: Buffer;
+  mtimeMs: number;
+  size: number;
+}
+
+export function createFileCache(options: FileCacheOptions) {
+  const { maxBytes } = options;
+  const doRead = options.readFile ?? ((p: string) => fsp.readFile(p));
+  const cache = new Map<string, CachedFile>();
+
+  async function read(path: string): Promise<Buffer> {
+    const cached = cache.get(path);
+    if (cached) {
+      const { data, mtimeMs, size } = cached;
+      const { mtimeMs: currentMtimeMs, size: currentSize } = await fsp.stat(path);
+      if (mtimeMs !== currentMtimeMs || size !== currentSize) {
+        const newData = await doRead(path);
+        const newSize = newData.byteLength;
+        if (newSize > maxBytes) return newData;
+        cache.set(path, { data: newData, mtimeMs: currentMtimeMs, size: newSize });
+        return newData;
+      } else {
+        return data;
+      }
+    } else {
+      const data = await doRead(path);
+      const size = data.byteLength;
+      if (size > maxBytes) return data;
+      const { mtimeMs } = await fsp.stat(path);
+      cache.set(path, { data, mtimeMs, size });
+      return data;
+    }
+  }
+
+  return {
+    async read,
+  };
+}
+```

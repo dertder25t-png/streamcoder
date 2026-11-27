@@ -1,0 +1,66 @@
+- Test that TabList renders with role="tablist" and forwards aria-label.
+- Test that each Tab is a button with role="tab", aria-selected, tabIndex, and a generated id.
+- Test that only the active TabPanel is rendered.
+- Test that keyboard handlers move focus and selection across enabled tabs.
+- Test that Home and End jump to the first and last enabled tabs.
+- Test that disabled tabs are not focusable or selectable.
+- Test that repeated calls to render the component do not cause memory leaks.
+- Test that the component cleans up any timers, listeners, or files when unmounted.
+
+```tsx
+import React from 'react';
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import { TabList, TabPanel } from './Tabs';
+
+afterEach(cleanup);
+
+test('TabList renders with role="tablist" and forwards aria-label', () => {
+  render(<TabList aria-label="demo"><Tab value="one">One</Tab></TabList>);
+  const tabList = screen.getByRole('tablist');
+  expect(tabList).toHaveAttribute('aria-label', 'demo');
+});
+
+test('Each Tab is a button with role="tab", aria-selected, tabIndex, and a generated id', () => {
+  render(<TabList><Tab value="one">One</Tab></TabList>);
+  const tab = screen.getByRole('tab', { name: 'One' });
+  expect(tab).toBeInstanceOf(HTMLButtonElement);
+  expect(tab).toHaveAttribute('aria-selected', 'false');
+  expect(tab).toHaveAttribute('tabIndex', '-1');
+  expect(tab).toHaveAttribute('id');
+});
+
+test('Only the active TabPanel is rendered', () => {
+  render(<TabList><Tab value="one">One</Tab></TabList><TabPanel value="one">Panel One</TabPanel><TabPanel value="two">Panel Two</TabPanel>);
+  const activePanel = screen.getByRole('tabpanel', { name: 'Panel One' });
+  expect(activePanel).toBeInTheDocument();
+  const inactivePanel = screen.getByRole('tabpanel', { name: 'Panel Two' });
+  expect(inactivePanel).not.toBeInTheDocument();
+});
+
+test('Keyboard handlers move focus and selection across enabled tabs', async () => {
+  render(<TabList><Tab value="one">One</Tab><Tab value="two">Two</Tab></TabList>);
+  const tabs = screen.getAllByRole('tab');
+  fireEvent.keyDown(tabs[0], { key: 'ArrowRight' });
+  await waitFor(() => expect(tabs[1]).toHaveAttribute('aria-selected', 'true'));
+  fireEvent.keyDown(tabs[1], { key: 'ArrowLeft' });
+  await waitFor(() => expect(tabs[0]).toHaveAttribute('aria-selected', 'true'));
+});
+
+test('Home and End jump to the first and last enabled tabs', async () => {
+  render(<TabList><Tab value="one">One</Tab><Tab value="two">Two</Tab></TabList>);
+  const tabs = screen.getAllByRole('tab');
+  fireEvent.keyDown(tabs[0], { key: 'Home' });
+  await waitFor(() => expect(tabs[0]).toHaveAttribute('aria-selected', 'true'));
+  fireEvent.keyDown(tabs[1], { key: 'End' });
+  await waitFor(() => expect(tabs[1]).toHaveAttribute('aria-selected', 'true'));
+});
+
+test('Disabled tabs are not focusable or selectable', async () => {
+  render(<TabList><Tab value="one" disabled>One</Tab><Tab value="two">Two</Tab></TabList>);
+  const tabs = screen.getAllByRole('tab');
+  fireEvent.keyDown(tabs[0], { key: 'ArrowRight' });
+  await waitFor(() => expect(tabs[1]).toHaveAttribute('aria-selected', 'true'));
+  fireEvent.keyDown(tabs[1], { key: 'ArrowLeft' });
+  await waitFor(() => expect(tabs[0]).toHaveAttribute('aria-selected', 'true'));
+});
+```

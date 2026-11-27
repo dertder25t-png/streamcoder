@@ -1,0 +1,80 @@
+- Renders role="dialog" with aria-modal="true" and aria-labelledby pointing to the title heading when open, and nothing when closed.
+- Pressing Tab on the last focusable element wraps to the first, and Shift+Tab on the first wraps to the last.
+- Closing via Escape or backdrop click invokes onClose and restores focus to the trigger element that held focus before opening.
+
+```tsx
+import React from 'react';
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import AccessibleModal from './AccessibleModal';
+
+afterEach(cleanup);
+
+test("renders role='dialog' with aria-modal='true' and aria-labelledby pointing to the title heading when open, and nothing when closed", async () => {
+  const triggerRef = React.createRef<HTMLButtonElement>();
+  const { getByRole, getByText } = render(
+    <>
+      <button ref={triggerRef}>Open Modal</button>
+      <AccessibleModal isOpen={true} onClose={() => {}} title="Test Title">
+        <p>Modal content</p>
+      </AccessibleModal>
+    </>
+  );
+
+  fireEvent.click(getByRole('button', { name: 'Open Modal' }));
+  await waitFor(() => expect(getByRole('dialog')).toBeInTheDocument());
+  expect(getByRole('dialog')).toHaveAttribute('aria-modal', 'true');
+  expect(getByRole('dialog')).toHaveAttribute('aria-labelledby', getByText('Test Title').id);
+
+  fireEvent.click(getByRole('button', { name: 'Open Modal' }));
+  await waitFor(() => expect(getByRole('dialog')).not.toBeInTheDocument());
+});
+
+test("pressing Tab on the last focusable element wraps to the first, and Shift+Tab on the first wraps to the last", async () => {
+  const { getByRole, getByText } = render(
+    <AccessibleModal isOpen={true} onClose={() => {}} title="Test Title">
+      <button>Button 1</button>
+      <button>Button 2</button>
+      <button>Button 3</button>
+    </AccessibleModal>
+  );
+
+  fireEvent.click(getByRole('button', { name: 'Button 1' }));
+  fireEvent.click(getByRole('button', { name: 'Button 2' }));
+  fireEvent.click(getByRole('button', { name: 'Button 3' }));
+
+  fireEvent.keyDown(document.activeElement, { key: 'Tab', shiftKey: false });
+  expect(document.activeElement).toBe(getByRole('button', { name: 'Button 1' }));
+
+  fireEvent.keyDown(document.activeElement, { key: 'Tab', shiftKey: true });
+  expect(document.activeElement).toBe(getByRole('button', { name: 'Button 3' }));
+});
+
+test("closing via Escape or backdrop click invokes onClose and restores focus to the trigger element that held focus before opening", async () => {
+  const triggerRef = React.createRef<HTMLButtonElement>();
+  const onCloseMock = vi.fn();
+  const { getByRole, getByText } = render(
+    <>
+      <button ref={triggerRef}>Open Modal</button>
+      <AccessibleModal isOpen={true} onClose={onCloseMock} title="Test Title">
+        <p>Modal content</p>
+      </AccessibleModal>
+    </>
+  );
+
+  fireEvent.click(getByRole('button', { name: 'Open Modal' }));
+  await waitFor(() => expect(getByRole('dialog')).toBeInTheDocument());
+
+  fireEvent.keyDown(document.activeElement, { key: 'Escape' });
+  await waitFor(() => expect(getByRole('dialog')).not.toBeInTheDocument());
+  expect(onCloseMock).toHaveBeenCalled();
+  expect(document.activeElement).toBe(triggerRef.current);
+
+  fireEvent.click(getByRole('button', { name: 'Open Modal' }));
+  await waitFor(() => expect(getByRole('dialog')).toBeInTheDocument());
+
+  fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+  await waitFor(() => expect(getByRole('dialog')).not.toBeInTheDocument());
+  expect(onCloseMock).toHaveBeenCalledTimes(2);
+  expect(document.activeElement).toBe(triggerRef.current);
+});
+```

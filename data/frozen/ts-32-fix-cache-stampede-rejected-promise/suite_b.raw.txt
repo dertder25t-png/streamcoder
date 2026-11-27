@@ -1,0 +1,71 @@
+- Concurrent calls for the same key share the exact same pending promise.
+- If fn rejects, the key is evicted immediately.
+- Resolved values expire after ttlMs.
+- Evict oldest entries when maxEntries is exceeded.
+- Handle empty or invalid input.
+- Clean up resources after tests.
+
+```ts
+import { memoizeAsync } from './memoizeAsync';
+
+test('concurrent calls for the same key share the exact same pending promise', async () => {
+  const fn = vi.fn(async () => 'result');
+  const memoized = memoizeAsync(fn, { ttlMs: 1000, maxEntries: 10 });
+  const promise1 = memoized('key');
+  const promise2 = memoized('key');
+  expect(promise1).toBe(promise2);
+  expect(fn).toBeCalledTimes(1);
+  await promise1;
+  expect(fn).toBeCalledTimes(1);
+});
+
+test('if fn rejects, the key is evicted immediately', async () => {
+  const fn = vi.fn(async () => Promise.reject('error'));
+  const memoized = memoizeAsync(fn, { ttlMs: 1000, maxEntries: 10 });
+  await expect(memoized('key')).rejects.toEqual('error');
+  expect(memoized('key')).not.toBe(undefined);
+  await expect(memoized('key')).rejects.toEqual('error');
+  expect(fn).toBeCalledTimes(2);
+});
+
+test('resolved values expire after ttlMs', async () => {
+  const fn = vi.fn(async () => 'result');
+  const memoized = memoizeAsync(fn, { ttlMs: 100, maxEntries: 10 });
+  const promise = memoized('key');
+  await expect(promise).resolves.toEqual('result');
+  vi.advanceTimersByTime(200);
+  await expect(memoized('key')).resolves.toEqual('result');
+  expect(fn).toBeCalledTimes(2);
+});
+
+test('evict oldest entries when maxEntries is exceeded', async () => {
+  const fn = vi.fn(async () => 'result');
+  const memoized = memoizeAsync(fn, { ttlMs: 1000, maxEntries: 2 });
+  await memoized('key1');
+  await memoized('key2');
+  await memoized('key3');
+  expect(memoized('key1')).toBe(undefined);
+  expect(memoized('key2')).not.toBe(undefined);
+  expect(memoized('key3')).not.toBe(undefined);
+  expect(fn).toBeCalledTimes(3);
+});
+
+test('handle empty or invalid input', async () => {
+  const fn = vi.fn(async () => 'result');
+  const memoized = memoizeAsync(fn, { ttlMs: 1000, maxEntries: 10 });
+  await expect(memoized('')).rejects.toThrow('Invalid key');
+  await expect(memoized(null)).rejects.toThrow('Invalid key');
+  await expect(memoized(undefined)).rejects.toThrow('Invalid key');
+  expect(fn).toBeCalledTimes(0);
+});
+
+test('clean up resources after tests', async () => {
+  const fn = vi.fn(async () => 'result');
+  const memoized = memoizeAsync(fn, { ttlMs: 1000, maxEntries: 10 });
+  const promise = memoized('key');
+  expect(promise).not.toBe(undefined);
+  expect(fn).toBeCalledTimes(1);
+  await promise;
+  expect(fn).toBeCalledTimes(1);
+});
+```

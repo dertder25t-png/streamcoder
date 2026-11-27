@@ -1,0 +1,24 @@
+- An empty array returns []
+- An array where all values are equal maps every entry to targetMin instead of producing NaN
+- Standard numeric arrays scale proportionally so the minimum maps to targetMin and the maximum maps to targetMax
+- Passing NaN, Infinity, or targetMin > targetMax throws a RangeError
+
+```ts
+test("An empty array returns []", () => {
+  expect(normalizeScores([])).toEqual([]);
+});
+
+test("An array where all values are equal maps every entry to targetMin instead of producing NaN", () => {
+  expect(normalizeScores([5, 5, 5], 0, 1)).toEqual([0, 0, 0]);
+});
+
+test("Standard numeric arrays scale proportionally so the minimum maps to targetMin and the maximum maps to targetMax", () => {
+  expect(normalizeScores([1, 2, 3, 4, 5], 0, 1)).toEqual([0, 0.25, 0.5, 0.75, 1]);
+});
+
+test("Passing NaN, Infinity, or targetMin > targetMax throws a RangeError", () => {
+  expect(() => normalizeScores([1, 2, 3], NaN, 1)).toThrow(RangeError);
+  expect(() => normalizeScores([1, 2, 3], 1, Infinity)).toThrow(RangeError);
+  expect(() => normalizeScores([1, 2, 3], 2, 1)).toThrow(RangeError);
+});
+```

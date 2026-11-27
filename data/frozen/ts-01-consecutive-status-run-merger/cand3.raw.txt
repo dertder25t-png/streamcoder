@@ -1,0 +1,26 @@
+```ts
+type StatusRun<T extends string> = { status: T; start: number; end: number; count: number };
+
+function collapseStatusLog<T extends string>(log: { timestamp: number; status: T }[]): StatusRun<T>[] {
+  if (log.length === 0) return [];
+
+  const runs: StatusRun<T>[] = [];
+  let currentRun = { status: log[0].status, start: log[0].timestamp, end: log[0].timestamp, count: 1 };
+
+  for (let i = 1; i < log.length; i++) {
+    const entry = log[i];
+    if (entry.status === currentRun.status) {
+      currentRun.end = entry.timestamp;
+      currentRun.count++;
+    } else {
+      runs.push(currentRun);
+      currentRun = { status: entry.status, start: entry.timestamp, end: entry.timestamp, count: 1 };
+    }
+  }
+
+  runs.push(currentRun);
+  return runs;
+}
+
+export { collapseStatusLog };
+```

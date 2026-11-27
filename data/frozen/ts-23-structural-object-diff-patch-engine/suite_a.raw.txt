@@ -1,0 +1,32 @@
+- For any nested plain object pair, applyObjectDiff(before, computeObjectDiff(before, after)) deeply equals after without mutating before.
+- Distinguishes between a missing key and a key explicitly set to null.
+- Keys containing dots or slashes (e.g., "a.b") round-trip cleanly because paths are represented as segment arrays or properly escaped tokens.
+
+```ts
+test("applyObjectDiff(before, computeObjectDiff(before, after)) deeply equals after without mutating before", () => {
+  const before = { a: { b: 1 } };
+  const after = { a: { b: 2 } };
+  const diff = computeObjectDiff(before, after);
+  const result = applyObjectDiff(before, diff);
+  expect(result).toEqual(after);
+  expect(before).toEqual({ a: { b: 1 } });
+});
+
+test("distinguishes between a missing key and a key explicitly set to null", () => {
+  const before = { a: { b: 1 } };
+  const after = { a: { b: null } };
+  const diff = computeObjectDiff(before, after);
+  const result = applyObjectDiff(before, diff);
+  expect(result).toEqual(after);
+  expect(before).toEqual({ a: { b: 1 } });
+});
+
+test("keys containing dots or slashes round-trip cleanly", () => {
+  const before = { "a.b": { "c/d": 1 } };
+  const after = { "a.b": { "c/d": 2 } };
+  const diff = computeObjectDiff(before, after);
+  const result = applyObjectDiff(before, diff);
+  expect(result).toEqual(after);
+  expect(before).toEqual({ "a.b": { "c/d": 1 } });
+});
+```

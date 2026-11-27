@@ -1,0 +1,45 @@
+```ts
+probe("create money with integer minor units", async () => {
+  return S.money(100, "USD");
+});
+
+probe("create money with non-integer minor units throws RangeError", async () => {
+  try {
+    S.money(100.5, "USD");
+  } catch (e) {
+    return e;
+  }
+});
+
+probe("addMoney with same currency", async () => {
+  return S.addMoney(S.money(100, "USD"), S.money(200, "USD"));
+});
+
+probe("addMoney with different currency throws Error", async () => {
+  try {
+    S.addMoney(S.money(100, "USD"), S.money(200, "EUR"));
+  } catch (e) {
+    return e;
+  }
+});
+
+probe("allocateMoney with equal ratios", async () => {
+  return S.allocateMoney(S.money(100, "USD"), [1, 1, 1]);
+});
+
+probe("allocateMoney with zero ratios throws RangeError", async () => {
+  try {
+    S.allocateMoney(S.money(100, "USD"), [0, 0, 0]);
+  } catch (e) {
+    return e;
+  }
+});
+
+probe("allocateMoney with negative ratios throws RangeError", async () => {
+  try {
+    S.allocateMoney(S.money(100, "USD"), [-1, 1, 1]);
+  } catch (e) {
+    return e;
+  }
+});
+```

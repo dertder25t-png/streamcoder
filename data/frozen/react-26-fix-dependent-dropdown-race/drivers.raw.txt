@@ -1,0 +1,32 @@
+```ts
+probe("Switching regions clears city selection", async () => {
+  const { unmount } = render(<RegionCityPicker regions={["Region A", "Region B"]} fetchCities={() => Promise.resolve(["City A", "City B"])} onChange={() => {}} />);
+  fireEvent.change(screen.getByRole("Region"), { target: { value: "Region A" } });
+  fireEvent.change(screen.getByRole("City"), { target: { value: "City A" } });
+  fireEvent.change(screen.getByRole("Region"), { target: { value: "Region B" } });
+  await waitFor(() => expect(screen.getByRole("City")).toHaveValue(""));
+  unmount();
+  return snap();
+});
+
+probe("Out-of-order responses are ignored", async () => {
+  const mockFetch = vi.fn().mockImplementation((region: string) => Promise.resolve([region === "Region A" ? "City A" : "City B"]));
+  const { unmount } = render(<RegionCityPicker regions={["Region A", "Region B"]} fetchCities={mockFetch} onChange={() => {}} />);
+  fireEvent.change(screen.getByRole("Region"), { target: { value: "Region A" } });
+  fireEvent.change(screen.getByRole("Region"), { target: { value: "Region B" } });
+  await waitFor(() => expect(mockFetch).toHaveBeenCalledWith("Region B"));
+  unmount();
+  return snap();
+});
+
+probe("Error state with Retry button", async () => {
+  const mockFetch = vi.fn().mockRejectedValue(new Error("Failed"));
+  const { unmount } = render(<RegionCityPicker regions={["Region A"]} fetchCities={mockFetch} onChange={() => {}} />);
+  fireEvent.change(screen.getByRole("Region"), { target: { value: "Region A" } });
+  await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
+  fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+  await waitFor(() => expect(mockFetch).toHaveBeenCalledWith("Region A"));
+  unmount();
+  return snap();
+});
+```

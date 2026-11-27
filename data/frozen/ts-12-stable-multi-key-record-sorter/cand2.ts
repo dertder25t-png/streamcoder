@@ -1,0 +1,38 @@
+import { cloneDeep } from 'lodash-es';
+
+interface SortSpec<T> {
+  key: keyof T;
+  direction?: 'asc' | 'desc';
+}
+
+export function sortRecordsByKeys<T>(items: readonly T[], specs: readonly SortSpec<T>[]): T[] {
+  const sortedItems = cloneDeep(items);
+  sortedItems.sort((a, b) => {
+    for (const { key, direction = 'asc' } of specs) {
+      const valueA = a[key];
+      const valueB = b[key];
+
+      if (valueA === valueB) {
+        continue;
+      }
+
+      if (typeof valueA === 'string' && typeof valueB === 'string') {
+        const comparison = valueA.localeCompare(valueB);
+        return direction === 'asc' ? comparison : -comparison;
+      }
+
+      if (typeof valueA === 'number' && typeof valueB === 'number') {
+        return direction === 'asc' ? valueA - valueB : valueB - valueA;
+      }
+
+      if (typeof valueA === 'boolean' && typeof valueB === 'boolean') {
+        return direction === 'asc' ? valueA - valueB : valueB - valueA;
+      }
+
+      // Fallback for non-comparable types
+      return 0;
+    }
+    return 0;
+  });
+  return sortedItems;
+}

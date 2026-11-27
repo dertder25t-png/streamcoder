@@ -1,0 +1,38 @@
+- Returns app-2026-05-01.1.log when no logs exist for that date.
+- Finds the numeric maximum rather than lexicographic maximum (so after .9.log and .10.log, it returns .11.log).
+- Ignores unrelated files and logs from other dates in the same directory.
+
+```ts
+import { nextLogFilePath } from './nextLogFilePath'; // Adjust the import path as necessary
+import fs from 'fs/promises';
+import path from 'path';
+import os from 'os';
+
+test("Returns app-2026-05-01.1.log when no logs exist for that date", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const dateStr = '2026-05-01';
+  const result = await nextLogFilePath(dir, dateStr);
+  expect(result).toBe(path.join(dir, `app-${dateStr}.1.log`));
+  await fs.promises.rm(dir, { recursive: true });
+});
+
+test("Finds the numeric maximum rather than lexicographic maximum", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const dateStr = '2026-05-01';
+  await fs.promises.writeFile(path.join(dir, `app-${dateStr}.9.log`), '');
+  await fs.promises.writeFile(path.join(dir, `app-${dateStr}.10.log`), '');
+  const result = await nextLogFilePath(dir, dateStr);
+  expect(result).toBe(path.join(dir, `app-${dateStr}.11.log`));
+  await fs.promises.rm(dir, { recursive: true });
+});
+
+test("Ignores unrelated files and logs from other dates in the same directory", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const dateStr = '2026-05-01';
+  await fs.promises.writeFile(path.join(dir, `app-2026-05-02.1.log`), '');
+  await fs.promises.writeFile(path.join(dir, `app-2026-05-01.9.log`), '');
+  const result = await nextLogFilePath(dir, dateStr);
+  expect(result).toBe(path.join(dir, `app-${dateStr}.1.log`));
+  await fs.promises.rm(dir, { recursive: true });
+});
+```

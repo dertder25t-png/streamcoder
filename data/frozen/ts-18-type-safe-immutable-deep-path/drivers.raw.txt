@@ -1,0 +1,34 @@
+```ts
+probe("update nested leaf", async () => {
+  const obj = { a: { b: { c: 1 } } };
+  const newObj = setByPath(obj, "a.b.c", 2);
+  return { obj, newObj };
+});
+
+probe("invalid dot path", async () => {
+  const obj = { a: { b: { c: 1 } } };
+  @ts-expect-error
+  return setByPath(obj, "a.b.d", 2);
+});
+
+probe("mismatched value type", async () => {
+  const obj = { a: { b: { c: 1 } } };
+  @ts-expect-error
+  return setByPath(obj, "a.b.c", "two");
+});
+
+probe("update root", async () => {
+  const obj = { a: { b: { c: 1 } } };
+  const newObj = setByPath(obj, "a", { b: { c: 2 } });
+  return { obj, newObj };
+});
+
+probe("update with __proto__", async () => {
+  const obj = { a: { b: { c: 1 } } };
+  try {
+    return setByPath(obj, "__proto__.a", 2);
+  } catch (error) {
+    return error;
+  }
+});
+```

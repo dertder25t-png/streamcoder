@@ -1,0 +1,24 @@
+- Copies only own enumerable properties from source whose value is not undefined.
+- Retains falsy defined values including 0, "", false, and null.
+- Never includes inherited prototype properties such as toString even if listed in keys.
+
+```ts
+test("copies only own enumerable properties", () => {
+  const source = { a: 1, b: 2, c: 3 };
+  const result = pickDefinedKeys(source, ["a", "b", "c"]);
+  expect(result).toEqual({ a: 1, b: 2, c: 3 });
+});
+
+test("retains falsy defined values", () => {
+  const source = { a: 0, b: "", c: false, d: null };
+  const result = pickDefinedKeys(source, ["a", "b", "c", "d"]);
+  expect(result).toEqual({ a: 0, b: "", c: false, d: null });
+});
+
+test("does not include inherited prototype properties", () => {
+  const source = Object.create({ toString: () => "inherited" });
+  source.a = 1;
+  const result = pickDefinedKeys(source, ["a", "toString"]);
+  expect(result).toEqual({ a: 1 });
+});
+```

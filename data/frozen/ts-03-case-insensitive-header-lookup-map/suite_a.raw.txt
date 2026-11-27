@@ -1,0 +1,25 @@
+- get("content-type") and has("CONTENT-TYPE") both locate a header stored as "Content-Type".
+- Overwriting an existing header with different casing replaces the value and updates the key casing returned by toRecord() without creating duplicate keys.
+- delete(name) removes the header regardless of case and returns true if it existed, false otherwise.
+
+```ts
+test("get and has with case-insensitive lookup", () => {
+  const headers = createHeaderMap([["Content-Type", "application/json"]]);
+  expect(headers.get("content-type")).toBe("application/json");
+  expect(headers.has("CONTENT-TYPE")).toBe(true);
+});
+
+test("overwriting header updates casing", () => {
+  const headers = createHeaderMap([["Content-Type", "application/json"]]);
+  headers.set("content-type", "text/plain");
+  expect(headers.get("content-type")).toBe("text/plain");
+  expect(headers.toRecord()).toEqual({ "Content-Type": "text/plain" });
+});
+
+test("delete removes header regardless of case", () => {
+  const headers = createHeaderMap([["Content-Type", "application/json"]]);
+  expect(headers.delete("content-type")).toBe(true);
+  expect(headers.has("content-type")).toBe(false);
+  expect(headers.toRecord()).toEqual({});
+});
+```

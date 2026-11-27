@@ -1,0 +1,53 @@
+- Test with an empty array.
+- Test with an array containing only `ok: true` results.
+- Test with an array containing only `ok: false` results.
+- Test with an array containing both `ok: true` and `ok: false` results.
+- Test with an array containing falsy values in both `values` and `errors`.
+- Test with an invalid input (e.g., a non-array value).
+
+```ts
+import { partitionResults } from './partitionResults';
+
+test("with an empty array", () => {
+  const result = partitionResults([]);
+  expect(result).toEqual({ values: [], errors: [] });
+});
+
+test("with an array containing only ok: true results", () => {
+  const result = partitionResults([{ ok: true, value: 1 }, { ok: true, value: 2 }]);
+  expect(result).toEqual({ values: [1, 2], errors: [] });
+});
+
+test("with an array containing only ok: false results", () => {
+  const result = partitionResults([{ ok: false, error: "error1" }, { ok: false, error: "error2" }]);
+  expect(result).toEqual({ values: [], errors: ["error1", "error2"] });
+});
+
+test("with an array containing both ok: true and ok: false results", () => {
+  const result = partitionResults([
+    { ok: true, value: 1 },
+    { ok: false, error: "error1" },
+    { ok: true, value: 2 },
+    { ok: false, error: "error2" }
+  ]);
+  expect(result).toEqual({ values: [1, 2], errors: ["error1", "error2"] });
+});
+
+test("with an array containing falsy values in both values and errors", () => {
+  const result = partitionResults([
+    { ok: true, value: 0 },
+    { ok: true, value: "" },
+    { ok: true, value: false },
+    { ok: true, value: null },
+    { ok: false, error: 0 },
+    { ok: false, error: "" },
+    { ok: false, error: false },
+    { ok: false, error: null }
+  ]);
+  expect(result).toEqual({ values: [0, "", false, null], errors: [0, "", false, null] });
+});
+
+test("with an invalid input (e.g., a non-array value)", () => {
+  expect(() => partitionResults("not an array")).toThrowError("Input must be an array");
+});
+```

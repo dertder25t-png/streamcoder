@@ -1,0 +1,39 @@
+```ts
+type Money<C extends string> = { readonly minorUnits: number; readonly currency: C };
+
+function money<C extends string>(minorUnits: number, currency: C): Money<C> {
+    if (!Number.isInteger(minorUnits)) {
+        throw new RangeError('Minor units must be an integer');
+    }
+    return { minorUnits, currency } as Money<C>;
+}
+
+function addMoney<C extends string>(a: Money<C>, b: Money<C>): Money<C> {
+    if (a.currency !== b.currency) {
+        throw new Error('Currencies must match');
+    }
+    return money(a.minorUnits + b.minorUnits, a.currency);
+}
+
+function allocateMoney<C extends string>(total: Money<C>, ratios: readonly number[]): Money<C>[] {
+    const sumRatios = ratios.reduce((acc, ratio) => acc + ratio, 0);
+    if (sumRatios <= 0 || ratios.some(ratio => ratio < 0)) {
+        throw new RangeError('Ratios must be positive and non-zero');
+    }
+
+    const base = Math.floor(total.minorUnits * 100 / sumRatios);
+    const extra = total.minorUnits * 100 - base * sumRatios;
+    const shares = ratios.map((ratio, index) => {
+        const share = base * ratio + (index < extra ? 1 : 0);
+        return money(share, total.currency);
+    });
+
+    if (shares.reduce((acc, share) => acc + share.minorUnits, 0) !== total.minorUnits * 100) {
+        throw new Error('Failed to allocate money without penny loss');
+    }
+
+    return shares;
+}
+
+export { Money, money, addMoney, allocateMoney };
+```

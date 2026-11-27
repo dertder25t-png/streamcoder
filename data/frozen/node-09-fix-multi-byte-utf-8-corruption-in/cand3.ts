@@ -1,0 +1,19 @@
+import { Readable } from "node:stream";
+
+export async function readUtf8Stream(stream: Readable): Promise<string> {
+  const chunks: Uint8Array[] = [];
+  return new Promise<string>((resolve, reject) => {
+    stream.on("data", (chunk: Buffer) => {
+      chunks.push(chunk);
+    });
+    stream.on("end", () => {
+      const buffer = Buffer.concat(chunks);
+      try {
+        resolve(buffer.toString("utf8"));
+      } catch (error) {
+        reject(error);
+      }
+    });
+    stream.on("error", reject);
+  });
+}

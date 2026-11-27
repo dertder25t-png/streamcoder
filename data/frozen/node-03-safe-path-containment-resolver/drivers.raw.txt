@@ -1,0 +1,55 @@
+```ts
+probe("valid relative path", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const result = resolveInsideRoot(dir, "a/../b.txt");
+  await fs.promises.rm(dir, { recursive: true });
+  return result;
+});
+
+probe("absolute path outside root", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  try {
+    resolveInsideRoot(dir, "/etc/passwd");
+  } catch (error) {
+    await fs.promises.rm(dir, { recursive: true });
+    return error;
+  }
+});
+
+probe("null byte in path", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  try {
+    resolveInsideRoot(dir, "a\0b.txt");
+  } catch (error) {
+    await fs.promises.rm(dir, { recursive: true });
+    return error;
+  }
+});
+
+probe("traversal escape", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  try {
+    resolveInsideRoot(dir, "../secret");
+  } catch (error) {
+    await fs.promises.rm(dir, { recursive: true });
+    return error;
+  }
+});
+
+probe("empty rootDir", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  try {
+    resolveInsideRoot("", "a.txt");
+  } catch (error) {
+    await fs.promises.rm(dir, { recursive: true });
+    return error;
+  }
+});
+
+probe("empty userPath", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const result = resolveInsideRoot(dir, "");
+  await fs.promises.rm(dir, { recursive: true });
+  return result;
+});
+```

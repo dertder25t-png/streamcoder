@@ -1,0 +1,43 @@
+```ts
+probe("renders 'No token provided' with no buttons", async () => {
+  render(<RevealableToken token="" />);
+  await waitFor(() => screen.getByText("No token provided"));
+  expect(screen.queryByRole("button")).toBeNull();
+  return snap();
+});
+
+probe("renders masked token with Show and Copy buttons", async () => {
+  render(<RevealableToken token="abc123" />);
+  await waitFor(() => screen.getByText("•••"));
+  expect(screen.getByRole("button", { name: "Show" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Copy" })).toBeInTheDocument();
+  return snap();
+});
+
+probe("reveals token and changes button label on 'Show' click", async () => {
+  render(<RevealableToken token="abc123" />);
+  await waitFor(() => screen.getByText("•••"));
+  fireEvent.click(screen.getByRole("button", { name: "Show" }));
+  await waitFor(() => screen.getByText("abc123"));
+  expect(screen.getByRole("button", { name: "Hide" })).toBeInTheDocument();
+  return snap();
+});
+
+probe("copies token to clipboard and displays 'Copied'", async () => {
+  render(<RevealableToken token="abc123" />);
+  await waitFor(() => screen.getByText("•••"));
+  fireEvent.click(screen.getByRole("button", { name: "Copy" }));
+  await waitFor(() => screen.getByText("Copied"));
+  return snap();
+});
+
+probe("re-masks token when prop changes while revealed", async () => {
+  render(<RevealableToken token="abc123" />);
+  await waitFor(() => screen.getByText("•••"));
+  fireEvent.click(screen.getByRole("button", { name: "Show" }));
+  await waitFor(() => screen.getByText("abc123"));
+  fireEvent.click(screen.getByRole("button", { name: "Show" }));
+  await waitFor(() => screen.getByText("•••"));
+  return snap();
+});
+```

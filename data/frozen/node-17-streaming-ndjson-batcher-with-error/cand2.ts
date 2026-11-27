@@ -1,0 +1,74 @@
+import { Transform, TransformCallback } from 'stream';
+
+export function createNdjsonBatchStream({ maxBatchSize, onInvalidLine }: { maxBatchSize: number, onInvalidLine: (rawLine: string, lineNumber: number) => void }): Transform {
+    if (typeof maxBatchSize !== 'number' || !Number.isInteger(maxBatchSize) || maxBatchSize < 1) {
+        throw new RangeError('maxBatchSize must be a positive integer');
+    }
+
+    let buffer = '';
+    let lineNumber = 0;
+    const batch: string[] = [];
+
+    return new Transform({
+        readableObjectMode: true,
+        transform(chunk, encoding, callback: TransformCallback) {
+            buffer += chunk.toString();
+            let index = 0;
+
+            while (index < buffer.length) {
+                if (buffer[index] === '\n') {
+                    const line = buffer.substring(0, index).trim();
+                    buffer = buffer.substring(index + 1);
+
+                    if (line) {
+                        try {
+                            batch.push(JSON.parse(line));
+                            if (batch.length === maxBatchSize) {
+                                this.push(batch);
+                                batch.length = 0;
+                            }
+                        } catch (error) {
+                            onInvalidLine(line, lineNumber + 1);
+                        }
+                    }
+
+                    lineNumber++;
+                } else {
+                    index++;
+                }
+            }
+
+            callback();
+        },
+        flush(callback: TransformCallback) {
+            if (buffer) {
+                let index = 0;
+
+                while (index < buffer.length) {
+                    if (buffer[index] === '\n') {
+                        const line = buffer.substring(0, index).trim();
+                        buffer = buffer.substring(index + 1);
+
+                        if (line) {
+                            try {
+                                batch.push(JSON.parse(line));
+                            } catch (error) {
+                                onInvalidLine(line, lineNumber + 1);
+                            }
+                        }
+
+                        lineNumber++;
+                    } else {
+                        index++;
+                    }
+                }
+            }
+
+            if (batch.length > 0) {
+                this.push(batch);
+            }
+
+            callback();
+        }
+    });
+}

@@ -1,0 +1,29 @@
+```ts
+type RenderTemplateOptions = {
+  strict?: boolean;
+};
+
+function renderTemplate(
+  template: string,
+  vars: Record<string, string | number>,
+  options: RenderTemplateOptions = {}
+): string {
+  const { strict = false } = options;
+  const regex = /\{\{\s*([^\s{}]+)\s*\}\}/g;
+  let result = template;
+
+  let match;
+  while ((match = regex.exec(result)) !== null) {
+    const key = match[1].trim();
+    if (key in vars) {
+      result = result.replace(match[0], String(vars[key]));
+    } else if (strict) {
+      throw new Error(`Missing variable: ${key}`);
+    }
+  }
+
+  return result;
+}
+
+export { renderTemplate };
+```

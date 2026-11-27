@@ -1,0 +1,25 @@
+{
+ "id": "node-24-http-idempotency-key-deduplication",
+ "topic": "node",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/node-24-http-idempotency-key-deduplication/solution.ts(57,40): error TS2345: Argum",
+  "type error:     Type 'OutgoingHttpHeader | undefined' is not assignable to type 'string'. |       Ty",
+  "type error:     Argument of type 'OutgoingHttpHeaders' is not assignable to parameter of type 'Itera",
+  "type error:           Type 'Socket | null' is not assignable to type 'string | string[] | undefined'"
+ ],
+ "cand_tokens": [
+  639,
+  555,
+  464,
+  625
+ ],
+ "gen_seconds": 65.4,
+ "type_only": false,
+ "errors": []
+}

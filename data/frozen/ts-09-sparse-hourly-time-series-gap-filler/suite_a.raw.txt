@@ -1,0 +1,72 @@
+- Empty or single-point arrays return a shallow copy without throwing.
+- Missing 3,600,000 ms intervals between the first and last point are filled with fillValue (default 0).
+- Original point values (including 0 or negative numbers) are never overwritten, and the input array is not mutated.
+
+```ts
+test("Empty array returns a shallow copy without throwing", () => {
+  const result = fillMissingHours([]);
+  expect(result).toEqual([]);
+});
+
+test("Single-point array returns a shallow copy without throwing", () => {
+  const result = fillMissingHours([{ hourMs: 1633072800000, value: 10 }]);
+  expect(result).toEqual([{ hourMs: 1633072800000, value: 10 }]);
+});
+
+test("Missing 3,600,000 ms intervals are filled with fillValue (default 0)", () => {
+  const result = fillMissingHours([
+    { hourMs: 1633072800000, value: 10 },
+    { hourMs: 1633076400000, value: 20 }
+  ]);
+  expect(result).toEqual([
+    { hourMs: 1633072800000, value: 10 },
+    { hourMs: 1633076400000, value: 20 },
+    { hourMs: 1633079200000, value: 0 },
+    { hourMs: 1633082800000, value: 0 },
+    { hourMs: 1633086400000, value: 0 },
+    { hourMs: 1633089200000, value: 0 },
+    { hourMs: 1633092800000, value: 0 },
+    { hourMs: 1633096400000, value: 0 },
+    { hourMs: 1633100000000, value: 0 },
+    { hourMs: 1633103600000, value: 0 },
+    { hourMs: 1633107200000, value: 0 },
+    { hourMs: 1633110800000, value: 0 },
+    { hourMs: 1633114400000, value: 0 },
+    { hourMs: 1633118000000, value: 0 },
+    { hourMs: 1633121600000, value: 0 },
+    { hourMs: 1633125200000, value: 0 },
+    { hourMs: 1633128800000, value: 0 },
+    { hourMs: 1633132400000, value: 0 },
+    { hourMs: 1633136000000, value: 0 },
+    { hourMs: 1633139600000, value: 0 },
+    { hourMs: 1633143200000, value: 0 },
+    { hourMs: 1633146800000, value: 0 },
+    { hourMs: 1633150400000, value: 0 },
+    { hourMs: 1633154000000, value: 0 },
+    { hourMs: 1633157600000, value: 0 },
+    { hourMs: 1633161200000, value: 0 },
+    { hourMs: 1633164800000, value: 0 },
+    { hourMs: 1633168400000, value: 0 },
+    { hourMs: 1633172000000, value: 0 },
+    { hourMs: 1633175600000, value: 0 },
+    { hourMs: 1633179200000, value: 0 },
+    { hourMs: 1633182800000, value: 0 },
+    { hourMs: 1633186400000, value: 0 },
+    { hourMs: 1633190000000, value: 0 },
+    { hourMs: 1633193600000, value: 0 },
+    { hourMs: 1633197200000, value: 0 },
+    { hourMs: 1633200800000, value: 0 },
+    { hourMs: 1633204400000, value: 0 },
+    { hourMs: 1633208000000, value: 0 },
+    { hourMs: 1633211600000, value: 0 },
+    { hourMs: 1633215200000, value: 0 },
+    { hourMs: 1633218800000, value: 0 },
+    { hourMs: 1633222400000, value: 0 },
+    { hourMs: 1633226000000, value: 0 },
+    { hourMs: 1633229600000, value: 0 },
+    { hourMs: 1633233200000, value: 0 },
+    { hourMs: 1633236800000, value: 0 },
+    { hourMs: 1633240400000, value: 0 },
+    { hourMs: 1633244000000, value: 0 },
+    { hourMs: 1633247600000, value: 0 },
+    { hourMs: 16332

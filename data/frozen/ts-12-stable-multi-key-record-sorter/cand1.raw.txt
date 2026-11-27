@@ -1,0 +1,36 @@
+```ts
+/**
+ * Sorts records by successive tie-breaker keys for string, number, and boolean properties.
+ * Returns a new sorted array without mutating items.
+ * Secondary keys break ties when primary keys are equal, honoring independent "asc" and "desc" directions.
+ * Records equal across all specified keys preserve their original relative order.
+ *
+ * @param items - The array of records to sort.
+ * @param specs - An array of objects specifying the key and direction to sort by.
+ * @returns A new sorted array of records.
+ */
+export function sortRecordsByKeys<T>(
+  items: readonly T[],
+  specs: readonly { key: keyof T; direction?: "asc" | "desc" }[]
+): T[] {
+  return [...items].sort((a, b) => {
+    for (const { key, direction = "asc" } of specs) {
+      const aValue = a[key];
+      const bValue = b[key];
+      const isNumber = typeof aValue === "number" && typeof bValue === "number";
+      const isString = typeof aValue === "string" && typeof bValue === "string";
+      const isBoolean = typeof aValue === "boolean" && typeof bValue === "boolean";
+
+      if (isNumber || isString || isBoolean) {
+        const comparison = isNumber ? aValue - bValue : isString ? aValue.localeCompare(bValue) : (aValue ? 1 : -1) - (bValue ? 1 : -1);
+        if (comparison !== 0) {
+          return direction === "desc" ? -comparison : comparison;
+        }
+      } else {
+        throw new Error(`Unsupported type for key ${key}: ${typeof aValue}`);
+      }
+    }
+    return 0;
+  });
+}
+```

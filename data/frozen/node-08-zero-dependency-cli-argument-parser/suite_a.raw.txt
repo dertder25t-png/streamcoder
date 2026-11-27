@@ -1,0 +1,30 @@
+- Parses both --key=value and --key value identically
+- Treats everything after -- as literal positional arguments even if prefixed with -
+- Throws an Error when a declared valued option has no value following it
+- Throws an Error when an unknown flag is passed
+- Returns declared default values for omitted options without mutating argv
+
+```ts
+test("Parses both --key=value and --key value identically", () => {
+  const result = parseCliArgs(["node", "script.js", "--port=8080", "--verbose"], { port: { type: "number" }, verbose: { type: "boolean" } });
+  expect(result).toEqual({ options: { port: 8080, verbose: true }, positionals: [] });
+});
+
+test("Treats everything after -- as literal positional arguments even if prefixed with -", () => {
+  const result = parseCliArgs(["node", "script.js", "--", "-p", "8080"], { port: { type: "number" } });
+  expect(result).toEqual({ options: {}, positionals: ["-p", "8080"] });
+});
+
+test("Throws an Error when a declared valued option has no value following it", () => {
+  expect(() => parseCliArgs(["node", "script.js", "--port"], { port: { type: "number" } })).toThrow("Option 'port' requires a value");
+});
+
+test("Throws an Error when an unknown flag is passed", () => {
+  expect(() => parseCliArgs(["node", "script.js", "--unknown"], {})).toThrow("Unknown option 'unknown'");
+});
+
+test("Returns declared default values for omitted options without mutating argv", () => {
+  const result = parseCliArgs(["node", "script.js"], { port: { type: "number", default: 8080 }, verbose: { type: "boolean", default: false } });
+  expect(result).toEqual({ options: { port: 8080, verbose: false }, positionals: [] });
+});
+```

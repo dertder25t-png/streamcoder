@@ -1,0 +1,25 @@
+{
+ "id": "react-06-synchronized-temperature-converter",
+ "topic": "react",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/react-06-synchronized-temperature-converter/solution.test.tsx(41,11): error TS2739",
+  "type error: .runs/react-06-synchronized-temperature-converter/solution.tsx(33,62): error TS1005: ';'",
+  "type error: .runs/react-06-synchronized-temperature-converter/solution.test.tsx(41,11): error TS2739",
+  "test failed: converts Celsius to Fahrenheit and back; rounds to at most 2 decimals"
+ ],
+ "cand_tokens": [
+  503,
+  369,
+  608,
+  469
+ ],
+ "gen_seconds": 31.7,
+ "type_only": false,
+ "errors": []
+}

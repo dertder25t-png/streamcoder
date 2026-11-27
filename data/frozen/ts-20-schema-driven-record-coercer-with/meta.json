@@ -1,0 +1,25 @@
+{
+ "id": "ts-20-schema-driven-record-coercer-with",
+ "topic": "typescript",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error:       Type 'string' is not assignable to type '\"Expected: string, Actual: unknown\" | \"Ex",
+  "type error:   No index signature with a parameter of type 'string' was found on type 'Partial<Infer<",
+  "type error: .runs/ts-20-schema-driven-record-coercer-with/solution.ts(74,71): error TS2536: Type 'Ex",
+  "type error:     Type 'Infer<Schema<{ [x: string]: any; }>>' is not assignable to type 'never'. | .ru"
+ ],
+ "cand_tokens": [
+  647,
+  592,
+  697,
+  656
+ ],
+ "gen_seconds": 69.7,
+ "type_only": false,
+ "errors": []
+}

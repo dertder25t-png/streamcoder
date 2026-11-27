@@ -1,0 +1,61 @@
+- Prefixes every logical line exactly once—even when lines span multiple small chunks or arrive many per chunk.
+- Flushes the final line cleanly when the input ends without a trailing newline, and emits nothing for a 0-byte input.
+- Cooperates cleanly with stream.pipeline into a slow writable stream with a tiny highWaterMark without unbounded memory growth or data loss.
+
+```ts
+import { createLinePrefixStream } from "./createLinePrefixStream"; // Adjust the import path as necessary
+import { Transform } from "node:stream";
+import { pipeline } from "node:stream/promises";
+import { Readable, Writable } from "node:stream";
+import { promisify } from "node:util";
+import { mkdtemp, rm } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { test, expect, vi } from "vitest";
+
+const fs = require("node:fs");
+const path = require("node:path");
+const os = require("node:os");
+
+const dir = await mkdtemp(join(os.tmpdir(), "st-"));
+
+const read = (data: string) => new Readable({ read: () => {} }).wrap(fs.createReadStream(path.join(dir, "input.txt"), { data }));
+const write = () => new Writable({ write: () => {} }).wrap(fs.createWriteStream(path.join(dir, "output.txt")));
+
+afterEach(async () => {
+  await rm(dir, { recursive: true, force: true });
+});
+
+test("prefixes every logical line exactly once", async () => {
+  const prefix = "prefix_";
+  const input = "line1\nline2\nline3";
+  const expected = "prefix_line1\nprefix_line2\nprefix_line3\n";
+
+  await pipeline(read(input), createLinePrefixStream(prefix), write());
+
+  const output = await fs.promises.readFile(path.join(dir, "output.txt"), "utf8");
+  expect(output).toBe(expected);
+});
+
+test("flushes the final line cleanly when the input ends without a trailing newline", async () => {
+  const prefix = "prefix_";
+  const input = "line1\nline2\nline3";
+  const expected = "prefix_line1\nprefix_line2\nprefix_line3\n";
+
+  await pipeline(read(input), createLinePrefixStream(prefix), write());
+
+  const output = await fs.promises.readFile(path.join(dir, "output.txt"), "utf8");
+  expect(output).toBe(expected);
+});
+
+test("emits nothing for a 0-byte input", async () => {
+  const prefix = "prefix_";
+  const input = "";
+  const expected = "";
+
+  await pipeline(read(input), createLinePrefixStream(prefix), write());
+
+  const output = await fs.promises.readFile(path.join(dir, "output.txt"), "utf8");
+  expect(output).toBe(expected);
+});
+```

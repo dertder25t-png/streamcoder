@@ -1,0 +1,116 @@
+- Cycles through ascending → descending → none on repeated clicks of the same column, updating aria-sort on the active <th>.
+- Clicking a different column header immediately starts that new column in ascending order and resets the previous column's aria-sort.
+- Numeric columns sort numerically rather than alphabetically, and the original rows prop is never mutated.
+
+```tsx
+import React from 'react';
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import SortableTable from './SortableTable';
+
+afterEach(cleanup);
+
+test("clicking a column header toggles sort order", async () => {
+  const columns = [
+    { key: 'name', label: 'Name' },
+    { key: 'age', label: 'Age' }
+  ];
+  const rows = [
+    { name: 'Alice', age: 30 },
+    { name: 'Bob', age: 25 },
+    { name: 'Charlie', age: 35 }
+  ];
+
+  render(<SortableTable rows={rows} columns={columns} />);
+  const nameHeader = screen.getByRole('columnheader', { name: 'Name' });
+  const ageHeader = screen.getByRole('columnheader', { name: 'Age' });
+
+  fireEvent.click(nameHeader);
+  expect(nameHeader).toHaveAttribute('aria-sort', 'ascending');
+  fireEvent.click(nameHeader);
+  expect(nameHeader).toHaveAttribute('aria-sort', 'descending');
+  fireEvent.click(nameHeader);
+  expect(nameHeader).toHaveAttribute('aria-sort', 'none');
+
+  fireEvent.click(ageHeader);
+  expect(ageHeader).toHaveAttribute('aria-sort', 'ascending');
+  fireEvent.click(ageHeader);
+  expect(ageHeader).toHaveAttribute('aria-sort', 'descending');
+  fireEvent.click(ageHeader);
+  expect(ageHeader).toHaveAttribute('aria-sort', 'none');
+});
+
+test("clicking a different column header resets previous column's sort", async () => {
+  const columns = [
+    { key: 'name', label: 'Name' },
+    { key: 'age', label: 'Age' }
+  ];
+  const rows = [
+    { name: 'Alice', age: 30 },
+    { name: 'Bob', age: 25 },
+    { name: 'Charlie', age: 35 }
+  ];
+
+  render(<SortableTable rows={rows} columns={columns} />);
+  const nameHeader = screen.getByRole('columnheader', { name: 'Name' });
+  const ageHeader = screen.getByRole('columnheader', { name: 'Age' });
+
+  fireEvent.click(nameHeader);
+  expect(nameHeader).toHaveAttribute('aria-sort', 'ascending');
+  fireEvent.click(ageHeader);
+  expect(ageHeader).toHaveAttribute('aria-sort', 'ascending');
+  expect(nameHeader).toHaveAttribute('aria-sort', 'none');
+});
+
+test("numeric columns sort numerically", async () => {
+  const columns = [
+    { key: 'name', label: 'Name' },
+    { key: 'age', label: 'Age', numeric: true }
+  ];
+  const rows = [
+    { name: 'Alice', age: 30 },
+    { name: 'Bob', age: 25 },
+    { name: 'Charlie', age: 35 }
+  ];
+
+  render(<SortableTable rows={rows} columns={columns} />);
+  const ageHeader = screen.getByRole('columnheader', { name: 'Age' });
+
+  fireEvent.click(ageHeader);
+  expect(ageHeader).toHaveAttribute('aria-sort', 'ascending');
+  expect(rows).toEqual([
+    { name: 'Bob', age: 25 },
+    { name: 'Alice', age: 30 },
+    { name: 'Charlie', age: 35 }
+  ]);
+  fireEvent.click(ageHeader);
+  expect(ageHeader).toHaveAttribute('aria-sort', 'descending');
+  expect(rows).toEqual([
+    { name: 'Charlie', age: 35 },
+    { name: 'Alice', age: 30 },
+    { name: 'Bob', age: 25 }
+  ]);
+});
+
+test("original rows prop is never mutated", async () => {
+  const columns = [
+    { key: 'name', label: 'Name' },
+    { key: 'age', label: 'Age' }
+  ];
+  const rows = [
+    { name: 'Alice', age: 30 },
+    { name: 'Bob', age: 25 },
+    { name: 'Charlie', age: 35 }
+  ];
+
+  render(<SortableTable rows={rows} columns={columns} />);
+  const ageHeader = screen.getByRole('columnheader', { name: 'Age' });
+
+  fireEvent.click(ageHeader);
+  expect(ageHeader).toHaveAttribute('aria-sort', 'ascending');
+  expect(rows).toEqual([
+    { name: 'Alice', age: 30 },
+    { name: 'Bob', age: 25 },
+    { name: 'Charlie', age: 35 }
+  ]);
+});
+```

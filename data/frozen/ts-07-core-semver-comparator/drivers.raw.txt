@@ -1,0 +1,33 @@
+```ts
+probe("equal versions", async () => {
+  return compareSemverCore("1.2.3", "1.2.3");
+});
+
+probe("different major versions", async () => {
+  return compareSemverCore("2.0.0", "1.0.0");
+});
+
+probe("different minor versions", async () => {
+  return compareSemverCore("1.3.0", "1.2.0");
+});
+
+probe("different patch versions", async () => {
+  return compareSemverCore("1.2.4", "1.2.3");
+});
+
+probe("leading v", async () => {
+  return compareSemverCore("v1.2.3", "1.2.3");
+});
+
+probe("malformed version", async () => {
+  return compareSemverCore("1.2", "1.2.0");
+});
+
+probe("leading zero", async () => {
+  return compareSemverCore("1.02.0", "1.2.0");
+});
+
+probe("invalid version", async () => {
+  return compareSemverCore("1.2.x", "1.2.0");
+});
+```

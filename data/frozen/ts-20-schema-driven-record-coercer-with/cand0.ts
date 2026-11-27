@@ -1,0 +1,86 @@
+type Schema<T> = {
+  parse(input: unknown): { ok: true; data: T } | { ok: false; errors: { path: string; message: string }[] };
+};
+
+type Infer<S> = S extends Schema<infer T> ? T : never;
+
+const s = {
+  string(): Schema<string> {
+    return {
+      parse(input) {
+        if (typeof input === 'string') {
+          return { ok: true, data: input };
+        } else {
+          return { ok: false, errors: [{ path: '', message: 'Expected a string' }] };
+        }
+      }
+    };
+  },
+  number(): Schema<number> {
+    return {
+      parse(input) {
+        if (typeof input === 'number' && isFinite(input)) {
+          return { ok: true, data: input };
+        } else {
+          return { ok: false, errors: [{ path: '', message: 'Expected a finite number' }] };
+        }
+      }
+    };
+  },
+  boolean(): Schema<boolean> {
+    return {
+      parse(input) {
+        if (typeof input === 'boolean') {
+          return { ok: true, data: input };
+        } else {
+          return { ok: false, errors: [{ path: '', message: 'Expected a boolean' }] };
+        }
+      }
+    };
+  },
+  optional(inner: Schema<unknown>): Schema<unknown> {
+    return {
+      parse(input) {
+        if (input === undefined) {
+          return { ok: true, data: undefined };
+        }
+        const result = inner.parse(input);
+        if (result.ok) {
+          return { ok: true, data: result.data };
+        } else {
+          return result;
+        }
+      }
+    };
+  },
+  object(shape: { [key: string]: Schema<unknown> }): Schema<{ [key in keyof typeof shape]?: Infer<typeof shape[key]> }> {
+    return {
+      parse(input) {
+        if (typeof input !== 'object' || input === null || Array.isArray(input)) {
+          return { ok: false, errors: [{ path: '', message: 'Expected a non-null, non-array object' }] };
+        }
+        const errors: { path: string; message: string }[] = [];
+        const data: { [key in keyof typeof shape]?: Infer<typeof shape[key]> } = {};
+        for (const key in shape) {
+          if (shape.hasOwnProperty(key)) {
+            const result = shape[key].parse((input as { [key: string]: unknown })[key]);
+            if (!result.ok) {
+              errors.push(...result.errors.map(e => ({ path: `${key}${e.path ? `.${e.path}` : ''}`, message: e.message })));
+            } else {
+              if (result.data !== undefined) {
+                data[key] = result.data;
+              }
+            }
+          }
+        }
+        if (errors.length > 0) {
+          return { ok: false, errors };
+        } else {
+          return { ok: true, data };
+        }
+      }
+    };
+  }
+};
+
+export { s, Infer };

@@ -1,0 +1,49 @@
+```ts
+probe("empty string", async () => {
+  return parseDotEnv("");
+});
+
+probe("single key-value pair", async () => {
+  return parseDotEnv("KEY=VALUE");
+});
+
+probe("multiple key-value pairs", async () => {
+  return parseDotEnv("KEY1=VALUE1\nKEY2=VALUE2");
+});
+
+probe("blank lines", async () => {
+  return parseDotEnv("KEY=VALUE\n\n\nKEY2=VALUE2");
+});
+
+probe("comments", async () => {
+  return parseDotEnv("KEY=VALUE # comment\nKEY2=VALUE2");
+});
+
+probe("export prefixes", async () => {
+  return parseDotEnv("export KEY=VALUE\nKEY2=VALUE2");
+});
+
+probe("single quotes", async () => {
+  return parseDotEnv("KEY='VALUE with spaces'\nKEY2='VALUE with \\n newline'");
+});
+
+probe("double quotes", async () => {
+  return parseDotEnv('KEY="VALUE with spaces"\nKEY2="VALUE with \\n newline"');
+});
+
+probe("escaped characters", async () => {
+  return parseDotEnv('KEY="VALUE with \\n newline"\nKEY2=\'VALUE with \\n newline\'');
+});
+
+probe("trailing whitespace", async () => {
+  return parseDotEnv("KEY=VALUE  \nKEY2=VALUE2  ");
+});
+
+probe("leading whitespace", async () => {
+  return parseDotEnv("  KEY=VALUE\n  KEY2=VALUE2");
+});
+
+probe("mixed whitespace", async () => {
+  return parseDotEnv("  KEY=VALUE  \n  KEY2=VALUE2  ");
+});
+```

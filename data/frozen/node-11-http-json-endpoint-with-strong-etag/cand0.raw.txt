@@ -1,0 +1,22 @@
+```typescript
+import { createHash } from 'crypto';
+import { IncomingMessage, ServerResponse } from 'http';
+
+export function createConfigHandler(getConfig: () => unknown): (req: IncomingMessage, res: ServerResponse) => void {
+    return (req, res) => {
+        const config = getConfig();
+        const etag = createHash('sha256').update(JSON.stringify(config)).digest('hex').replace(/"/g, '\\"');
+
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('ETag', `"${etag}"`);
+
+        if (req.headers['if-none-match'] === etag || req.headers['if-none-match'] === '*') {
+            res.writeHead(304);
+            res.end();
+        } else {
+            res.writeHead(200);
+            res.end(JSON.stringify(config));
+        }
+    };
+}
+```

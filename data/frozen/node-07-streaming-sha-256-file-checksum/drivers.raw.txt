@@ -1,0 +1,48 @@
+```ts
+probe("empty file", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const filePath = path.join(dir, "empty.txt");
+  await fs.promises.writeFile(filePath, "");
+  const result = await hashFileStream(filePath);
+  await fs.promises.rm(dir, { recursive: true });
+  return result;
+});
+
+probe("small file", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const filePath = path.join(dir, "small.txt");
+  await fs.promises.writeFile(filePath, "hello world");
+  const result = await hashFileStream(filePath);
+  await fs.promises.rm(dir, { recursive: true });
+  return result;
+});
+
+probe("large file", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const filePath = path.join(dir, "large.txt");
+  const largeData = Buffer.alloc(1024 * 1024 * 10, 'a'); // 10MB of 'a'
+  await fs.promises.writeFile(filePath, largeData);
+  const result = await hashFileStream(filePath);
+  await fs.promises.rm(dir, { recursive: true });
+  return result;
+});
+
+probe("non-existent file", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const filePath = path.join(dir, "non-existent.txt");
+  await fs.promises.rm(dir, { recursive: true });
+  try {
+    await hashFileStream(filePath);
+  } catch (error) {
+    return error;
+  }
+});
+
+probe("invalid file path", async () => {
+  try {
+    await hashFileStream("/non-existent/path");
+  } catch (error) {
+    return error;
+  }
+});
+```

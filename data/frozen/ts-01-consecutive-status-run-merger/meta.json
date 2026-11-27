@@ -1,0 +1,25 @@
+{
+ "id": "ts-01-consecutive-status-run-merger",
+ "topic": "typescript",
+ "cand_hidden": [
+  true,
+  true,
+  true,
+  true
+ ],
+ "cand_hidden_err": [
+  "",
+  "",
+  "",
+  ""
+ ],
+ "cand_tokens": [
+  217,
+  276,
+  186,
+  215
+ ],
+ "gen_seconds": 22.7,
+ "type_only": false,
+ "errors": []
+}

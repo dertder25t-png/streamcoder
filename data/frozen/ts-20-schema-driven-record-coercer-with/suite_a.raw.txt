@@ -1,0 +1,43 @@
+- Export a minimal schema builder (s.string(), s.number(), s.boolean(), s.optional(inner), s.object(shape)) with an Infer<S> helper type and parse(input: unknown) method returning typed data or structured field errors.
+- Infer<typeof schema> produces optional properties (key?: T) for fields wrapped in s.optional and required properties otherwise.
+- Invalid inputs collect all nested field validation errors with dot-separated paths rather than stopping at the first error.
+- Unknown extra properties on input objects are stripped from the parsed output rather than leaked through.
+
+```ts
+import * as S from './schemaBuilder';
+
+test("s.string() should validate strings", () => {
+  expect(S.s.string().parse("hello")).toEqual({ ok: true, data: "hello" });
+  expect(S.s.string().parse(123)).toEqual({ ok: false, errors: [{ path: "", message: "Expected a string" }] });
+});
+
+test("s.number() should validate finite numbers", () => {
+  expect(S.s.number().parse(42)).toEqual({ ok: true, data: 42 });
+  expect(S.s.number().parse(Infinity)).toEqual({ ok: false, errors: [{ path: "", message: "Expected a finite number" }] });
+  expect(S.s.number().parse(NaN)).toEqual({ ok: false, errors: [{ path: "", message: "Expected a finite number" }] });
+});
+
+test("s.boolean() should validate booleans", () => {
+  expect(S.s.boolean().parse(true)).toEqual({ ok: true, data: true });
+  expect(S.s.boolean().parse("true")).toEqual({ ok: false, errors: [{ path: "", message: "Expected a boolean" }] });
+});
+
+test("s.optional() should handle undefined values", () => {
+  expect(S.s.optional(S.s.string()).parse(undefined)).toEqual({ ok: true, data: undefined });
+  expect(S.s.optional(S.s.string()).parse("hello")).toEqual({ ok: true, data: "hello" });
+});
+
+test("s.object() should validate nested objects", () => {
+  const schema = S.s.object({
+    name: S.s.string(),
+    age: S.s.number(),
+    isStudent: S.s.boolean(),
+  });
+
+  expect(schema.parse({ name: "Alice", age: 25, isStudent: true })).toEqual({ ok: true, data: { name: "Alice", age: 25, isStudent: true } });
+  expect(schema.parse({ name: "Alice", age: "25", isStudent: true })).toEqual({ ok: false, errors: [{ path: "age", message: "Expected a number" }] });
+  expect(schema.parse({ name: "Alice", isStudent: true })).toEqual({ ok: false, errors: [{ path: "age", message: "Expected a number" }] });
+  expect(schema.parse({ name: "Alice", age: 25, isStudent: "true" })).toEqual({ ok: false, errors: [{ path: "isStudent", message: "Expected a boolean" }] });
+  expect(schema.parse({ name: "Alice", age: 25, isStudent: true, extra: "value" })).toEqual({ ok: true, data: { name: "Alice", age: 25, isStudent: true } });
+});
+```

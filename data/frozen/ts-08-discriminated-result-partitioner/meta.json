@@ -1,0 +1,25 @@
+{
+ "id": "ts-08-discriminated-result-partitioner",
+ "topic": "typescript",
+ "cand_hidden": [
+  true,
+  false,
+  true,
+  true
+ ],
+ "cand_hidden_err": [
+  "",
+  "type error: .runs/ts-08-discriminated-result-partitioner/solution.ts(1,26): error TS2307: Cannot fin",
+  "",
+  ""
+ ],
+ "cand_tokens": [
+  122,
+  131,
+  120,
+  120
+ ],
+ "gen_seconds": 29.7,
+ "type_only": false,
+ "errors": []
+}

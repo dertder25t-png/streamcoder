@@ -1,0 +1,36 @@
+```tsx
+probe("initial state", async () => {
+  const { getByRole } = render(<ButtonComponent />);
+  expect(getByRole("button")).toHaveTextContent("Click me");
+  return snap();
+});
+
+probe("loading state", async () => {
+  vi.useFakeTimers();
+  const { getByRole } = render(<ButtonComponent />);
+  fireEvent.click(getByRole("button"));
+  expect(getByRole("button")).toHaveTextContent("Loading...");
+  vi.advanceTimersByTime(1000);
+  return snap();
+});
+
+probe("error state", async () => {
+  vi.useFakeTimers();
+  const { getByRole } = render(<ButtonComponent />);
+  fireEvent.click(getByRole("button"));
+  expect(getByRole("button")).toHaveTextContent("Error");
+  vi.advanceTimersByTime(1000);
+  return snap();
+});
+
+probe("reset state", async () => {
+  vi.useFakeTimers();
+  const { getByRole } = render(<ButtonComponent />);
+  fireEvent.click(getByRole("button"));
+  expect(getByRole("button")).toHaveTextContent("Error");
+  vi.advanceTimersByTime(1000);
+  fireEvent.click(getByRole("button"));
+  expect(getByRole("button")).toHaveTextContent("Click me");
+  return snap();
+});
+```

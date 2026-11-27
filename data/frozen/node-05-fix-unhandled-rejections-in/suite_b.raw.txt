@@ -1,0 +1,74 @@
+- Test that it resolves to a map of path → string for every existing readable file, silently omitting paths that fail specifically with ENOENT.
+- Test that it re-throws non-ENOENT errors (such as EISDIR when a directory path is supplied).
+- Test that it never emits unhandled promise rejection warnings.
+- Test that it handles empty input gracefully.
+- Test that it handles invalid input gracefully.
+- Test that it handles repeated calls correctly.
+- Test that it cleans up resources after each test.
+
+```ts
+import { readExistingFiles } from './readExistingFiles';
+import { promises as fs } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+afterEach(async () => {
+  const files = await fs.readdir(tmpdir());
+  const stFiles = files.filter(file => file.startsWith('st-'));
+  for (const file of stFiles) {
+    await fs.rm(join(tmpdir(), file), { recursive: true, force: true });
+  }
+});
+
+test('resolves to a map of path → string for every existing readable file, silently omitting paths that fail specifically with ENOENT', async () => {
+  const dir = await fs.promises.mkdtemp(join(tmpdir(), 'st-'));
+  const filePath1 = join(dir, 'file1.txt');
+  const filePath2 = join(dir, 'file2.txt');
+  await fs.promises.writeFile(filePath1, 'content1');
+  await fs.promises.writeFile(filePath2, 'content2');
+
+  const result = await readExistingFiles([filePath1, filePath2, 'nonexistent.txt']);
+  expect(result).toEqual(new Map([
+    [filePath1, 'content1'],
+    [filePath2, 'content2']
+  ]));
+});
+
+test('re-throws non-ENOENT errors (such as EISDIR when a directory path is supplied)', async () => {
+  const dir = await fs.promises.mkdtemp(join(tmpdir(), 'st-'));
+  const filePath = join(dir, 'file.txt');
+  await fs.promises.writeFile(filePath, 'content');
+
+  await expect(readExistingFiles([filePath, dir])).rejects.toThrow('EISDIR');
+});
+
+test('never emits unhandled promise rejection warnings', async () => {
+  const dir = await fs.promises.mkdtemp(join(tmpdir(), 'st-'));
+  const filePath = join(dir, 'file.txt');
+  await fs.promises.writeFile(filePath, 'content');
+
+  const spy = vi.spyOn(console, 'error');
+  await readExistingFiles([filePath, 'nonexistent.txt']);
+  expect(spy).not.toHaveBeenCalled();
+  spy.mockRestore();
+});
+
+test('handles empty input gracefully', async () => {
+  const result = await readExistingFiles([]);
+  expect(result).toEqual(new Map());
+});
+
+test('handles invalid input gracefully', async () => {
+  await expect(readExistingFiles(['nonexistent.txt'])).rejects.toThrow('ENOENT');
+});
+
+test('handles repeated calls correctly', async () => {
+  const dir = await fs.promises.mkdtemp(join(tmpdir(), 'st-'));
+  const filePath = join(dir, 'file.txt');
+  await fs.promises.writeFile(filePath, 'content');
+
+  const result1 = await readExistingFiles([filePath]);
+  const result2 = await readExistingFiles([filePath]);
+  expect(result1).toEqual(result2);
+});
+```

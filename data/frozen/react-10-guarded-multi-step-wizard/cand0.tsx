@@ -1,0 +1,65 @@
+import React, { useState } from 'react';
+
+interface Step {
+  id: string;
+  title: string;
+  content: React.ReactNode;
+  isValid?: boolean;
+}
+
+interface StepWizardProps {
+  steps: Step[];
+  onComplete: () => void;
+}
+
+const StepWizard: React.FC<StepWizardProps> = ({ steps, onComplete }) => {
+  const [activeStepIndex, setActiveStepIndex] = useState(0);
+
+  const handleNext = () => {
+    if (activeStepIndex < steps.length - 1 && steps[activeStepIndex].isValid !== false) {
+      setActiveStepIndex(activeStepIndex + 1);
+    }
+  };
+
+  const handleBack = () => {
+    if (activeStepIndex > 0) {
+      setActiveStepIndex(activeStepIndex - 1);
+    }
+  };
+
+  const handleFinish = () => {
+    if (steps[activeStepIndex].isValid !== false) {
+      onComplete();
+    }
+  };
+
+  return (
+    <div>
+      <div>
+        {steps.map((step, index) => (
+          <button
+            key={step.id}
+            onClick={() => setActiveStepIndex(index)}
+            disabled={index !== activeStepIndex}
+          >
+            {step.title}
+          </button>
+        ))}
+      </div>
+      <div>{steps[activeStepIndex].content}</div>
+      <div>
+        <button onClick={handleBack} disabled={activeStepIndex === 0}>
+          Back
+        </button>
+        <button onClick={handleNext} disabled={steps[activeStepIndex].isValid === false}>
+          Next
+        </button>
+        {activeStepIndex === steps.length - 1 && (
+          <button onClick={handleFinish}>Finish</button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export { StepWizard };

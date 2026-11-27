@@ -1,0 +1,25 @@
+{
+ "id": "react-32-click-outside-detector-hook",
+ "topic": "react",
+ "cand_hidden": [
+  true,
+  true,
+  true,
+  true
+ ],
+ "cand_hidden_err": [
+  "",
+  "",
+  "",
+  ""
+ ],
+ "cand_tokens": [
+  134,
+  144,
+  154,
+  134
+ ],
+ "gen_seconds": 25.7,
+ "type_only": false,
+ "errors": []
+}

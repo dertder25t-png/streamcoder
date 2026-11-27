@@ -1,0 +1,34 @@
+```ts
+probe("just now", async () => {
+  vi.useFakeTimers();
+  const now = Date.now();
+  render(<TimeAgoLabel timestampMs={now} />);
+  vi.advanceTimersByTime(59000);
+  return snap();
+});
+
+probe("1m ago", async () => {
+  vi.useFakeTimers();
+  const now = Date.now();
+  render(<TimeAgoLabel timestampMs={now - 60000} />);
+  vi.advanceTimersByTime(30000);
+  return snap();
+});
+
+probe("1h ago", async () => {
+  vi.useFakeTimers();
+  const now = Date.now();
+  render(<TimeAgoLabel timestampMs={now - 3600000} />);
+  vi.advanceTimersByTime(30000);
+  return snap();
+});
+
+probe("clears interval on unmount", async () => {
+  vi.useFakeTimers();
+  const now = Date.now();
+  const { unmount } = render(<TimeAgoLabel timestampMs={now} />);
+  unmount();
+  vi.advanceTimersByTime(30000);
+  return snap();
+});
+```

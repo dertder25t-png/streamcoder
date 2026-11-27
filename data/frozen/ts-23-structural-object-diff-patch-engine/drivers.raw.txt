@@ -1,0 +1,49 @@
+```ts
+probe("empty objects", async () => {
+  const before = {};
+  const after = {};
+  const diff = computeObjectDiff(before, after);
+  const result = applyObjectDiff(before, diff);
+  return { result };
+});
+
+probe("add simple key", async () => {
+  const before = {};
+  const after = { a: 1 };
+  const diff = computeObjectDiff(before, after);
+  const result = applyObjectDiff(before, diff);
+  return { result };
+});
+
+probe("replace simple key", async () => {
+  const before = { a: 1 };
+  const after = { a: 2 };
+  const diff = computeObjectDiff(before, after);
+  const result = applyObjectDiff(before, diff);
+  return { result };
+});
+
+probe("remove simple key", async () => {
+  const before = { a: 1 };
+  const after = {};
+  const diff = computeObjectDiff(before, after);
+  const result = applyObjectDiff(before, diff);
+  return { result };
+});
+
+probe("nested object", async () => {
+  const before = { a: { b: 1 } };
+  const after = { a: { b: 2 } };
+  const diff = computeObjectDiff(before, after);
+  const result = applyObjectDiff(before, diff);
+  return { result };
+});
+
+probe("missing key", async () => {
+  const before = { a: 1 };
+  const after = {};
+  const diff = computeObjectDiff(before, after);
+  const result = applyObjectDiff(before, diff);
+  return { result };
+});
+```

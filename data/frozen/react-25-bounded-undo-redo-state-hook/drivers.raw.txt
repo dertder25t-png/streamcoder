@@ -1,0 +1,34 @@
+```ts
+probe("initial state", async () => {
+  const { getByRole } = render(<MyComponent initialValue="initial" />);
+  return getByRole("text").textContent;
+});
+
+probe("set value", async () => {
+  const { getByRole } = render(<MyComponent initialValue="initial" />);
+  fireEvent.click(getByRole("button", { name: "Set Value" }));
+  return getByRole("text").textContent;
+});
+
+probe("undo", async () => {
+  const { getByRole } = render(<MyComponent initialValue="initial" />);
+  fireEvent.click(getByRole("button", { name: "Set Value" }));
+  fireEvent.click(getByRole("button", { name: "Undo" }));
+  return getByRole("text").textContent;
+});
+
+probe("redo", async () => {
+  const { getByRole } = render(<MyComponent initialValue="initial" />);
+  fireEvent.click(getByRole("button", { name: "Set Value" }));
+  fireEvent.click(getByRole("button", { name: "Undo" }));
+  fireEvent.click(getByRole("button", { name: "Redo" }));
+  return getByRole("text").textContent;
+});
+
+probe("reset", async () => {
+  const { getByRole } = render(<MyComponent initialValue="initial" />);
+  fireEvent.click(getByRole("button", { name: "Set Value" }));
+  fireEvent.click(getByRole("button", { name: "Reset" }));
+  return getByRole("text").textContent;
+});
+```

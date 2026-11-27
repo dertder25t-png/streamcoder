@@ -1,0 +1,97 @@
+- Uses useSyncExternalStore (or equivalent tear-safe pattern) so synchronous mutations before commit are never missed.
+- Re-subscribes cleanly when the store prop switches to a different store instance and unsubscribes from the previous store.
+- Under <React.StrictMode>, leaves exactly one active subscription while mounted and zero after unmount.
+
+```tsx
+import React, { useEffect, useState } from "react";
+import { render, screen, cleanup, act, waitFor } from "@testing-library/react";
+import { useExternalSnapshot } from "./useExternalSnapshot";
+
+describe("useExternalSnapshot", () => {
+  afterEach(cleanup);
+
+  test("uses useSyncExternalStore (or equivalent tear-safe pattern) so synchronous mutations before commit are never missed", async () => {
+    const store = {
+      _value: 0,
+      subscribe: (callback: () => void) => {
+        const id = setInterval(callback, 100);
+        return () => clearInterval(id);
+      },
+      getSnapshot: () => store._value,
+    };
+
+    const Component = () => {
+      const value = useExternalSnapshot(store);
+      return <div role="value">{value}</div>;
+    };
+
+    render(<Component />);
+    expect(screen.getByRole("value")).toHaveTextContent("0");
+
+    store._value = 1;
+    await waitFor(() => expect(screen.getByRole("value")).toHaveTextContent("1"));
+  });
+
+  test("re-subscribes cleanly when the store prop switches to a different store instance and unsubscribes from the previous store", async () => {
+    const store1 = {
+      _value: 0,
+      subscribe: (callback: () => void) => {
+        const id = setInterval(callback, 100);
+        return () => clearInterval(id);
+      },
+      getSnapshot: () => store1._value,
+    };
+
+    const store2 = {
+      _value: 0,
+      subscribe: (callback: () => void) => {
+        const id = setInterval(callback, 100);
+        return () => clearInterval(id);
+      },
+      getSnapshot: () => store2._value,
+    };
+
+    const Component = ({ store }: { store: typeof store1 }) => {
+      const value = useExternalSnapshot(store);
+      return <div role="value">{value}</div>;
+    };
+
+    render(<Component store={store1} />);
+    expect(screen.getByRole("value")).toHaveTextContent("0");
+
+    store1._value = 1;
+    await waitFor(() => expect(screen.getByRole("value")).toHaveTextContent("1"));
+
+    render(<Component store={store2} />);
+    expect(screen.getByRole("value")).toHaveTextContent("0");
+
+    store2._value = 1;
+    await waitFor(() => expect(screen.getByRole("value")).toHaveTextContent("1"));
+  });
+
+  test("under <React.StrictMode>, leaves exactly one active subscription while mounted and zero after unmount", async () => {
+    const store = {
+      _value: 0,
+      subscribe: (callback: () => void) => {
+        const id = setInterval(callback, 100);
+        return () => clearInterval(id);
+      },
+      getSnapshot: () => store._value,
+    };
+
+    const Component = () => {
+      const value = useExternalSnapshot(store);
+      return <div role="value">{value}</div>;
+    };
+
+    render(<React.StrictMode><Component /></React.StrictMode>);
+    expect(screen.getByRole("value")).toHaveTextContent("0");
+
+    store._value = 1;
+    await waitFor(() => expect(screen.getByRole("value")).toHaveTextContent("1"));
+
+    cleanup();
+    expect(screen.queryByRole("value")).toBeNull();
+  });
+});
+```

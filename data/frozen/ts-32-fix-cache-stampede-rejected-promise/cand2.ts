@@ -1,0 +1,34 @@
+import { Map } from 'node:util';
+
+export interface MemoizeOptions {
+  ttlMs: number;
+  maxEntries: number;
+  now?: () => number;
+}
+
+export function memoizeAsync<V>(
+  fn: (key: string) => Promise<V>,
+  options: MemoizeOptions,
+): (key: string) => Promise<V> {
+  const { maxEntries, now = Date.now } = options;
+  const cache = new Map<string, { promise: Promise<V>; at: number }>();
+  return async (key) => {
+    const hit = cache.get(key);
+    if (hit) {
+      if (now() - hit.at < options.ttlMs) {
+        return hit.promise;
+      } else {
+        cache.delete(key);
+      }
+    }
+    const promise = fn(key);
+    const store = () => {
+      cache.set(key, { promise, at: now() });
+      while (cache.size > maxEntries) {
+        cache.delete(cache.keys().next().value as string);
+      }
+    };
+    promise.then(store, store);
+    return promise;
+  };
+}

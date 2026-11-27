@@ -1,0 +1,68 @@
+```ts
+probe("basic request", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const configPath = path.join(dir, "config.json");
+  await fs.promises.writeFile(configPath, JSON.stringify({ key: "value" }));
+
+  const getConfig = () => JSON.parse(fs.readFileSync(configPath, "utf8"));
+  const handler = createConfigHandler(getConfig);
+
+  const req = new http.IncomingMessage({ url: "/", headers: {} });
+  const res = new http.ServerResponse(req);
+  handler(req, res);
+
+  return { statusCode: res.statusCode, headers: res.getHeaders(), body: await readResponseBody(res) };
+});
+
+probe("conditional request with matching ETag", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const configPath = path.join(dir, "config.json");
+  await fs.promises.writeFile(configPath, JSON.stringify({ key: "value" }));
+
+  const getConfig = () => JSON.parse(fs.readFileSync(configPath, "utf8"));
+  const handler = createConfigHandler(getConfig);
+
+  const req = new http.IncomingMessage({ url: "/", headers: { "If-None-Match": '"1234567890"' } });
+  const res = new http.ServerResponse(req);
+  handler(req, res);
+
+  return { statusCode: res.statusCode, headers: res.getHeaders(), body: await readResponseBody(res) };
+});
+
+probe("conditional request with non-matching ETag", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const configPath = path.join(dir, "config.json");
+  await fs.promises.writeFile(configPath, JSON.stringify({ key: "value" }));
+
+  const getConfig = () => JSON.parse(fs.readFileSync(configPath, "utf8"));
+  const handler = createConfigHandler(getConfig);
+
+  const req = new http.IncomingMessage({ url: "/", headers: { "If-None-Match": '"9876543210"' } });
+  const res = new http.ServerResponse(req);
+  handler(req, res);
+
+  return { statusCode: res.statusCode, headers: res.getHeaders(), body: await readResponseBody(res) };
+});
+
+probe("config change triggers new ETag", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const configPath = path.join(dir, "config.json");
+  await fs.promises.writeFile(configPath, JSON.stringify({ key: "value" }));
+
+  const getConfig = () => JSON.parse(fs.readFileSync(configPath, "utf8"));
+  const handler = createConfigHandler(getConfig);
+
+  const req1 = new http.IncomingMessage({ url: "/", headers: {} });
+  const res1 = new http.ServerResponse(req1);
+  handler(req1, res1);
+  await readResponseBody(res1);
+
+  await fs.promises.writeFile(configPath, JSON.stringify({ key: "new value" }));
+
+  const req2 = new http.IncomingMessage({ url: "/", headers: {} });
+  const res2 = new http.ServerResponse(req2);
+  handler(req2, res2);
+
+  return { statusCode: res2.statusCode, headers: res2.getHeaders(), body: await readResponseBody(res2) };
+});
+```

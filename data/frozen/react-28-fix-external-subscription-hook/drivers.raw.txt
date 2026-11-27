@@ -1,0 +1,53 @@
+```ts
+probe("initial render", async () => {
+  const store = {
+    subscribe: vi.fn(),
+    getSnapshot: vi.fn(() => "initial")
+  };
+  render(<useExternalSnapshot store={store} />);
+  await waitFor(() => expect(screen.getByText("initial")).toBeInTheDocument());
+  return snap();
+});
+
+probe("store change", async () => {
+  const store = {
+    subscribe: vi.fn(),
+    getSnapshot: vi.fn(() => "initial")
+  };
+  render(<useExternalSnapshot store={store} />);
+  await waitFor(() => expect(screen.getByText("initial")).toBeInTheDocument());
+  store.getSnapshot.mockReturnValue("updated");
+  store.subscribe.mock.calls[0][0]();
+  await waitFor(() => expect(screen.getByText("updated")).toBeInTheDocument());
+  return snap();
+});
+
+probe("store identity change", async () => {
+  const store1 = {
+    subscribe: vi.fn(),
+    getSnapshot: vi.fn(() => "initial")
+  };
+  const store2 = {
+    subscribe: vi.fn(),
+    getSnapshot: vi.fn(() => "updated")
+  };
+  render(<useExternalSnapshot store={store1} />);
+  await waitFor(() => expect(screen.getByText("initial")).toBeInTheDocument());
+  rerender(<useExternalSnapshot store={store2} />);
+  await waitFor(() => expect(screen.getByText("updated")).toBeInTheDocument());
+  return snap();
+});
+
+probe("strict mode double-invocation", async () => {
+  vi.useFakeTimers();
+  const store = {
+    subscribe: vi.fn(),
+    getSnapshot: vi.fn(() => "initial")
+  };
+  render(<React.StrictMode><useExternalSnapshot store={store} /></React.StrictMode>);
+  await waitFor(() => expect(screen.getByText("initial")).toBeInTheDocument());
+  vi.advanceTimersByTime(100);
+  await waitFor(() => expect(screen.getByText("initial")).toBeInTheDocument());
+  return snap();
+});
+```

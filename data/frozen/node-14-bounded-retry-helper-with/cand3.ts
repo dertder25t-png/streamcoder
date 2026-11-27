@@ -1,0 +1,38 @@
+import { AbortController, AbortSignal } from 'node:events';
+
+interface RetryOptions {
+  maxAttempts: number;
+  baseDelayMs: number;
+  shouldRetry?: (err: unknown) => boolean;
+  signal?: AbortSignal;
+  sleep?: (ms: number) => Promise<void>;
+}
+
+export async function retryWithBackoff(
+  fn: () => Promise<void>,
+  options: RetryOptions
+): Promise<void> {
+  const {
+    maxAttempts,
+    baseDelayMs,
+    shouldRetry = () => true,
+    signal = new AbortController().signal,
+    sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms)),
+  } = options;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      await fn();
+      return; // Success, exit immediately
+    } catch (err) {
+      if (!shouldRetry(err) || signal.aborted) {
+        throw err; // Re-throw if should not retry or signal aborted
+      }
+      if (signal.aborted) {
+        return; // Exit if signal aborted
+      }
+      await sleep(baseDelayMs * Math.pow(2, attempt - 1)); // Wait with backoff
+    }
+  }
+  throw new Error('Max attempts reached'); // Fallback error
+}

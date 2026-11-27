@@ -1,0 +1,84 @@
+- Test that the form renders with the correct labels and input types.
+- Test that the form fields are required and display errors on blur.
+- Test that the cross-field constraint endDate >= startDate is enforced and errors are displayed live.
+- Test that the form prevents submission on invalid input and focuses on the first invalid input.
+- Test that the form clears errors when the input values are corrected.
+- Test that the form handles repeated calls to onSubmit correctly.
+- Test that the form cleans up any timers, listeners, or resources when unmounted.
+
+```tsx
+import React from 'react';
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import DateRangeForm from './DateRangeForm';
+
+afterEach(cleanup);
+
+test('renders with the correct labels and input types', () => {
+  render(<DateRangeForm onSubmit={() => {}} />);
+  expect(screen.getByLabelText('Start date')).toBeInTheDocument();
+  expect(screen.getByLabelText('End date')).toBeInTheDocument();
+  expect(screen.getByLabelText('Label')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /Submit/i })).toBeInTheDocument();
+});
+
+test('displays errors on blur when fields are empty', async () => {
+  render(<DateRangeForm onSubmit={() => {}} />);
+  fireEvent.blur(screen.getByLabelText('Start date'));
+  fireEvent.blur(screen.getByLabelText('End date'));
+  fireEvent.blur(screen.getByLabelText('Label'));
+  await waitFor(() => {
+    expect(screen.getByText('Start date is required')).toBeInTheDocument();
+    expect(screen.getByText('End date is required')).toBeInTheDocument();
+    expect(screen.getByText('Label is required')).toBeInTheDocument();
+  });
+});
+
+test('enforces cross-field constraint endDate >= startDate and displays errors live', async () => {
+  render(<DateRangeForm onSubmit={() => {}} />);
+  fireEvent.change(screen.getByLabelText('Start date'), { target: { value: '2024-01-15' } });
+  fireEvent.change(screen.getByLabelText('End date'), { target: { value: '2024-01-10' } });
+  await waitFor(() => {
+    expect(screen.getByText('End date must be on or after Start date')).toBeInTheDocument();
+  });
+  fireEvent.change(screen.getByLabelText('End date'), { target: { value: '2024-01-20' } });
+  await waitFor(() => {
+    expect(screen.queryByText('End date must be on or after Start date')).not.toBeInTheDocument();
+  });
+});
+
+test('prevents submission on invalid input and focuses on the first invalid input', async () => {
+  render(<DateRangeForm onSubmit={() => {}} />);
+  fireEvent.click(screen.getByRole('button', { name: /Submit/i }));
+  await waitFor(() => {
+    expect(screen.getByText('Start date is required')).toBeInTheDocument();
+    expect(screen.getByText('End date is required')).toBeInTheDocument();
+    expect(screen.getByText('Label is required')).toBeInTheDocument();
+    expect(screen.getByLabelText('Start date')).toHaveFocus();
+  });
+});
+
+test('clears errors when the input values are corrected', async () => {
+  render(<DateRangeForm onSubmit={() => {}} />);
+  fireEvent.change(screen.getByLabelText('Start date'), { target: { value: '2024-01-15' } });
+  fireEvent.change(screen.getByLabelText('End date'), { target: { value: '2024-01-20' } });
+  fireEvent.change(screen.getByLabelText('Label'), { target: { value: 'Test' } });
+  fireEvent.blur(screen.getByLabelText('Start date'));
+  fireEvent.blur(screen.getByLabelText('End date'));
+  fireEvent.blur(screen.getByLabelText('Label'));
+  await waitFor(() => {
+    expect(screen.queryByText('Start date is required')).not.toBeInTheDocument();
+    expect(screen.queryByText('End date is required')).not.toBeInTheDocument();
+    expect(screen.queryByText('Label is required')).not.toBeInTheDocument();
+  });
+});
+
+test('handles repeated calls to onSubmit correctly', async () => {
+  const onSubmit = vi.fn();
+  render(<DateRangeForm onSubmit={onSubmit} />);
+  fireEvent.click(screen.getByRole('button', { name: /Submit/i }));
+  fireEvent.click(screen.getByRole('button', { name: /Submit/i }));
+  await waitFor(() => {
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+});
+```

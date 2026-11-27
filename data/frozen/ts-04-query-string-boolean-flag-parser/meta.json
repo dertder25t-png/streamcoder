@@ -1,0 +1,25 @@
+{
+ "id": "ts-04-query-string-boolean-flag-parser",
+ "topic": "typescript",
+ "cand_hidden": [
+  true,
+  false,
+  true,
+  true
+ ],
+ "cand_hidden_err": [
+  "",
+  "test failed: parses true values, false values and bare flags; leading ? is optional and values are c",
+  "",
+  ""
+ ],
+ "cand_tokens": [
+  146,
+  200,
+  171,
+  184
+ ],
+ "gen_seconds": 19.4,
+ "type_only": false,
+ "errors": []
+}

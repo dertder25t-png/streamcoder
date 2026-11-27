@@ -1,0 +1,37 @@
+- Test that renderTemplate replaces known keys with their stringified values.
+- Test that renderTemplate does not recursively re-interpolate replacement values.
+- Test that renderTemplate throws an Error when a missing key is encountered and strict is true.
+- Test that renderTemplate leaves unknown placeholders untouched when strict is false or omitted.
+- Test that renderTemplate handles empty or invalid input gracefully.
+- Test that renderTemplate handles repeated calls correctly.
+
+```ts
+test("replaces known keys with their stringified values", () => {
+  expect(renderTemplate("Hello, {{name}}!", { name: "Alice" })).toBe("Hello, Alice!");
+});
+
+test("does not recursively re-interpolate replacement values", () => {
+  expect(renderTemplate("Value: {{value}}", { value: "{{unknown}}" })).toBe("Value: {{unknown}}");
+});
+
+test("throws an Error when a missing key is encountered and strict is true", () => {
+  expect(() => renderTemplate("Hello, {{name}}!", {}, { strict: true })).toThrow("name");
+});
+
+test("leaves unknown placeholders untouched when strict is false or omitted", () => {
+  expect(renderTemplate("Hello, {{name}}!", {})).toBe("Hello, {{name}}!");
+  expect(renderTemplate("Hello, {{name}}!", {}, { strict: false })).toBe("Hello, {{name}}!");
+});
+
+test("handles empty or invalid input gracefully", () => {
+  expect(renderTemplate("", { name: "Alice" })).toBe("");
+  expect(renderTemplate("Hello, {{name}}!", {})).toBe("Hello, {{name}}!");
+  expect(renderTemplate("Hello, {{name}}!", null)).toBe("Hello, {{name}}!");
+  expect(renderTemplate("Hello, {{name}}!", undefined)).toBe("Hello, {{name}}!");
+});
+
+test("handles repeated calls correctly", () => {
+  expect(renderTemplate("Hello, {{name}}!", { name: "Alice" })).toBe("Hello, Alice!");
+  expect(renderTemplate("Hello, {{name}}!", { name: "Bob" })).toBe("Hello, Bob!");
+});
+```

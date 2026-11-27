@@ -1,0 +1,25 @@
+{
+ "id": "react-29-paginated-table-with-cross-page",
+ "topic": "react",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "test failed: header checkbox only affects the visible page",
+  "test failed: keeps selections across pages and reports all selected ids; header checkbox only affect",
+  "type error: .runs/react-29-paginated-table-with-cross-page/solution.tsx(26,49): error TS2556: A spre",
+  "test failed: keeps selections across pages and reports all selected ids; header checkbox only affect"
+ ],
+ "cand_tokens": [
+  677,
+  621,
+  572,
+  707
+ ],
+ "gen_seconds": 69.8,
+ "type_only": false,
+ "errors": []
+}

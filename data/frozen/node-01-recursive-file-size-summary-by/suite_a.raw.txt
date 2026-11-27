@@ -1,0 +1,51 @@
+- An empty directory resolves to {}.
+- Nested subdirectories aggregate together with normalized lowercase extension keys.
+- Extensionless files and dotfiles like .gitignore group under "(no-ext)".
+- Symbolic links to files or directories are skipped rather than counted or followed.
+
+```ts
+import { summarizeByExtension } from './summarizeByExtension'; // Adjust the import path as necessary
+import fs from 'fs/promises';
+import path from 'path';
+import os from 'os';
+
+test("Empty directory resolves to {}", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const result = await summarizeByExtension(dir);
+  expect(result).toEqual({});
+  await fs.promises.rm(dir, { recursive: true });
+});
+
+test("Nested subdirectories aggregate together with normalized lowercase extension keys", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const subdir1 = path.join(dir, 'subdir1');
+  const subdir2 = path.join(dir, 'subdir2');
+  await fs.promises.mkdir(subdir1);
+  await fs.promises.mkdir(subdir2);
+  await fs.promises.writeFile(path.join(subdir1, 'file1.txt'), 'content1');
+  await fs.promises.writeFile(path.join(subdir2, 'file2.ts'), 'content2');
+  const result = await summarizeByExtension(dir);
+  expect(result).toEqual({ '.txt': { count: 1, bytes: 7 }, '.ts': { count: 1, bytes: 7 } });
+  await fs.promises.rm(dir, { recursive: true });
+});
+
+test("Extensionless files and dotfiles like .gitignore group under '(no-ext)'", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  await fs.promises.writeFile(path.join(dir, 'file1'), 'content1');
+  await fs.promises.writeFile(path.join(dir, '.gitignore'), 'content2');
+  const result = await summarizeByExtension(dir);
+  expect(result).toEqual({ '(no-ext)': { count: 2, bytes: 14 } });
+  await fs.promises.rm(dir, { recursive: true });
+});
+
+test("Symbolic links to files or directories are skipped rather than counted or followed", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const targetFile = path.join(dir, 'target.txt');
+  const linkFile = path.join(dir, 'link.txt');
+  await fs.promises.writeFile(targetFile, 'content1');
+  await fs.promises.symlink(targetFile, linkFile);
+  const result = await summarizeByExtension(dir);
+  expect(result).toEqual({ '(no-ext)': { count: 1, bytes: 7 } });
+  await fs.promises.rm(dir, { recursive: true });
+});
+```

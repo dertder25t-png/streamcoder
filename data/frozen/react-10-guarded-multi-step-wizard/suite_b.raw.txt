@@ -1,0 +1,85 @@
+- Test that StepWizard renders step indicators.
+- Test that Back button is disabled on step 1.
+- Test that Next button is disabled when current step has isValid === false.
+- Test that Finish button is displayed on the last step.
+- Test that Finish button invokes onComplete() only when isValid !== false.
+- Test that moving backward and forward never lets the active index drop below 0 or exceed steps.length - 1.
+- Test that empty or invalid input is handled gracefully.
+- Test that repeated calls do not cause issues.
+- Test that timers, listeners, files, or other resources are cleaned up.
+
+```tsx
+import React from 'react';
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import StepWizard from './StepWizard';
+
+afterEach(cleanup);
+
+test("renders step indicators", () => {
+  const steps = [
+    { id: '1', title: 'Step 1', content: 'Content 1' },
+    { id: '2', title: 'Step 2', content: 'Content 2' },
+    { id: '3', title: 'Step 3', content: 'Content 3' }
+  ];
+  render(<StepWizard steps={steps} onComplete={() => {}} />);
+  expect(screen.getByRole('button', { name: 'Step 1' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Step 2' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Step 3' })).toBeInTheDocument();
+});
+
+test("Back button is disabled on step 1", () => {
+  const steps = [
+    { id: '1', title: 'Step 1', content: 'Content 1' },
+    { id: '2', title: 'Step 2', content: 'Content 2' }
+  ];
+  render(<StepWizard steps={steps} onComplete={() => {}} />);
+  expect(screen.getByRole('button', { name: 'Back' })).toBeDisabled();
+});
+
+test("Next button is disabled when current step has isValid === false", () => {
+  const steps = [
+    { id: '1', title: 'Step 1', content: 'Content 1', isValid: false },
+    { id: '2', title: 'Step 2', content: 'Content 2' }
+  ];
+  render(<StepWizard steps={steps} onComplete={() => {}} />);
+  expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
+});
+
+test("Finish button is displayed on the last step", () => {
+  const steps = [
+    { id: '1', title: 'Step 1', content: 'Content 1' },
+    { id: '2', title: 'Step 2', content: 'Content 2' }
+  ];
+  render(<StepWizard steps={steps} onComplete={() => {}} />);
+  expect(screen.getByRole('button', { name: 'Finish' })).toBeInTheDocument();
+});
+
+test("Finish button invokes onComplete() only when isValid !== false", () => {
+  const onComplete = vi.fn();
+  const steps = [
+    { id: '1', title: 'Step 1', content: 'Content 1', isValid: false },
+    { id: '2', title: 'Step 2', content: 'Content 2' }
+  ];
+  render(<StepWizard steps={steps} onComplete={onComplete} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Finish' }));
+  expect(onComplete).not.toHaveBeenCalled();
+  steps[0].isValid = true;
+  fireEvent.click(screen.getByRole('button', { name: 'Finish' }));
+  expect(onComplete).toHaveBeenCalled();
+});
+
+test("moving backward and forward never lets the active index drop below 0 or exceed steps.length - 1", async () => {
+  const steps = [
+    { id: '1', title: 'Step 1', content: 'Content 1' },
+    { id: '2', title: 'Step 2', content: 'Content 2' },
+    { id: '3', title: 'Step 3', content: 'Content 3' }
+  ];
+  render(<StepWizard steps={steps} onComplete={() => {}} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+  expect(screen.getByRole('button', { name: 'Step 3' })).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+  expect(screen.getByRole('button', { name: 'Step 1' })).toBeVisible();
+});
+```

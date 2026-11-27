@@ -1,0 +1,8 @@
+type DeepPartialExcept<T, K extends keyof T> = {
+  [P in keyof T]: P extends K ? T[P] : T[P] extends object ? DeepPartialExcept<T[P], K> : T[P] | undefined;
+};
+
+// Example usage:
+type User = { id: string; profile: { name: string; age: number } };
+type Result = DeepPartialExcept<User, "id">;
+// Result must require `id: string`, while `profile` is optional and its inner properties are optional.

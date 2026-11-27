@@ -1,0 +1,25 @@
+```ts
+probe("basic replacement", async () => {
+  return renderTemplate("Hello, {{name}}!", { name: "Alice" });
+});
+
+probe("inner whitespace", async () => {
+  return renderTemplate("Hello, {{ name }}!", { name: "Alice" });
+});
+
+probe("missing key", async () => {
+  return renderTemplate("Hello, {{name}}!", { age: 30 });
+});
+
+probe("strict mode", async () => {
+  return renderTemplate("Hello, {{name}}!", { name: "Alice" }, { strict: true });
+});
+
+probe("zero value", async () => {
+  return renderTemplate("Value: {{value}}", { value: 0 });
+});
+
+probe("empty string value", async () => {
+  return renderTemplate("Value: {{value}}", { value: "" });
+});
+```

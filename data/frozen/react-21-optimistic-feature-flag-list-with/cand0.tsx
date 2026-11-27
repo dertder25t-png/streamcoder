@@ -1,0 +1,66 @@
+import React, { useState, useEffect, useRef } from 'react';
+
+interface OptimisticFeatureFlag {
+  id: string;
+  label: string;
+  enabled: boolean;
+}
+
+interface OptimisticFeatureFlagsProps {
+  flags: OptimisticFeatureFlag[];
+  onToggle: (id: string, nextEnabled: boolean) => Promise<void>;
+}
+
+const OptimisticFeatureFlags: React.FC<OptimisticFeatureFlagsProps> = ({ flags, onToggle }) => {
+  const [flagStates, setFlagStates] = useState<{ [id: string]: boolean }>({});
+  const [flagErrors, setFlagErrors] = useState<{ [id: string]: string | null }>({});
+  const toggleInProgress = useRef<{ [id: string]: boolean }>({});
+
+  useEffect(() => {
+    flags.forEach(flag => {
+      setFlagStates(prev => ({ ...prev, [flag.id]: flag.enabled }));
+    });
+  }, [flags]);
+
+  const handleToggle = async (id: string) => {
+    if (toggleInProgress.current[id]) return;
+    toggleInProgress.current[id] = true;
+
+    try {
+      const nextEnabled = !flagStates[id];
+      setFlagStates(prev => ({ ...prev, [id]: nextEnabled }));
+      await onToggle(id, nextEnabled);
+      setFlagErrors(prev => ({ ...prev, [id]: null }));
+    } catch (error) {
+      setFlagErrors(prev => ({ ...prev, [id]: 'Failed to update' }));
+      setFlagStates(prev => ({ ...prev, [id]: !nextEnabled }));
+    } finally {
+      toggleInProgress.current[id] = false;
+    }
+  };
+
+  return (
+    <div>
+      {flags.map(flag => (
+        <div key={flag.id}>
+          <label>
+            <input
+              type="checkbox"
+              checked={flagStates[flag.id]}
+              onChange={() => handleToggle(flag.id)}
+              aria-checked={flagStates[flag.id]}
+            />
+            {flag.label}
+          </label>
+          {flagErrors[flag.id] && (
+            <div role="alert" style={{ color: 'red' }}>
+              {flagErrors[flag.id]}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export { OptimisticFeatureFlags };

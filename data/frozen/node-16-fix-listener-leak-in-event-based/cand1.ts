@@ -1,0 +1,37 @@
+import type { EventEmitter } from "node:events";
+
+export function waitForEventWithTimeout(emitter: EventEmitter, eventName: string, timeoutMs: number): Promise<unknown> {
+  return new Promise<unknown>((resolve, reject) => {
+    let timeoutId: NodeJS.Timeout | null = null;
+    let resolveCalled = false;
+
+    const handleEvent = (payload: unknown) => {
+      if (resolveCalled) return;
+      resolveCalled = true;
+      clearTimeout(timeoutId);
+      emitter.removeListener(eventName, handleEvent);
+      emitter.removeListener("error", handleError);
+      resolve(payload);
+    };
+
+    const handleError = (error: Error) => {
+      if (resolveCalled) return;
+      resolveCalled = true;
+      clearTimeout(timeoutId);
+      emitter.removeListener(eventName, handleEvent);
+      emitter.removeListener("error", handleError);
+      reject(error);
+    };
+
+    timeoutId = setTimeout(() => {
+      if (resolveCalled) return;
+      resolveCalled = true;
+      emitter.removeListener(eventName, handleEvent);
+      emitter.removeListener("error", handleError);
+      reject(new Error("timeout"));
+    }, timeoutMs);
+
+    emitter.once(eventName, handleEvent);
+    emitter.once("error", handleError);
+  });
+}

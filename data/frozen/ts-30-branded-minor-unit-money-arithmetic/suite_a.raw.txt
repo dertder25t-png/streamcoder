@@ -1,0 +1,50 @@
+- `money(minorUnits, currency)` returns a branded object with `minorUnits` and `currency`.
+- `money` throws a `RangeError` for non-integer `minorUnits`.
+- `addMoney(a, b)` returns a `Money<C>` with the sum of `minorUnits` and the same `currency`.
+- `addMoney` throws a `RangeError` if the currencies are different.
+- `allocateMoney(total, ratios)` returns an array of `Money<C>` with the correct minor units.
+- `allocateMoney` throws a `RangeError` for all-zero or negative ratios.
+- `allocateMoney` distributes the total minor units according to the ratios.
+
+```ts
+import * as S from './module';
+
+test("money(minorUnits, currency) returns a branded object with minorUnits and currency", () => {
+  const money = S.money(100, "USD");
+  expect(money).toEqual({ minorUnits: 100, currency: "USD" as const });
+});
+
+test("money throws a RangeError for non-integer minorUnits", () => {
+  expect(() => S.money(100.5, "USD")).toThrow(RangeError);
+});
+
+test("addMoney(a, b) returns a Money<C> with the sum of minorUnits and the same currency", () => {
+  const a = S.money(100, "USD");
+  const b = S.money(200, "USD");
+  const result = S.addMoney(a, b);
+  expect(result).toEqual({ minorUnits: 300, currency: "USD" as const });
+});
+
+test("addMoney throws a RangeError if the currencies are different", () => {
+  const a = S.money(100, "USD");
+  const b = S.money(200, "EUR");
+  expect(() => S.addMoney(a, b)).toThrow(RangeError);
+});
+
+test("allocateMoney(total, ratios) returns an array of Money<C> with the correct minor units", () => {
+  const total = S.money(100, "USD");
+  const ratios = [1, 1, 1];
+  const result = S.allocateMoney(total, ratios);
+  expect(result).toEqual([
+    { minorUnits: 34, currency: "USD" as const },
+    { minorUnits: 33, currency: "USD" as const },
+    { minorUnits: 33, currency: "USD" as const },
+  ]);
+});
+
+test("allocateMoney throws a RangeError for all-zero or negative ratios", () => {
+  const total = S.money(100, "USD");
+  const ratios = [0, 0, 0];
+  expect(() => S.allocateMoney(total, ratios)).toThrow(RangeError);
+});
+```

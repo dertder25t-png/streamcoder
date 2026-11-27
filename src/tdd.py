@@ -102,12 +102,7 @@ def parse_suite(reply: str, type_only: bool) -> str:
     Returns '' if there is no usable code block."""
     if "```" not in reply:
         return ""
-    code = extract_code(reply)
-    code = re.sub(r"^\s*import\b[^;]*?\bfrom\s*[\"'][^\"']+[\"'];?[ \t]*$", "", code, flags=re.M | re.S)
-    code = re.sub(r"^\s*import\s*[\"'][^\"']+[\"'];?[ \t]*$", "", code, flags=re.M)
-    code = re.sub(r"^\s*//\s*@vitest-environment.*$", "", code, flags=re.M)
-    for hook in ("afterEach", "afterAll", "beforeAll"):
-        code = _strip_call(code, hook)
+    code = _clean_body(reply)
     if type_only:
         code = re.sub(r"^\s*(?:export\s+)?type\s+(?:Equal|Expect)\b.*?;[ \t]*$", "", code, flags=re.M | re.S)
         ok = "Expect<" in code or "@ts-expect-error" in code
@@ -116,17 +111,78 @@ def parse_suite(reply: str, type_only: bool) -> str:
     return code.strip() + "\n" if ok else ""
 
 
-def test_header(t, counts_path: str) -> str:
+_ID = r"[A-Za-z_$][\w$]*"
+_BUILTINS = {"fs", "fs/promises", "path", "os", "stream", "stream/promises", "http", "https", "events", "crypto",
+             "util", "url", "zlib", "child_process", "readline", "buffer", "timers", "timers/promises",
+             "string_decoder", "assert", "net", "worker_threads", "perf_hooks"}
+_HEADER_NAMES = {"fs", "fsBase", "path", "os", "React", "http", "EventEmitter", "Readable", "Writable",
+                 "PassThrough", "Transform"}  # bound by our locked header
+_IMPORT = re.compile(r"^[ \t]*import\b([^;]*?)\bfrom\s*[\"']([^\"']+)[\"'];?[ \t]*(?://[^\n]*)?$", re.M | re.S)
+
+
+def _bound_names(clause: str) -> list:
+    """Local names an import clause binds: `a, { b, c as d }, * as e` -> [a, b, d, e]."""
+    clause = re.sub(r"\btype\b", " ", clause)
+    out = []
+    for part in re.split(r",(?![^{]*})", clause):
+        part = part.strip()
+        if part.startswith("{"):
+            out += [x.split(" as ")[-1].strip() for x in part.strip("{} \n").split(",") if x.strip()]
+        elif part.startswith("*"):
+            out.append(part.split(" as ")[-1].strip())
+        elif part:
+            out.append(part)
+    return [n for n in out if re.fullmatch(_ID, n)]
+
+
+def _fix_import(m) -> str:
+    """Our header owns the imports, but the model's own imports still matter:
+    - from './solution' (or './<fnName>'): keep the NAMES (merged into our solution import, see test_header)
+    - from a Node built-in: keep the line (join, Readable, http...), unless it re-binds a header name
+    - anything else (vitest, testing-library, react): drop, the header has it."""
+    clause, src = m.group(1), m.group(2)
+    if src.startswith("."):
+        named = re.search(r"\{([^}]*)\}", clause)
+        names = [x.split(" as ")[0].replace("type ", "").strip() for x in named.group(1).split(",")] if named else []
+        names = [n for n in names if re.fullmatch(_ID, n)]
+        return f"//@sol-names {' '.join(names)}" if names else ""
+    if src.removeprefix("node:") in _BUILTINS and not set(_bound_names(clause)) & _HEADER_NAMES:
+        return f"import{clause}from \"{src}\";"
+    return ""
+
+
+def sol_names(body: str) -> list:
+    return [n for line in re.findall(r"^//@sol-names (.*)$", body, re.M) for n in line.split()]
+
+
+def _clean_body(reply: str) -> str:
+    """Code block of a reply minus our-header imports, @vitest-environment lines and the model's own hooks."""
+    code = extract_code(reply)
+    code = _IMPORT.sub(_fix_import, code)
+    code = re.sub(r"^\s*import\s*[\"'][^\"']+[\"'];?[ \t]*(?://[^\n]*)?$", "", code, flags=re.M)
+    code = re.sub(r"^\s*//\s*@vitest-environment.*$", "", code, flags=re.M)
+    for hook in ("afterEach", "afterAll", "beforeAll"):
+        code = _strip_call(code, hook)
+    return code
+
+
+def test_header(t, counts_path: str, body: str = "") -> str:
     """Locked header we write in front of the model's test bodies (runtime suites)."""
     react = t["topic"] == "react"
     lines = ["// @vitest-environment jsdom"] if react else []
     if react:
         lines += ['import React from "react";',
-                  'import { render, screen, fireEvent, cleanup, act, waitFor, within } from "@testing-library/react";']
+                  'import { render, screen, fireEvent, cleanup, act, waitFor, within } from "@testing-library/react";',
+                  'import "@testing-library/jest-dom/vitest";  // toBeInTheDocument etc. (models use them a lot)']
     lines.append('import { test, it, expect, vi, afterEach, afterAll, beforeEach, describe } from "vitest";')
     if t["topic"] == "node":
-        lines += ['import fs from "node:fs";', 'import path from "node:path";', 'import os from "node:os";']
-    names = required_exports(t)
+        # fs is promise-first (models write `await fs.mkdtemp(...)`); sync calls still work (spread copy).
+        lines += ['import fsBase from "node:fs";',
+                  'const fs = { ...fsBase, ...fsBase.promises, promises: fsBase.promises };',
+                  'import path from "node:path";', 'import os from "node:os";', 'import http from "node:http";',
+                  'import { EventEmitter } from "node:events";',
+                  'import { Readable, Writable, PassThrough, Transform } from "node:stream";']
+    names = list(dict.fromkeys(required_exports(t) + sol_names(body)))  # prompt names + names the tests import
     lines.append(f'import {{ {", ".join(names)} }} from "./solution";' if names
                  else 'import * as S from "./solution";')
     lines.append("afterEach(() => { cleanup(); vi.useRealTimers(); });" if react
@@ -234,7 +290,7 @@ def write_run(t, name: str, code: str, suites: dict, type_only: bool):
             (run / f"selftest_{s}.typecheck.ts").write_text(head + body)
             meta[s] = head.count("\n")
         else:
-            (run / f"selftest_{s}.test{ext(t)}").write_text(test_header(t, str(run / f"counts_{s}.json")) + body)
+            (run / f"selftest_{s}.test{ext(t)}").write_text(test_header(t, str(run / f"counts_{s}.json"), body) + body)
     _write_tsconfig(t, run)  # tsc for type checks; also tells vitest/esbuild to use the react-jsx transform
     return run, meta
 
@@ -293,6 +349,105 @@ def read_counts(run) -> dict:
         except (OSError, ValueError, KeyError, TypeError):
             pass
     return tot
+
+# ---------------------------------------------------------------- MBR-Exec input drivers
+
+DRIVER_SYSTEM = ("You write INPUT DRIVERS for a TypeScript task: small snippets that exercise a module and return "
+                 "what it produced. You do NOT implement the task and you do NOT write expected values or asserts.")
+
+
+def driver_messages(t) -> list:
+    names = _imports_line(t)
+    react = t["topic"] == "react"
+    rules = ["No imports, no asserts, no expected values: just exercise the module and RETURN a value. "
+             "Never call `expect` (no `toBe...`, `toHave...`); the returned value is compared for you.",
+             "Each probe is `probe(\"short name\", async () => { ...; return value; })`. "
+             "`probe` is already defined."]
+    if react:
+        rules.append("Already imported: React, render, screen, fireEvent, cleanup, act, waitFor, within "
+                     "(testing-library) and vi (vitest).")
+        rules.append("Render the component with props taken from the task, then do a sequence of `fireEvent` "
+                     "interactions. Query only with `screen.getByRole` (not getByLabelText / getByTestId) or text strings quoted in the task. Never "
+                     "use CSS classes, tag selectors, invented labels or test ids. End with `return snap();` "
+                     "(`snap()` is provided and returns the page HTML). Use `vi.useFakeTimers()` if timers are needed.")
+    else:
+        rules.append("Already imported: vi (vitest)"
+                     + (", and fs, path, os (node built-ins)." if t["topic"] == "node" else "."))
+        rules.append("Call the exported functions with varied arguments, including edge cases (empty, zero, "
+                     "boundaries, invalid input), and return the result (wrap it in an object/array if you "
+                     "make several calls).")
+        if t["topic"] == "node":
+            rules.append('For files use `const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"))` '
+                         "inside each probe (unique folder), and return what was written or read.")
+    rules.append(f"The module under test is already imported: {names}." if names else
+                 "The module under test is imported as `S` (`import * as S`); call it as `S.name`.")
+    user = (f"TASK (context only; do NOT implement it):\n\n{build_prompt(t)}\n\n---\n"
+            "Write 4-6 probes.\nRules:\n" + "\n".join(f"- {r}" for r in rules) +
+            "\n\nReply with ONE ```ts code block containing only the `probe(...)` calls.")
+    return [{"role": "system", "content": DRIVER_SYSTEM}, {"role": "user", "content": user}]
+
+
+_PROBE_RUNTIME = r"""
+const snap = () => (typeof document === "undefined" ? "" : document.body.innerHTML);
+const __fp: Record<string, any> = {};
+const __st = setTimeout, __ct = clearTimeout;
+function __stable(v: any, seen: any[] = []): any {
+  if (v === undefined) return "__undefined";
+  if (typeof v === "function") return "__function";
+  if (typeof v === "bigint" || typeof v === "symbol") return String(v);
+  if (typeof v === "number") return Number.isFinite(v) ? v : String(v);
+  if (v === null || typeof v !== "object") return v;
+  if (seen.includes(v)) return "__cycle";
+  seen = [...seen, v];
+  if (v instanceof Date) return { __date: isNaN(+v) ? "invalid" : v.toISOString() };
+  if (v instanceof Error) return { __error: v.constructor.name, message: v.message };
+  if (v instanceof Map) return { __map: [...v.entries()].map(([k, x]) => [__stable(k, seen), __stable(x, seen)]) };
+  if (v instanceof Set) return { __set: [...v.values()].map((x) => __stable(x, seen)) };
+  if (Array.isArray(v)) return v.map((x) => __stable(x, seen));
+  const o: Record<string, any> = {};
+  for (const k of Object.keys(v).sort()) o[k] = __stable(v[k], seen);
+  return o;
+}
+const stableJSON = (v: any): string => { try { return JSON.stringify(__stable(v)); } catch { return "__unserializable"; } };
+function probe(name: string, fn: () => any) {
+  test(name, async () => {
+    let timer: any;
+    try {
+      const r = await Promise.race([Promise.resolve().then(fn),
+        new Promise((_, rej) => { timer = __st(() => rej(new Error("probe timeout")), 3000); })]);
+      __fp[name] = { ok: true, value: stableJSON(r) };
+    } catch (e: any) {
+      __fp[name] = { ok: false, error: (e && e.constructor && e.constructor.name) || "Error" };
+    } finally { __ct(timer); }
+  }, 10000);
+}
+"""
+
+
+def driver_file(t, raw: str, fp_path: str, counts_path: str | None = None) -> str:
+    """Runnable vitest file for the model's probes: locked header + probe runtime + cleaned probe code.
+    The fingerprint JSON {name: {ok, value|error}} is written to fp_path after the run."""
+    body = _clean_body(raw) if "```" in raw else ""
+    head = test_header(t, counts_path or fp_path + ".counts", body)
+    tail = (f"\nafterAll(() => {{ try {{ __wf({json.dumps(fp_path)}, JSON.stringify(__fp)); }} catch {{}} }});\n")
+    return head + _PROBE_RUNTIME + "\n" + body.strip() + "\n" + tail
+
+
+def run_probes(t, code: str, raw: str, tag: str = "probe") -> dict:
+    """Run the driver against one candidate module. Returns {probe name: {ok, value|error}} ({} on crash)."""
+    run = _run_dir(t, tag)
+    try:
+        (run / f"solution{ext(t)}").write_text(code)
+        fp = run / "fp.json"
+        (run / f"probes.test{ext(t)}").write_text(driver_file(t, raw, str(fp)))
+        _write_tsconfig(t, run)
+        _run([str(KIT / "node_modules" / ".bin" / "vitest"), "run", f".runs/{run.name}", "--reporter=json",
+              f"--outputFile={run / 'result.json'}"], _timeout())
+        return json.loads(fp.read_text())
+    except (subprocess.TimeoutExpired, OSError, ValueError):
+        return {}
+    finally:
+        shutil.rmtree(run, ignore_errors=True)
 
 # ---------------------------------------------------------------- repair
 

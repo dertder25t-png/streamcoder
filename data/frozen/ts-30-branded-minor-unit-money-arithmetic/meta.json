@@ -1,0 +1,25 @@
+{
+ "id": "ts-30-branded-minor-unit-money-arithmetic",
+ "topic": "typescript",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/ts-30-branded-minor-unit-money-arithmetic/solution.test.ts(19,3): error TS2578: Un",
+  "type error: .runs/ts-30-branded-minor-unit-money-arithmetic/solution.test.ts(19,3): error TS2578: Un",
+  "type error: .runs/ts-30-branded-minor-unit-money-arithmetic/solution.test.ts(19,3): error TS2578: Un",
+  "type error: .runs/ts-30-branded-minor-unit-money-arithmetic/solution.test.ts(2,48): error TS2306: Fi"
+ ],
+ "cand_tokens": [
+  370,
+  399,
+  375,
+  359
+ ],
+ "gen_seconds": 37.5,
+ "type_only": false,
+ "errors": []
+}

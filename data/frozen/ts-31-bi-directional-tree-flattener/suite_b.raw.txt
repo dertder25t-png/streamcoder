@@ -1,0 +1,45 @@
+```ts
+// Checklist
+- flattenTree returns an empty array for an empty input
+- flattenTree preserves sibling order
+- flattenTree handles multi-root trees
+- flattenTree handles deeply nested trees
+- flattenTree throws an error for duplicate node IDs
+- flattenTree throws an error for orphan references
+- rebuildTree returns an empty array for an empty input
+- rebuildTree preserves sibling order
+- rebuildTree handles multi-root trees
+- rebuildTree handles deeply nested trees
+- rebuildTree throws an error for duplicate node IDs
+- rebuildTree throws an error for orphan references
+- rebuildTree works even when child records appear earlier than their parent records
+- rebuildTree deeply equals the original forest
+- rebuildTree does not mutate the input
+- rebuildTree handles repeated calls
+- rebuildTree cleans up resources
+
+```ts
+test("flattenTree returns an empty array for an empty input", () => {
+  expect(flattenTree([])).toEqual([]);
+});
+
+test("rebuildTree returns an empty array for an empty input", () => {
+  expect(rebuildTree([])).toEqual([]);
+});
+
+test("flattenTree throws an error for duplicate node IDs", () => {
+  expect(() => flattenTree([{ id: "1", value: 1, children: [] }, { id: "1", value: 2, children: [] }])).toThrow("Duplicate node ID: 1");
+});
+
+test("rebuildTree throws an error for duplicate node IDs", () => {
+  expect(() => rebuildTree([{ id: "1", parentId: null, value: 1 }, { id: "1", parentId: null, value: 2 }])).toThrow("Duplicate node ID: 1");
+});
+
+test("flattenTree throws an error for orphan references", () => {
+  expect(() => flattenTree([{ id: "1", value: 1, children: [] }, { id: "2", parentId: "3", value: 2 }])).toThrow("Orphan reference to nonexistent parent ID: 3");
+});
+
+test("rebuildTree throws an error for orphan references", () => {
+  expect(() => rebuildTree([{ id: "1", parentId: null, value: 1 }, { id: "2", parentId: "3", value: 2 }])).toThrow("Orphan reference to nonexistent parent ID: 3");
+});
+```

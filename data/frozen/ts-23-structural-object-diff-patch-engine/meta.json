@@ -1,0 +1,25 @@
+{
+ "id": "ts-23-structural-object-diff-patch-engine",
+ "topic": "typescript",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/ts-23-structural-object-diff-patch-engine/solution.ts(33,37): error TS7053: Elemen",
+  "test failed: round-trips adds, replaces and removes at the top level; round-trips nested objects",
+  "type error: .runs/ts-23-structural-object-diff-patch-engine/solution.ts(1,25): error TS2307: Cannot ",
+  "type error:     Argument of type '(acc: Record<string, unknown>, segment: PathSegment, index: number"
+ ],
+ "cand_tokens": [
+  749,
+  617,
+  572,
+  610
+ ],
+ "gen_seconds": 42.7,
+ "type_only": false,
+ "errors": []
+}

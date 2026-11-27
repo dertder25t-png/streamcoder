@@ -1,0 +1,26 @@
+import React, { useState, useCallback } from 'react';
+
+interface AsyncActionResult<T> {
+  execute: () => Promise<void>;
+  isLoading: boolean;
+  error: Error | null;
+}
+
+export function useAsyncAction<T>(action: () => Promise<T>): AsyncActionResult<T> {
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const execute = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await action();
+    } catch (e) {
+      setError(e instanceof Error ? e : new Error(String(e)));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [action]);
+
+  return { execute, isLoading, error };
+}

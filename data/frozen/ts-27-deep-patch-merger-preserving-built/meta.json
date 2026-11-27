@@ -1,0 +1,25 @@
+{
+ "id": "ts-27-deep-patch-merger-preserving-built",
+ "topic": "typescript",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/ts-27-deep-patch-merger-preserving-built/solution.test.ts(2,48): error TS2306: Fil",
+  "type error: .runs/ts-27-deep-patch-merger-preserving-built/solution.ts(14,9): error TS2322: Type '(T",
+  "type error: .runs/ts-27-deep-patch-merger-preserving-built/solution.ts(22,9): error TS2322: Type '(D",
+  "type error: .runs/ts-27-deep-patch-merger-preserving-built/solution.ts(22,9): error TS2322: Type '(T"
+ ],
+ "cand_tokens": [
+  229,
+  225,
+  236,
+  224
+ ],
+ "gen_seconds": 34.9,
+ "type_only": false,
+ "errors": []
+}

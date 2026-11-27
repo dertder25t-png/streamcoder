@@ -1,0 +1,25 @@
+{
+ "id": "ts-13-sliding-window-mean-calculator",
+ "topic": "typescript",
+ "cand_hidden": [
+  true,
+  true,
+  true,
+  true
+ ],
+ "cand_hidden_err": [
+  "",
+  "",
+  "",
+  ""
+ ],
+ "cand_tokens": [
+  193,
+  214,
+  167,
+  193
+ ],
+ "gen_seconds": 22.7,
+ "type_only": false,
+ "errors": []
+}

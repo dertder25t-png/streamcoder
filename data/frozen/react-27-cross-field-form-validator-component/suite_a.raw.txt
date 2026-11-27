@@ -1,0 +1,75 @@
+- Validates start date, end date, and label fields are required.
+- Displays error messages on blur for empty fields.
+- Validates cross-field constraint endDate >= startDate.
+- Clears errors when fields are corrected.
+- Prevents onSubmit on invalid submit and displays errors.
+- Moves focus to the first invalid input on invalid submit.
+
+```tsx
+import React from 'react';
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import DateRangeForm from './DateRangeForm';
+
+afterEach(cleanup);
+
+test("displays error messages on blur for empty fields", async () => {
+  render(<DateRangeForm onSubmit={() => {}} />);
+  fireEvent.blur(screen.getByLabelText("Start date"));
+  fireEvent.blur(screen.getByLabelText("End date"));
+  fireEvent.blur(screen.getByLabelText("Label"));
+  await waitFor(() => {
+    expect(screen.getByText("Start date is required")).toBeInTheDocument();
+    expect(screen.getByText("End date is required")).toBeInTheDocument();
+    expect(screen.getByText("Label is required")).toBeInTheDocument();
+  });
+});
+
+test("validates cross-field constraint endDate >= startDate", async () => {
+  render(<DateRangeForm onSubmit={() => {}} />);
+  fireEvent.change(screen.getByLabelText("Start date"), { target: { value: "2024-01-10" } });
+  fireEvent.change(screen.getByLabelText("End date"), { target: { value: "2023-12-31" } });
+  fireEvent.blur(screen.getByLabelText("End date"));
+  await waitFor(() => {
+    expect(screen.getByText("End date must be on or after Start date")).toBeInTheDocument();
+  });
+});
+
+test("clears errors when fields are corrected", async () => {
+  render(<DateRangeForm onSubmit={() => {}} />);
+  fireEvent.change(screen.getByLabelText("Start date"), { target: { value: "2024-01-10" } });
+  fireEvent.change(screen.getByLabelText("End date"), { target: { value: "2024-01-11" } });
+  fireEvent.change(screen.getByLabelText("Label"), { target: { value: "Test" } });
+  fireEvent.blur(screen.getByLabelText("Start date"));
+  fireEvent.blur(screen.getByLabelText("End date"));
+  fireEvent.blur(screen.getByLabelText("Label"));
+  await waitFor(() => {
+    expect(screen.queryByText("Start date is required")).not.toBeInTheDocument();
+    expect(screen.queryByText("End date is required")).not.toBeInTheDocument();
+    expect(screen.queryByText("Label is required")).not.toBeInTheDocument();
+    expect(screen.queryByText("End date must be on or after Start date")).not.toBeInTheDocument();
+  });
+});
+
+test("prevents onSubmit on invalid submit and displays errors", async () => {
+  render(<DateRangeForm onSubmit={() => {}} />);
+  fireEvent.change(screen.getByLabelText("Start date"), { target: { value: "2024-01-10" } });
+  fireEvent.change(screen.getByLabelText("End date"), { target: { value: "2023-12-31" } });
+  fireEvent.change(screen.getByLabelText("Label"), { target: { value: "Test" } });
+  fireEvent.submit(screen.getByRole("button", { name: /Submit/i }));
+  await waitFor(() => {
+    expect(screen.getByText("End date must be on or after Start date")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Submit/i })).toHaveAttribute("aria-invalid", "true");
+  });
+});
+
+test("moves focus to the first invalid input on invalid submit", async () => {
+  render(<DateRangeForm onSubmit={() => {}} />);
+  fireEvent.change(screen.getByLabelText("Start date"), { target: { value: "2024-01-10" } });
+  fireEvent.change(screen.getByLabelText("End date"), { target: { value: "2023-12-31" } });
+  fireEvent.change(screen.getByLabelText("Label"), { target: { value: "Test" } });
+  fireEvent.submit(screen.getByRole("button", { name: /Submit/i }));
+  await waitFor(() => {
+    expect(screen.getByLabelText("End date")).toHaveFocus();
+  });
+});
+```

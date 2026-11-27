@@ -1,0 +1,45 @@
+- Two synchronous rapid clicks trigger onAction exactly once until the returned promise settles.
+- Displays "Working..." and sets disabled while pending, then restores label whether the promise resolves or rejects.
+- Does not attempt to update state if the component unmounts before the promise settles.
+
+```tsx
+import React from 'react';
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import { SubmitOnceButton } from './SubmitOnceButton';
+
+afterEach(cleanup);
+
+test('two synchronous rapid clicks trigger onAction exactly once until the returned promise settles', async () => {
+  const onAction = vi.fn();
+  render(<SubmitOnceButton onAction={onAction} label="Submit" />);
+  fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+  await waitFor(() => expect(onAction).toHaveBeenCalledTimes(1));
+});
+
+test('displays "Working..." and sets disabled while pending, then restores label whether the promise resolves or rejects', async () => {
+  const onAction = vi.fn().mockResolvedValue();
+  render(<SubmitOnceButton onAction={onAction} label="Submit" />);
+  fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+  expect(screen.getByRole('button', { name: 'Submit' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Submit' })).toHaveTextContent('Working...');
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Submit' })).toHaveTextContent('Submit'));
+  expect(screen.getByRole('button', { name: 'Submit' })).not.toBeDisabled();
+
+  onAction.mockReset();
+  onAction.mockRejectedValue();
+  fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+  expect(screen.getByRole('button', { name: 'Submit' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Submit' })).toHaveTextContent('Working...');
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Submit' })).toHaveTextContent('Submit'));
+  expect(screen.getByRole('button', { name: 'Submit' })).not.toBeDisabled();
+});
+
+test('does not attempt to update state if the component unmounts before the promise settles', async () => {
+  const onAction = vi.fn().mockResolvedValue();
+  const { unmount } = render(<SubmitOnceButton onAction={onAction} label="Submit" />);
+  fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+  unmount();
+  await waitFor(() => expect(onAction).toHaveBeenCalledTimes(1));
+});
+```

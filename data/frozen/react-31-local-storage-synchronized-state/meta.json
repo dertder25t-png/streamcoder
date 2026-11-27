@@ -1,0 +1,25 @@
+{
+ "id": "react-31-local-storage-synchronized-state",
+ "topic": "react",
+ "cand_hidden": [
+  false,
+  false,
+  true,
+  true
+ ],
+ "cand_hidden_err": [
+  "type error:   Not all constituents of type '((prev: T) => T) | (T & Function)' are callable. |     T",
+  "type error: .runs/react-31-local-storage-synchronized-state/solution.tsx(52,1): error TS1381: Unexpe",
+  "",
+  ""
+ ],
+ "cand_tokens": [
+  230,
+  364,
+  275,
+  249
+ ],
+ "gen_seconds": 28.7,
+ "type_only": false,
+ "errors": []
+}

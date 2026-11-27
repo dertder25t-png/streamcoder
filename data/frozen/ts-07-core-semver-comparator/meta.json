@@ -1,0 +1,25 @@
+{
+ "id": "ts-07-core-semver-comparator",
+ "topic": "typescript",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/ts-07-core-semver-comparator/solution.ts(14,28): error TS2322: Type 'number' is no",
+  "type error: .runs/ts-07-core-semver-comparator/solution.ts(26,32): error TS2322: Type 'number' is no",
+  "test failed: throws on malformed input",
+  "test failed: treats a leading v as equal; throws on malformed input"
+ ],
+ "cand_tokens": [
+  177,
+  360,
+  227,
+  202
+ ],
+ "gen_seconds": 25.0,
+ "type_only": false,
+ "errors": []
+}

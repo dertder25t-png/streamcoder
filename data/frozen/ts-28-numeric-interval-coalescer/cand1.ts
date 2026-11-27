@@ -1,0 +1,74 @@
+/**
+ * Subtracts intervals from a base set of intervals.
+ * @param base - The base intervals to subtract from.
+ * @param cutouts - The intervals to subtract.
+ * @returns The resulting intervals after subtraction.
+ * @throws RangeError if any interval is inverted or empty.
+ */
+function subtractIntervals(
+  base: readonly [number, number][],
+  cutouts: readonly [number, number][]
+): [number, number][] {
+  // Validate intervals
+  base.forEach(([start, end]) => {
+    if (start >= end) throw new RangeError('Inverted or empty interval');
+  });
+  cutouts.forEach(([start, end]) => {
+    if (start >= end) throw new RangeError('Inverted or empty interval');
+  });
+
+  // Helper to coalesce overlapping intervals
+  const coalesce = (intervals: [number, number][]) => {
+    intervals.sort((a, b) => a[0] - b[0]);
+    const result: [number, number][] = [];
+    let current: [number, number] | null = null;
+
+    for (const interval of intervals) {
+      if (current === null) {
+        current = interval;
+      } else if (interval[0] < current[1]) {
+        current[1] = Math.max(current[1], interval[1]);
+      } else {
+        result.push(current);
+        current = interval;
+      }
+    }
+
+    if (current !== null) result.push(current);
+    return result;
+  };
+
+  // Coalesce base intervals
+  const coalescedBase = coalesce([...base]);
+
+  // Subtract cutouts
+  const result: [number, number][] = [];
+  for (const baseInterval of coalescedBase) {
+    let [baseStart, baseEnd] = baseInterval;
+    for (const cutout of cutouts) {
+      const [cutoutStart, cutoutEnd] = cutout;
+      if (cutoutStart < baseStart && cutoutEnd > baseEnd) {
+        // Cutout covers the entire interval
+        break;
+      } else if (cutoutStart >= baseEnd || cutoutEnd <= baseStart) {
+        // Cutout does not affect this interval
+        result.push([baseStart, baseEnd]);
+        break;
+      } else if (cutoutStart > baseStart && cutoutEnd < baseEnd) {
+        // Cutout splits the interval into two
+        result.push([baseStart, cutoutStart]);
+        baseStart = cutoutEnd;
+      } else if (cutoutStart < baseStart && cutoutEnd < baseEnd) {
+        // Cutout starts before the interval and ends inside
+        baseStart = cutoutEnd;
+      } else if (cutoutStart > baseStart && cutoutEnd > baseEnd) {
+        // Cutout starts inside the interval and ends after
+        result.push([baseStart, cutoutStart]);
+      }
+    }
+  }
+
+  return result;
+}
+
+export { subtractIntervals };

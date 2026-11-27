@@ -1,0 +1,32 @@
+import http from 'node:http';
+
+export function createHealthServer(checkReady: () => Promise<boolean>): http.Server {
+  return http.createServer(async (req, res) => {
+    if (req.method === 'GET') {
+      if (req.url === '/live') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'ok' }));
+      } else if (req.url === '/ready') {
+        try {
+          const isReady = await checkReady();
+          if (isReady) {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ status: 'ok' }));
+          } else {
+            res.writeHead(503, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ status: 'not ready' }));
+          }
+        } catch {
+          res.writeHead(503, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ status: 'not ready' }));
+        }
+      } else {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Not Found' }));
+      }
+    } else {
+      res.writeHead(405, { 'Allow': 'GET', 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Method Not Allowed' }));
+    }
+  });
+}

@@ -1,0 +1,65 @@
+import React, { useState, useEffect, useRef } from 'react';
+
+interface FilterableDirectoryProps {
+  entries: { id: string; name: string; department: string }[];
+  delayMs?: number;
+}
+
+const FilterableDirectory: React.FC<FilterableDirectoryProps> = ({ entries, delayMs = 250 }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredEntries, setFilteredEntries] = useState(entries);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const handleSearch = () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      debounceTimerRef.current = setTimeout(() => {
+        const filtered = entries.filter(entry =>
+          entry.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          entry.department.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        setFilteredEntries(filtered);
+      }, delayMs);
+    };
+
+    handleSearch();
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [searchTerm, entries, delayMs]);
+
+  const handleClear = () => {
+    setSearchTerm('');
+    setFilteredEntries(entries);
+  };
+
+  return (
+    <div>
+      <input
+        type="text"
+        value={searchTerm}
+        onChange={e => setSearchTerm(e.target.value)}
+        placeholder="Search by name or department..."
+      />
+      <button onClick={handleClear}>Clear</button>
+      <ul>
+        {filteredEntries.length === 0 ? (
+          <li>No matching people</li>
+        ) : (
+          filteredEntries.map(entry => (
+            <li key={entry.id}>
+              {entry.name}, {entry.department}
+            </li>
+          ))
+        )}
+      </ul>
+    </div>
+  );
+};
+
+export { FilterableDirectory };

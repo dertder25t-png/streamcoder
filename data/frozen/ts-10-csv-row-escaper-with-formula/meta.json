@@ -1,0 +1,25 @@
+{
+ "id": "ts-10-csv-row-escaper-with-formula",
+ "topic": "typescript",
+ "cand_hidden": [
+  true,
+  false,
+  true,
+  false
+ ],
+ "cand_hidden_err": [
+  "",
+  "test failed: joins plain cells and renders null/undefined as empty fields; quotes cells with commas,",
+  "",
+  "test failed: prefixes formula-looking strings with a single quote; does not prefix ordinary strings "
+ ],
+ "cand_tokens": [
+  156,
+  170,
+  150,
+  139
+ ],
+ "gen_seconds": 18.0,
+ "type_only": false,
+ "errors": []
+}

@@ -1,0 +1,154 @@
+- Test that the input has role="combobox".
+- Test that the listbox is hidden initially.
+- Test that fetchSuggestions is called with the input query and a signal.
+- Test that the listbox shows suggestions when fetchSuggestions resolves.
+- Test that the active option is marked with aria-selected="true".
+- Test that the active option wraps around with ArrowDown and ArrowUp.
+- Test that onSelect is called with the selected suggestion on Enter.
+- Test that the listbox is hidden on Escape.
+- Test that stale suggestions are discarded when a newer request resolves.
+- Test that the previous request is aborted when the query changes.
+- Test that the previous request is aborted when the component unmounts.
+- Test that the input is cleared when the listbox is hidden on Escape.
+
+```tsx
+import React from 'react';
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom/extend-expect';
+import vi from 'vitest';
+import AsyncAutocomplete from './AsyncAutocomplete';
+
+vi.useFakeTimers();
+
+afterEach(() => {
+  cleanup();
+  vi.clearAllTimers();
+});
+
+test('input has role="combobox"', () => {
+  render(<AsyncAutocomplete fetchSuggestions={() => Promise.resolve([])} onSelect={() => {}} />);
+  const input = screen.getByRole('combobox');
+  expect(input).toBeInTheDocument();
+});
+
+test('listbox is hidden initially', () => {
+  render(<AsyncAutocomplete fetchSuggestions={() => Promise.resolve([])} onSelect={() => {}} />);
+  const listbox = screen.queryByRole('listbox');
+  expect(listbox).not.toBeInTheDocument();
+});
+
+test('fetchSuggestions is called with the input query and a signal', async () => {
+  const fetchSuggestions = vi.fn(() => Promise.resolve(['suggestion1', 'suggestion2']));
+  render(<AsyncAutocomplete fetchSuggestions={fetchSuggestions} onSelect={() => {}} />);
+  const input = screen.getByRole('combobox');
+  fireEvent.change(input, { target: { value: 'query' } });
+  await waitFor(() => expect(fetchSuggestions).toHaveBeenCalledWith('query', expect.any(AbortSignal)));
+});
+
+test('listbox shows suggestions when fetchSuggestions resolves', async () => {
+  const fetchSuggestions = vi.fn(() => Promise.resolve(['suggestion1', 'suggestion2']));
+  render(<AsyncAutocomplete fetchSuggestions={fetchSuggestions} onSelect={() => {}} />);
+  const input = screen.getByRole('combobox');
+  fireEvent.change(input, { target: { value: 'query' } });
+  await waitFor(() => {
+    const listbox = screen.getByRole('listbox');
+    expect(listbox).toBeInTheDocument();
+    expect(screen.getByText('suggestion1')).toBeInTheDocument();
+    expect(screen.getByText('suggestion2')).toBeInTheDocument();
+  });
+});
+
+test('active option is marked with aria-selected="true"', async () => {
+  const fetchSuggestions = vi.fn(() => Promise.resolve(['suggestion1', 'suggestion2']));
+  render(<AsyncAutocomplete fetchSuggestions={fetchSuggestions} onSelect={() => {}} />);
+  const input = screen.getByRole('combobox');
+  fireEvent.change(input, { target: { value: 'query' } });
+  await waitFor(() => {
+    const listbox = screen.getByRole('listbox');
+    expect(listbox).toBeInTheDocument();
+    expect(screen.getByText('suggestion1')).toHaveAttribute('aria-selected', 'true');
+  });
+  fireEvent.keyDown(input, { key: 'ArrowDown' });
+  await waitFor(() => {
+    expect(screen.getByText('suggestion2')).toHaveAttribute('aria-selected', 'true');
+  });
+});
+
+test('active option wraps around with ArrowDown and ArrowUp', async () => {
+  const fetchSuggestions = vi.fn(() => Promise.resolve(['suggestion1', 'suggestion2']));
+  render(<AsyncAutocomplete fetchSuggestions={fetchSuggestions} onSelect={() => {}} />);
+  const input = screen.getByRole('combobox');
+  fireEvent.change(input, { target: { value: 'query' } });
+  await waitFor(() => {
+    const listbox = screen.getByRole('listbox');
+    expect(listbox).toBeInTheDocument();
+    expect(screen.getByText('suggestion1')).toHaveAttribute('aria-selected', 'true');
+  });
+  fireEvent.keyDown(input, { key: 'ArrowDown' });
+  await waitFor(() => {
+    expect(screen.getByText('suggestion2')).toHaveAttribute('aria-selected', 'true');
+  });
+  fireEvent.keyDown(input, { key: 'ArrowUp' });
+  await waitFor(() => {
+    expect(screen.getByText('suggestion1')).toHaveAttribute('aria-selected', 'true');
+  });
+});
+
+test('onSelect is called with the selected suggestion on Enter', async () => {
+  const onSelect = vi.fn();
+  const fetchSuggestions = vi.fn(() => Promise.resolve(['suggestion1', 'suggestion2']));
+  render(<AsyncAutocomplete fetchSuggestions={fetchSuggestions} onSelect={onSelect} />);
+  const input = screen.getByRole('combobox');
+  fireEvent.change(input, { target: { value: 'query' } });
+  await waitFor(() => {
+    const listbox = screen.getByRole('listbox');
+    expect(listbox).toBeInTheDocument();
+    expect(screen.getByText('suggestion1')).toHaveAttribute('aria-selected', 'true');
+  });
+  fireEvent.keyDown(input, { key: 'ArrowDown' });
+  await waitFor(() => {
+    expect(screen.getByText('suggestion2')).toHaveAttribute('aria-selected', 'true');
+  });
+  fireEvent.keyDown(input, { key: 'Enter' });
+  await waitFor(() => {
+    expect(onSelect).toHaveBeenCalledWith('suggestion2');
+  });
+});
+
+test('listbox is hidden on Escape', async () => {
+  const fetchSuggestions = vi.fn(() => Promise.resolve(['suggestion1', 'suggestion2']));
+  render(<AsyncAutocomplete fetchSuggestions={fetchSuggestions} onSelect={() => {}} />);
+  const input = screen.getByRole('combobox');
+  fireEvent.change(input, { target: { value: 'query' } });
+  await waitFor(() => {
+    const listbox = screen.getByRole('listbox');
+    expect(listbox).toBeInTheDocument();
+  });
+  fireEvent.keyDown(input, { key: 'Escape' });
+  await waitFor(() => {
+    const listbox = screen.queryByRole('listbox');
+    expect(listbox).not.toBeInTheDocument();
+  });
+});
+
+test('stale suggestions are discarded when a newer request resolves', async () => {
+  const fetchSuggestions = vi.fn(() => Promise.resolve(['suggestion1', 'suggestion2']));
+  render(<AsyncAutocomplete fetchSuggestions={fetchSuggestions} onSelect={() => {}} />);
+  const input = screen.getByRole('combobox');
+  fireEvent.change(input, { target: { value: 'query' } });
+  await waitFor(() => {
+    const listbox = screen.getByRole('listbox');
+    expect(listbox).toBeInTheDocument();
+    expect(screen.getByText('suggestion1')).toBeInTheDocument();
+    expect(screen.getByText('suggestion2')).toBeInTheDocument();
+  });
+  fireEvent.change(input, { target: { value: 'query2' } });
+  await waitFor(() => {
+    const listbox = screen.getByRole('listbox');
+    expect(listbox).toBeInTheDocument();
+    expect(screen.getByText('suggestion1')).not.toBeInTheDocument();
+    expect(screen.getByText('suggestion2')).not.toBeInTheDocument();
+  });
+});
+
+test('previous request is aborted

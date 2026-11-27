@@ -1,0 +1,95 @@
+- Uses `useSyncExternalStore` (or equivalent tear-safe pattern) so synchronous mutations before commit are never missed.
+- Re-subscribes cleanly when the store prop switches to a different store instance and unsubscribes from the previous store.
+- Under `<React.StrictMode>`, leaves exactly one active subscription while mounted and zero after unmount.
+
+```tsx
+import { render, screen, cleanup, act, waitFor } from '@testing-library/react';
+import { useExternalSnapshot } from './useExternalSnapshot';
+
+describe('useExternalSnapshot', () => {
+  afterEach(cleanup);
+
+  test('uses useSyncExternalStore so synchronous mutations before commit are never missed', async () => {
+    const store = {
+      _snapshot: 0,
+      subscribe: (callback: () => void) => {
+        const intervalId = setInterval(() => {
+          store._snapshot++;
+          callback();
+        }, 100);
+        return () => clearInterval(intervalId);
+      },
+      getSnapshot: () => store._snapshot,
+    };
+
+    const Component = () => {
+      const snapshot = useExternalSnapshot(store);
+      return <div>{snapshot}</div>;
+    };
+
+    render(<Component />);
+    await waitFor(() => expect(screen.getByText('1')).toBeInTheDocument());
+  });
+
+  test('re-subscribes cleanly when the store prop switches to a different store instance and unsubscribes from the previous store', () => {
+    const store1 = {
+      _snapshot: 0,
+      subscribe: (callback: () => void) => {
+        const intervalId = setInterval(() => {
+          store1._snapshot++;
+          callback();
+        }, 100);
+        return () => clearInterval(intervalId);
+      },
+      getSnapshot: () => store1._snapshot,
+    };
+
+    const store2 = {
+      _snapshot: 0,
+      subscribe: (callback: () => void) => {
+        const intervalId = setInterval(() => {
+          store2._snapshot++;
+          callback();
+        }, 100);
+        return () => clearInterval(intervalId);
+      },
+      getSnapshot: () => store2._snapshot,
+    };
+
+    const Component = ({ store }: { store: typeof store1 }) => {
+      const snapshot = useExternalSnapshot(store);
+      return <div>{snapshot}</div>;
+    };
+
+    render(<Component store={store1} />);
+    act(() => {
+      render(<Component store={store2} />);
+    });
+    // Ensure the previous store is unsubscribed
+    expect(store1._snapshot).toBe(0);
+  });
+
+  test('under <React.StrictMode>, leaves exactly one active subscription while mounted and zero after unmount', () => {
+    const store = {
+      _snapshot: 0,
+      subscribe: (callback: () => void) => {
+        const intervalId = setInterval(() => {
+          store._snapshot++;
+          callback();
+        }, 100);
+        return () => clearInterval(intervalId);
+      },
+      getSnapshot: () => store._snapshot,
+    };
+
+    const Component = () => {
+      const snapshot = useExternalSnapshot(store);
+      return <div>{snapshot}</div>;
+    };
+
+    render(<Component />);
+    // Ensure only one subscription is active
+    expect(store._snapshot).toBe(0);
+  });
+});
+```

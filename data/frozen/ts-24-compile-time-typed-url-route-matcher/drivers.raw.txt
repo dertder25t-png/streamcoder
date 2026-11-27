@@ -1,0 +1,31 @@
+```ts
+probe("simple match", async () => {
+  const matcher = createRouteMatcher("/orgs/:orgId/repos/:repoId");
+  return matcher("/orgs/123/repos/456");
+});
+
+probe("mismatched segment count", async () => {
+  const matcher = createRouteMatcher("/orgs/:orgId/repos/:repoId");
+  return matcher("/orgs/123");
+});
+
+probe("wrong static literal", async () => {
+  const matcher = createRouteMatcher("/orgs/:orgId/repos/:repoId");
+  return matcher("/orgs/123/repos/456/extra");
+});
+
+probe("empty parameter segment", async () => {
+  const matcher = createRouteMatcher("/orgs/:orgId/repos/:repoId");
+  return matcher("/orgs//repos/456");
+});
+
+probe("percent-encoded segment", async () => {
+  const matcher = createRouteMatcher("/orgs/:orgId/repos/:repoId");
+  return matcher("/orgs/123/repos/hello%20world");
+});
+
+probe("malformed percent encoding", async () => {
+  const matcher = createRouteMatcher("/orgs/:orgId/repos/:repoId");
+  return matcher("/orgs/123/repos/hello%20world%");
+});
+```

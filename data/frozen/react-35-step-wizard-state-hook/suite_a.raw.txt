@@ -1,0 +1,43 @@
+- Clamps step indices between 0 and `totalSteps - 1`.
+
+```tsx
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
+import { useWizard } from './useWizard';
+
+test("step starts at 0", () => {
+  render(<div>{useWizard(3).step}</div>);
+  expect(screen.getByText(0)).toBeInTheDocument();
+});
+
+test("next() increments step", () => {
+  render(<div>{useWizard(3).step}</div>);
+  fireEvent.click(screen.getByRole('button', { name: 'next' }));
+  expect(screen.getByText(1)).toBeInTheDocument();
+});
+
+test("prev() decrements step", () => {
+  render(<div>{useWizard(3).step}</div>);
+  fireEvent.click(screen.getByRole('button', { name: 'prev' }));
+  expect(screen.getByText(0)).toBeInTheDocument();
+});
+
+test("goTo() sets step to given index", () => {
+  render(<div>{useWizard(3).step}</div>);
+  fireEvent.click(screen.getByRole('button', { name: 'goTo 2' }));
+  expect(screen.getByText(2)).toBeInTheDocument();
+});
+
+test("clamps step to 0 when going below 0", () => {
+  render(<div>{useWizard(3).step}</div>);
+  fireEvent.click(screen.getByRole('button', { name: 'prev' }));
+  expect(screen.getByText(0)).toBeInTheDocument();
+});
+
+test("clamps step to totalSteps - 1 when going above totalSteps - 1", () => {
+  render(<div>{useWizard(3).step}</div>);
+  fireEvent.click(screen.getByRole('button', { name: 'next' }));
+  fireEvent.click(screen.getByRole('button', { name: 'next' }));
+  fireEvent.click(screen.getByRole('button', { name: 'next' }));
+  expect(screen.getByText(2)).toBeInTheDocument();
+});
+```

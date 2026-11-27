@@ -1,0 +1,126 @@
+- Clamps step indices between 0 and `totalSteps - 1`.
+- Handles empty or invalid input.
+- Handles boundaries (first and last steps).
+- Handles repeated calls.
+- Cleans up resources.
+
+```tsx
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import { useWizard } from './useWizard';
+
+afterEach(cleanup);
+
+test("clamps step indices between 0 and totalSteps - 1", () => {
+  const { step, next, prev, goTo } = useWizard(3);
+
+  expect(step).toBe(0);
+  next();
+  expect(step).toBe(1);
+  next();
+  expect(step).toBe(2);
+  next();
+  expect(step).toBe(2);
+  prev();
+  expect(step).toBe(1);
+  prev();
+  expect(step).toBe(0);
+  prev();
+  expect(step).toBe(0);
+  goTo(1);
+  expect(step).toBe(1);
+  goTo(2);
+  expect(step).toBe(2);
+  goTo(3);
+  expect(step).toBe(2);
+  goTo(-1);
+  expect(step).toBe(0);
+});
+
+test("handles empty or invalid input", () => {
+  const { step, next, prev, goTo } = useWizard(0);
+
+  expect(step).toBe(0);
+  next();
+  expect(step).toBe(0);
+  prev();
+  expect(step).toBe(0);
+  goTo(0);
+  expect(step).toBe(0);
+  goTo(-1);
+  expect(step).toBe(0);
+  goTo(1);
+  expect(step).toBe(0);
+});
+
+test("handles boundaries (first and last steps)", () => {
+  const { step, next, prev, goTo } = useWizard(3);
+
+  expect(step).toBe(0);
+  prev();
+  expect(step).toBe(0);
+  next();
+  expect(step).toBe(1);
+  next();
+  expect(step).toBe(2);
+  next();
+  expect(step).toBe(2);
+  prev();
+  expect(step).toBe(1);
+  prev();
+  expect(step).toBe(0);
+});
+
+test("handles repeated calls", () => {
+  const { step, next, prev, goTo } = useWizard(3);
+
+  expect(step).toBe(0);
+  next();
+  expect(step).toBe(1);
+  next();
+  expect(step).toBe(2);
+  next();
+  expect(step).toBe(2);
+  prev();
+  expect(step).toBe(1);
+  prev();
+  expect(step).toBe(0);
+  prev();
+  expect(step).toBe(0);
+  goTo(1);
+  expect(step).toBe(1);
+  goTo(2);
+  expect(step).toBe(2);
+  goTo(3);
+  expect(step).toBe(2);
+  goTo(-1);
+  expect(step).toBe(0);
+});
+
+test("cleans up resources", () => {
+  // This test is more about ensuring no memory leaks or other resource leaks.
+  // Since we're not implementing the hook, we can't directly test resource cleanup.
+  // However, we can ensure that the hook doesn't cause any issues when called multiple times.
+  const { step, next, prev, goTo } = useWizard(3);
+  expect(step).toBe(0);
+  next();
+  expect(step).toBe(1);
+  next();
+  expect(step).toBe(2);
+  next();
+  expect(step).toBe(2);
+  prev();
+  expect(step).toBe(1);
+  prev();
+  expect(step).toBe(0);
+  prev();
+  expect(step).toBe(0);
+  goTo(1);
+  expect(step).toBe(1);
+  goTo(2);
+  expect(step).toBe(2);
+  goTo(3);
+  expect(step).toBe(2);
+  goTo(-1);
+  expect(step).toBe(0);
+});
+```

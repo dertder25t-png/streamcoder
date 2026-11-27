@@ -1,0 +1,47 @@
+```ts
+probe("empty directory", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const result = await summarizeByExtension(dir);
+  return result;
+});
+
+probe("single file with extension", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const filePath = path.join(dir, "test.ts");
+  await fs.promises.writeFile(filePath, "console.log('Hello, world!');");
+  const result = await summarizeByExtension(dir);
+  return result;
+});
+
+probe("single file without extension", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const filePath = path.join(dir, "test");
+  await fs.promises.writeFile(filePath, "console.log('Hello, world!');");
+  const result = await summarizeByExtension(dir);
+  return result;
+});
+
+probe("nested subdirectories", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const subDir1 = path.join(dir, "subdir1");
+  const subDir2 = path.join(dir, "subdir2");
+  await fs.promises.mkdir(subDir1);
+  await fs.promises.mkdir(subDir2);
+  const filePath1 = path.join(subDir1, "test.ts");
+  const filePath2 = path.join(subDir2, "test.js");
+  await fs.promises.writeFile(filePath1, "console.log('Hello, world!');");
+  await fs.promises.writeFile(filePath2, "console.log('Hello, world!');");
+  const result = await summarizeByExtension(dir);
+  return result;
+});
+
+probe("symbolic link to file", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const filePath = path.join(dir, "test.ts");
+  await fs.promises.writeFile(filePath, "console.log('Hello, world!');");
+  const linkPath = path.join(dir, "link.ts");
+  await fs.promises.symlink(filePath, linkPath);
+  const result = await summarizeByExtension(dir);
+  return result;
+});
+```

@@ -1,0 +1,25 @@
+{
+ "id": "node-29-stream-buffer-collector",
+ "topic": "node",
+ "cand_hidden": [
+  true,
+  true,
+  true,
+  true
+ ],
+ "cand_hidden_err": [
+  "",
+  "",
+  "",
+  ""
+ ],
+ "cand_tokens": [
+  109,
+  75,
+  109,
+  109
+ ],
+ "gen_seconds": 20.4,
+ "type_only": false,
+ "errors": []
+}

@@ -1,0 +1,35 @@
+- Static type inference extracts `{ orgId: string; repoId: string }` from "/orgs/:orgId/repos/:repoId" and `Record<never, never>` when no params exist.
+- Returns null for mismatched segment counts, wrong static literals, or empty parameter segments.
+- Percent-encoded segments (e.g., "hello%20world") are decoded safely, and malformed percent encodings return null instead of throwing.
+
+```ts
+test("Extracts parameters correctly", () => {
+  const match = createRouteMatcher("/orgs/:orgId/repos/:repoId")("/orgs/123/repos/456");
+  expect(match).toEqual({ orgId: "123", repoId: "456" });
+});
+
+test("Returns null for mismatched segment counts", () => {
+  const match = createRouteMatcher("/orgs/:orgId/repos/:repoId")("/orgs/123");
+  expect(match).toBeNull();
+});
+
+test("Returns null for wrong static literals", () => {
+  const match = createRouteMatcher("/orgs/:orgId/repos/:repoId")("/orgs/123/repos/456/extra");
+  expect(match).toBeNull();
+});
+
+test("Returns null for empty parameter segments", () => {
+  const match = createRouteMatcher("/orgs/:orgId/repos/:repoId")("/orgs//repos/456");
+  expect(match).toBeNull();
+});
+
+test("Decodes percent-encoded segments safely", () => {
+  const match = createRouteMatcher("/orgs/:orgId/repos/:repoId")("/orgs/123/repos/hello%20world");
+  expect(match).toEqual({ orgId: "123", repoId: "hello world" });
+});
+
+test("Returns null for malformed percent encodings", () => {
+  const match = createRouteMatcher("/orgs/:orgId/repos/:repoId")("/orgs/123/repos/hello%20world%");
+  expect(match).toBeNull();
+});
+```

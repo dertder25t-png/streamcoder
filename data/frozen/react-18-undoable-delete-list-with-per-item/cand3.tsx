@@ -1,0 +1,67 @@
+import React, { useState, useEffect, useRef } from 'react';
+
+type Item = { id: string; label: string };
+
+interface DeferredActionListProps {
+  items: Item[];
+  onCommitDelete: (id: string) => void;
+  graceMs?: number;
+}
+
+export const DeferredActionList: React.FC<DeferredActionListProps> = ({
+  items,
+  onCommitDelete,
+  graceMs = 3000,
+}) => {
+  const [pendingDeletions, setPendingDeletions] = useState<{ [id: string]: NodeJS.Timeout }>({});
+  const [itemStates, setItemStates] = useState<{ [id: string]: 'pending' | 'idle' }>({});
+
+  useEffect(() => {
+    return () => {
+      Object.values(pendingDeletions).forEach(timeout => clearTimeout(timeout));
+    };
+  }, [pendingDeletions]);
+
+  const handleDeleteClick = (id: string) => {
+    if (itemStates[id] === 'pending') return;
+
+    setItemStates(prevState => ({ ...prevState, [id]: 'pending' }));
+
+    const timeout = setTimeout(() => {
+      onCommitDelete(id);
+      setItemStates(prevState => ({ ...prevState, [id]: 'idle' }));
+      delete pendingDeletions[id];
+    }, graceMs);
+
+    setPendingDeletions(prevState => ({ ...prevState, [id]: timeout }));
+  };
+
+  const handleUndoClick = (id: string) => {
+    if (itemStates[id] !== 'pending') return;
+
+    clearTimeout(pendingDeletions[id]);
+    setItemStates(prevState => ({ ...prevState, [id]: 'idle' }));
+    delete pendingDeletions[id];
+  };
+
+  return (
+    <ul>
+      {items.map(item => (
+        <li key={item.id}>
+          {itemStates[item.id] === 'pending' ? (
+            <>
+              Deleting...
+              <button onClick={() => handleUndoClick(item.id)} aria-label={`Undo delete ${item.label}`}>
+                Undo
+              </button>
+            </>
+          ) : (
+            <button onClick={() => handleDeleteClick(item.id)} aria-label={`Delete ${item.label}`}>
+              Delete {item.label}
+            </button>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+};

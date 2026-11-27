@@ -1,0 +1,25 @@
+{
+ "id": "react-24-compound-tabs-with-roving-tabindex",
+ "topic": "react",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/react-24-compound-tabs-with-roving-tabindex/solution.tsx(114,27): error TS2304: Ca",
+  "type error: .runs/react-24-compound-tabs-with-roving-tabindex/solution.tsx(150,9): error TS2322: Typ",
+  "type error: .runs/react-24-compound-tabs-with-roving-tabindex/solution.tsx(106,98): error TS18046: '",
+  "type error: .runs/react-24-compound-tabs-with-roving-tabindex/solution.tsx(63,43): error TS7006: Par"
+ ],
+ "cand_tokens": [
+  823,
+  1043,
+  744,
+  686
+ ],
+ "gen_seconds": 60.2,
+ "type_only": false,
+ "errors": []
+}

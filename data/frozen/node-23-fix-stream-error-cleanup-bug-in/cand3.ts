@@ -1,0 +1,45 @@
+import { createGzip } from "node:zlib";
+import { createReadStream, createWriteStream, unlink } from "node:fs";
+
+export async function compressFileSafe(
+  srcPath: string,
+  destPath: string,
+  options: { signal?: AbortSignal } = {},
+): Promise<void> {
+  return new Promise<void>(async (resolve, reject) => {
+    const src = createReadStream(srcPath);
+    const gzip = createGzip();
+    const out = createWriteStream(destPath);
+
+    let cleanup = false;
+
+    const finish = () => {
+      if (cleanup) return;
+      cleanup = true;
+      out.destroy();
+      resolve();
+    };
+
+    const error = (err: Error) => {
+      if (cleanup) return;
+      cleanup = true;
+      unlink(destPath, () => {}); // Ignore error if unlink fails
+      out.destroy();
+      reject(err);
+    };
+
+    src.on("error", error);
+    out.on("error", error);
+    out.on("finish", finish);
+
+    options.signal?.addEventListener("abort", () => {
+      if (cleanup) return;
+      cleanup = true;
+      unlink(destPath, () => {}); // Ignore error if unlink fails
+      out.destroy();
+      reject(new Error("aborted"));
+    });
+
+    src.pipe(gzip).pipe(out);
+  });
+}

@@ -1,0 +1,26 @@
+```ts
+probe("single line highlight", async () => {
+  render(<HighlightedSnippet code="console.log('Hello');" highlightLines="2" />);
+  return snap();
+});
+
+probe("range highlight", async () => {
+  render(<HighlightedSnippet code="console.log('Hello');\nconsole.log('World');" highlightLines="2-3" />);
+  return snap();
+});
+
+probe("mixed highlight", async () => {
+  render(<HighlightedSnippet code="console.log('Hello');\nconsole.log('World');" highlightLines="1,3" />);
+  return snap();
+});
+
+probe("out-of-bounds highlight", async () => {
+  render(<HighlightedSnippet code="console.log('Hello');\nconsole.log('World');" highlightLines="5" />);
+  return snap();
+});
+
+probe("empty highlight", async () => {
+  render(<HighlightedSnippet code="console.log('Hello');\nconsole.log('World');" highlightLines="" />);
+  return snap();
+});
+```

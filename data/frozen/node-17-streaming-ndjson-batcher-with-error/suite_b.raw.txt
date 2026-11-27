@@ -1,0 +1,108 @@
+- Handles JSON lines and multi-byte UTF-8 characters split across arbitrary Buffer boundaries as well as \n and \r\n endings.
+- Emits full batches immediately when filled and flushes any partial batch (including a final line lacking a trailing newline) on stream end.
+- Invalid JSON invokes onInvalidLine(rawLine, lineNumber) with 1-based line numbers without crashing the stream; blank lines are ignored.
+- Non-integer or < 1 values for maxBatchSize throw a RangeError.
+
+```ts
+import { createNdjsonBatchStream } from './createNdjsonBatchStream'; // Adjust the import path as necessary
+import { test, expect, vi } from 'vitest';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
+
+test("Emits full batches immediately when filled", async () => {
+  const maxBatchSize = 2;
+  const onInvalidLine = vi.fn();
+  const stream = createNdjsonBatchStream({ maxBatchSize, onInvalidLine });
+
+  const chunks = [
+    Buffer.from('{"id":1}\n{"id":2}\n{"id":3}\n{"id":4}\n'),
+    Buffer.from('{"id":5}\n{"id":6}\n{"id":7}\n{"id":8}\n'),
+  ];
+
+  const results: any[][] = [];
+  stream.on('data', (batch) => results.push(batch));
+
+  for (const chunk of chunks) {
+    stream.write(chunk);
+  }
+
+  stream.end();
+
+  await new Promise(resolve => stream.on('end', resolve));
+
+  expect(results).toEqual([
+    [{ id: 1 }, { id: 2 }],
+    [{ id: 3 }, { id: 4 }],
+    [{ id: 5 }, { id: 6 }],
+    [{ id: 7 }, { id: 8 }],
+  ]);
+});
+
+test("Flushes any partial batch on stream end", async () => {
+  const maxBatchSize = 2;
+  const onInvalidLine = vi.fn();
+  const stream = createNdjsonBatchStream({ maxBatchSize, onInvalidLine });
+
+  const chunks = [
+    Buffer.from('{"id":1}\n{"id":2}\n{"id":3}\n'),
+    Buffer.from('{"id":4}\n'),
+  ];
+
+  const results: any[][] = [];
+  stream.on('data', (batch) => results.push(batch));
+
+  for (const chunk of chunks) {
+    stream.write(chunk);
+  }
+
+  stream.end();
+
+  await new Promise(resolve => stream.on('end', resolve));
+
+  expect(results).toEqual([
+    [{ id: 1 }, { id: 2 }],
+    [{ id: 3 }],
+    [{ id: 4 }],
+  ]);
+});
+
+test("Invalid JSON invokes onInvalidLine", async () => {
+  const maxBatchSize = 2;
+  const onInvalidLine = vi.fn();
+  const stream = createNdjsonBatchStream({ maxBatchSize, onInvalidLine });
+
+  const chunks = [
+    Buffer.from('{"id":1}\n{"id":2}\n{"id":3}\n{"id":4}\n'),
+    Buffer.from('{"id":5}\n{"id":6}\n{"id":7}\n{"id":8}\n'),
+  ];
+
+  const results: any[][] = [];
+  stream.on('data', (batch) => results.push(batch));
+
+  for (const chunk of chunks) {
+    stream.write(chunk);
+  }
+
+  stream.write(Buffer.from('{"id":9}\n{"id":10\n{"id":11}\n'));
+
+  stream.end();
+
+  await new Promise(resolve => stream.on('end', resolve));
+
+  expect(onInvalidLine).toHaveBeenCalledWith('{"id":10\n{"id":11}\n', 5);
+  expect(results).toEqual([
+    [{ id: 1 }, { id: 2 }],
+    [{ id: 3 }, { id: 4 }],
+    [{ id: 5 }, { id: 6 }],
+    [{ id: 7 }, { id: 8 }],
+  ]);
+});
+
+test("Non-integer or < 1 values for maxBatchSize throw a RangeError", async () => {
+  expect(() => createNdjsonBatchStream({ maxBatchSize: 0, onInvalidLine: vi.fn() })).toThrow(RangeError);
+  expect(() => createNdjsonBatchStream({ maxBatchSize: -1, onInvalidLine: vi.fn() })).toThrow(RangeError);
+  expect(() => createNdjsonBatchStream({ maxBatchSize: '1', onInvalidLine: vi.fn() })).toThrow(RangeError);
+  expect(() => createNdjsonBatchStream({ maxBatchSize: 1.5, onInvalidLine: vi.fn() })).toThrow(RangeError);
+});
+```

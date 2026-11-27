@@ -1,0 +1,45 @@
+```ts
+probe("typing in Celsius updates Fahrenheit", async () => {
+  render(<TemperaturePair />);
+  const celsiusInput = screen.getByRole("textbox", { name: "Celsius" });
+  fireEvent.change(celsiusInput, { target: { value: "0" } });
+  return snap();
+});
+
+probe("typing in Fahrenheit updates Celsius", async () => {
+  render(<TemperaturePair />);
+  const fahrenheitInput = screen.getByRole("textbox", { name: "Fahrenheit" });
+  fireEvent.change(fahrenheitInput, { target: { value: "212" } });
+  return snap();
+});
+
+probe("incomplete negative sign in Celsius", async () => {
+  render(<TemperaturePair />);
+  const celsiusInput = screen.getByRole("textbox", { name: "Celsius" });
+  fireEvent.change(celsiusInput, { target: { value: "-" } });
+  return snap();
+});
+
+probe("clearing Celsius updates Fahrenheit", async () => {
+  render(<TemperaturePair />);
+  const celsiusInput = screen.getByRole("textbox", { name: "Celsius" });
+  fireEvent.change(celsiusInput, { target: { value: "0" } });
+  fireEvent.clear(celsiusInput);
+  return snap();
+});
+
+probe("incomplete negative sign in Fahrenheit", async () => {
+  render(<TemperaturePair />);
+  const fahrenheitInput = screen.getByRole("textbox", { name: "Fahrenheit" });
+  fireEvent.change(fahrenheitInput, { target: { value: "-" } });
+  return snap();
+});
+
+probe("clearing Fahrenheit updates Celsius", async () => {
+  render(<TemperaturePair />);
+  const fahrenheitInput = screen.getByRole("textbox", { name: "Fahrenheit" });
+  fireEvent.change(fahrenheitInput, { target: { value: "212" } });
+  fireEvent.clear(fahrenheitInput);
+  return snap();
+});
+```

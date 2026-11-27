@@ -1,0 +1,15 @@
+function normalizePath(path: string): string {
+  if (path.includes('..') || /^[A-Za-z]:\\/.test(path)) {
+    throw new Error('Invalid path');
+  }
+  return path.replace(/\\+/g, '/').replace(/^\.\//, '');
+}
+
+export function normalizeArchivePaths(rawPaths: readonly string[]): string[] {
+  const seen = new Set<string>();
+  return rawPaths.map(normalizePath).filter(path => {
+    if (seen.has(path)) return false;
+    seen.add(path);
+    return true;
+  });
+}

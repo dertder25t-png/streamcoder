@@ -1,0 +1,27 @@
+- Splits CSV fields correctly respecting double quotes.
+- Handles quoted fields containing commas.
+- Handles unquoted fields without commas.
+- Handles leading and trailing spaces in fields.
+- Handles empty fields.
+
+```ts
+test("Splits CSV fields correctly respecting double quotes", () => {
+  expect(parseCsvLine('field1,"field, with, commas",field3')).toEqual(['field1', 'field, with, commas', 'field3']);
+});
+
+test("Handles quoted fields containing commas", () => {
+  expect(parseCsvLine('field1,"field, with, commas",field3')).toEqual(['field1', 'field, with, commas', 'field3']);
+});
+
+test("Handles unquoted fields without commas", () => {
+  expect(parseCsvLine('field1,field2,field3')).toEqual(['field1', 'field2', 'field3']);
+});
+
+test("Handles leading and trailing spaces in fields", () => {
+  expect(parseCsvLine('  field1  ,  field2  ,  field3  ')).toEqual(['field1', 'field2', 'field3']);
+});
+
+test("Handles empty fields", () => {
+  expect(parseCsvLine(',,')).toEqual(['', '']);
+});
+```

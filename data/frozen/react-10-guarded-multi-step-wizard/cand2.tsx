@@ -1,0 +1,61 @@
+import React, { useState } from 'react';
+
+interface Step {
+  id: number;
+  title: string;
+  content: React.ReactNode;
+  isValid?: boolean;
+}
+
+interface StepWizardProps {
+  steps: Step[];
+  onComplete: () => void;
+}
+
+const StepWizard: React.FC<StepWizardProps> = ({ steps, onComplete }) => {
+  const [activeStepIndex, setActiveStepIndex] = useState(0);
+
+  const handleNext = () => {
+    if (activeStepIndex < steps.length - 1) {
+      setActiveStepIndex(prevIndex => prevIndex + 1);
+    }
+  };
+
+  const handleBack = () => {
+    if (activeStepIndex > 0) {
+      setActiveStepIndex(prevIndex => prevIndex - 1);
+    }
+  };
+
+  const isLastStep = activeStepIndex === steps.length - 1;
+  const isNextDisabled = isLastStep ? !steps[activeStepIndex].isValid : !steps[activeStepIndex].isValid;
+
+  return (
+    <div>
+      <div>
+        {steps.map(step => (
+          <span key={step.id} style={{ marginRight: '8px' }}>
+            {step.id === activeStepIndex + 1 ? '●' : '○'}
+          </span>
+        ))}
+      </div>
+      <div>{steps[activeStepIndex].content}</div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+        {activeStepIndex > 0 && (
+          <button onClick={handleBack} disabled={activeStepIndex === 0}>
+            Back
+          </button>
+        )}
+        <button
+          onClick={isLastStep ? onComplete : handleNext}
+          disabled={isNextDisabled}
+          style={{ marginLeft: '8px' }}
+        >
+          {isLastStep ? 'Finish' : 'Next'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export { StepWizard };

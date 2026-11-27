@@ -1,0 +1,54 @@
+- Resolves immediately on the first successful attempt and doubles delay between failures (baseDelayMs * 2^(attempt - 1)).
+- Stops immediately and re-throws when shouldRetry(err) returns false or when maxAttempts is exhausted.
+- Aborts cleanly without further attempts if signal is already aborted or aborts during backoff sleep.
+
+```ts
+import { retryWithBackoff } from './retryWithBackoff'; // Adjust the import path as necessary
+
+test("resolves immediately on the first successful attempt", async () => {
+  const fn = vi.fn(() => Promise.resolve("success"));
+  const result = await retryWithBackoff(fn, { maxAttempts: 1, baseDelayMs: 100 });
+  expect(result).toBe("success");
+  expect(fn).toHaveBeenCalledTimes(1);
+});
+
+test("doubles delay between failures", async () => {
+  const fn = vi.fn(() => Promise.reject(new Error("fail")));
+  const start = Date.now();
+  await expect(retryWithBackoff(fn, { maxAttempts: 3, baseDelayMs: 100 })).rejects.toThrow("fail");
+  const end = Date.now();
+  expect(end - start).toBeGreaterThanOrEqual(300); // 100 + 200 + 400
+  expect(fn).toHaveBeenCalledTimes(3);
+});
+
+test("stops immediately and re-throws when shouldRetry(err) returns false", async () => {
+  const fn = vi.fn(() => Promise.reject(new Error("fail")));
+  const shouldRetry = vi.fn((err) => err.message !== "stop");
+  await expect(retryWithBackoff(fn, { maxAttempts: 3, baseDelayMs: 100, shouldRetry })).rejects.toThrow("fail");
+  expect(shouldRetry).toHaveBeenCalledTimes(3);
+  expect(fn).toHaveBeenCalledTimes(3);
+});
+
+test("stops immediately and re-throws when maxAttempts is exhausted", async () => {
+  const fn = vi.fn(() => Promise.reject(new Error("fail")));
+  await expect(retryWithBackoff(fn, { maxAttempts: 2, baseDelayMs: 100 })).rejects.toThrow("fail");
+  expect(fn).toHaveBeenCalledTimes(2);
+});
+
+test("aborts cleanly without further attempts if signal is already aborted", async () => {
+  const fn = vi.fn(() => Promise.reject(new Error("fail")));
+  const controller = new AbortController();
+  controller.abort();
+  await expect(retryWithBackoff(fn, { maxAttempts: 3, baseDelayMs: 100, signal: controller.signal })).rejects.toThrow("AbortError");
+  expect(fn).toHaveBeenCalledTimes(1);
+});
+
+test("aborts during backoff sleep", async () => {
+  const fn = vi.fn(() => Promise.reject(new Error("fail")));
+  const controller = new AbortController();
+  const sleep = vi.fn((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+  await expect(retryWithBackoff(fn, { maxAttempts: 3, baseDelayMs: 100, signal: controller.signal, sleep })).rejects.toThrow("AbortError");
+  expect(sleep).toHaveBeenCalledTimes(1);
+  expect(fn).toHaveBeenCalledTimes(1);
+});
+```

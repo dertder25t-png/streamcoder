@@ -1,0 +1,64 @@
+- Starts full at capacity, refills continuously based on elapsed time from now(), and never exceeds capacity.
+- When insufficient tokens exist, does not deduct any tokens and returns accurate retryAfterMs rounded up to the nearest millisecond.
+- Handles clock regressions (if now() moves backwards) gracefully without generating negative tokens or NaN.
+- Empty or invalid input (capacity, refillPerSecond, now) results in an error.
+- Repeated calls with the same cost return accurate results.
+- Timers, listeners, files or other resources are cleaned up after tests.
+
+```ts
+import { createTokenBucket } from './createTokenBucket';
+
+test("starts full at capacity", () => {
+  const bucket = createTokenBucket({ capacity: 10, refillPerSecond: 1, now: () => 0 });
+  expect(bucket.tryConsume()).toEqual({ allowed: true, remaining: 10, retryAfterMs: 0 });
+});
+
+test("refills continuously based on elapsed time", () => {
+  const now = vi.fn(() => 0);
+  const bucket = createTokenBucket({ capacity: 10, refillPerSecond: 1, now });
+  expect(bucket.tryConsume()).toEqual({ allowed: true, remaining: 10, retryAfterMs: 0 });
+  now.mockReturnValue(1000);
+  expect(bucket.tryConsume()).toEqual({ allowed: true, remaining: 9, retryAfterMs: 0 });
+  now.mockReturnValue(2000);
+  expect(bucket.tryConsume()).toEqual({ allowed: true, remaining: 8, retryAfterMs: 0 });
+});
+
+test("when insufficient tokens exist, does not deduct any tokens", () => {
+  const now = vi.fn(() => 0);
+  const bucket = createTokenBucket({ capacity: 10, refillPerSecond: 1, now });
+  now.mockReturnValue(1000);
+  expect(bucket.tryConsume(11)).toEqual({ allowed: false, remaining: 9, retryAfterMs: 1000 });
+  now.mockReturnValue(2000);
+  expect(bucket.tryConsume(1)).toEqual({ allowed: true, remaining: 8, retryAfterMs: 0 });
+});
+
+test("handles clock regressions gracefully", () => {
+  const now = vi.fn(() => 0);
+  const bucket = createTokenBucket({ capacity: 10, refillPerSecond: 1, now });
+  now.mockReturnValue(1000);
+  expect(bucket.tryConsume()).toEqual({ allowed: true, remaining: 9, retryAfterMs: 0 });
+  now.mockReturnValue(500); // Clock regression
+  expect(bucket.tryConsume()).toEqual({ allowed: true, remaining: 9, retryAfterMs: 0 });
+});
+
+test("empty or invalid input results in an error", () => {
+  expect(() => createTokenBucket({ capacity: 10, refillPerSecond: 1, now: null as any })).toThrowError();
+  expect(() => createTokenBucket({ capacity: 10, refillPerSecond: 1, now: () => 0 })).toThrowError();
+  expect(() => createTokenBucket({ capacity: 10, refillPerSecond: 1, now: () => 0 })).toThrowError();
+});
+
+test("repeated calls with the same cost return accurate results", () => {
+  const now = vi.fn(() => 0);
+  const bucket = createTokenBucket({ capacity: 10, refillPerSecond: 1, now });
+  expect(bucket.tryConsume()).toEqual({ allowed: true, remaining: 10, retryAfterMs: 0 });
+  expect(bucket.tryConsume()).toEqual({ allowed: true, remaining: 9, retryAfterMs: 0 });
+  expect(bucket.tryConsume()).toEqual({ allowed: true, remaining: 8, retryAfterMs: 0 });
+});
+
+test("timers, listeners, files or other resources are cleaned up after tests", () => {
+  const now = vi.fn(() => 0);
+  const bucket = createTokenBucket({ capacity: 10, refillPerSecond: 1, now });
+  expect(bucket.tryConsume()).toEqual({ allowed: true, remaining: 10, retryAfterMs: 0 });
+  // No cleanup needed as we are not using timers, listeners, files or other resources
+});
+```

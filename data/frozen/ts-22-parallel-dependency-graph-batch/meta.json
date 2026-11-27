@@ -1,0 +1,25 @@
+{
+ "id": "ts-22-parallel-dependency-graph-batch",
+ "topic": "typescript",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/ts-22-parallel-dependency-graph-batch/solution.ts(32,48): error TS7006: Parameter ",
+  "type error: .runs/ts-22-parallel-dependency-graph-batch/solution.ts(41,38): error TS2345: Argument o",
+  "type error: .runs/ts-22-parallel-dependency-graph-batch/solution.test.ts(2,10): error TS2459: Module",
+  "type error: .runs/ts-22-parallel-dependency-graph-batch/solution.ts(65,21): error TS2345: Argument o"
+ ],
+ "cand_tokens": [
+  408,
+  447,
+  557,
+  493
+ ],
+ "gen_seconds": 34.4,
+ "type_only": false,
+ "errors": []
+}

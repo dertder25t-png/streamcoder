@@ -1,0 +1,28 @@
+```typescript
+import { promises as fs } from 'node:fs';
+import { join } from 'node:path';
+
+export async function nextLogFilePath(dirPath: string, dateStr: string): Promise<string> {
+  const logPattern = new RegExp(`^app-${dateStr}\\.(\\d+)\\.log$`);
+  let maxSequence = 0;
+
+  try {
+    const files = await fs.readdir(dirPath);
+    for (const file of files) {
+      const match = file.match(logPattern);
+      if (match) {
+        const sequence = parseInt(match[1], 10);
+        if (!isNaN(sequence) && sequence > maxSequence) {
+          maxSequence = sequence;
+        }
+      }
+    }
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      throw error;
+    }
+  }
+
+  return join(dirPath, `app-${dateStr}.${maxSequence + 1}.log`);
+}
+```

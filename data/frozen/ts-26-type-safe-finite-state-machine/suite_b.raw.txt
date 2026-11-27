@@ -1,0 +1,117 @@
+- Test that `createStateMachine` throws an error when `initial` state is not declared in `transitions`.
+- Test that `createStateMachine` throws an error when an event is not declared in `transitions` for the current state.
+- Test that `getState()` returns the initial state.
+- Test that `can(event)` returns true for a valid event in the current state.
+- Test that `can(event)` returns false for an invalid event in the current state.
+- Test that `send(event)` returns true and transitions to the target state for a valid event with a passing guard.
+- Test that `send(event)` returns false and does not transition for a valid event with a failing guard.
+- Test that `send(event)` returns false and does not transition for an invalid event.
+- Test that `send(event)` does not transition when the current state has no transitions for the event.
+- Test that `send(event)` does not transition when the current state has no transitions at all.
+
+```ts
+import { createStateMachine } from './createStateMachine';
+
+test("throws an error when initial state is not declared in transitions", () => {
+  expect(() => createStateMachine({
+    initial: 'unknown',
+    transitions: {
+      'state1': { 'event1': { target: 'state1' } }
+    }
+  })).toThrowError('Initial state "unknown" is not declared in transitions');
+});
+
+test("throws an error when an event is not declared in transitions for the current state", () => {
+  expect(() => createStateMachine({
+    initial: 'state1',
+    transitions: {
+      'state1': { 'unknownEvent': { target: 'state1' } }
+    }
+  })).toThrowError('Event "unknownEvent" is not declared for state "state1"');
+});
+
+test("getState() returns the initial state", () => {
+  const machine = createStateMachine({
+    initial: 'state1',
+    transitions: {
+      'state1': { 'event1': { target: 'state1' } }
+    }
+  });
+  expect(machine.getState()).toBe('state1');
+});
+
+test("can(event) returns true for a valid event in the current state", () => {
+  const machine = createStateMachine({
+    initial: 'state1',
+    transitions: {
+      'state1': { 'event1': { target: 'state1' } }
+    }
+  });
+  expect(machine.can('event1')).toBe(true);
+});
+
+test("can(event) returns false for an invalid event in the current state", () => {
+  const machine = createStateMachine({
+    initial: 'state1',
+    transitions: {
+      'state1': { 'event1': { target: 'state1' } }
+    }
+  });
+  expect(machine.can('unknownEvent')).toBe(false);
+});
+
+test("send(event) returns true and transitions to the target state for a valid event with a passing guard", () => {
+  const machine = createStateMachine({
+    initial: 'state1',
+    transitions: {
+      'state1': { 'event1': { target: 'state2', guard: () => true } }
+    }
+  });
+  expect(machine.send('event1')).toBe(true);
+  expect(machine.getState()).toBe('state2');
+});
+
+test("send(event) returns false and does not transition for a valid event with a failing guard", () => {
+  const machine = createStateMachine({
+    initial: 'state1',
+    transitions: {
+      'state1': { 'event1': { target: 'state2', guard: () => false } }
+    }
+  });
+  expect(machine.send('event1')).toBe(false);
+  expect(machine.getState()).toBe('state1');
+});
+
+test("send(event) returns false and does not transition for an invalid event", () => {
+  const machine = createStateMachine({
+    initial: 'state1',
+    transitions: {
+      'state1': { 'event1': { target: 'state1' } }
+    }
+  });
+  expect(machine.send('unknownEvent')).toBe(false);
+  expect(machine.getState()).toBe('state1');
+});
+
+test("send(event) does not transition when the current state has no transitions for the event", () => {
+  const machine = createStateMachine({
+    initial: 'state1',
+    transitions: {
+      'state1': { 'event1': { target: 'state1' } }
+    }
+  });
+  expect(machine.send('event2')).toBe(false);
+  expect(machine.getState()).toBe('state1');
+});
+
+test("send(event) does not transition when the current state has no transitions at all", () => {
+  const machine = createStateMachine({
+    initial: 'state1',
+    transitions: {
+      'state2': { 'event1': { target: 'state2' } }
+    }
+  });
+  expect(machine.send('event1')).toBe(false);
+  expect(machine.getState()).toBe('state1');
+});
+```

@@ -1,0 +1,25 @@
+{
+ "id": "node-06-http-health-readiness-server",
+ "topic": "node",
+ "cand_hidden": [
+  true,
+  false,
+  true,
+  false
+ ],
+ "cand_hidden_err": [
+  "",
+  "test failed: GET /live returns 200 JSON {status: ok} regardless of readiness; GET /ready returns 200",
+  "",
+  "test failed: GET /ready returns 200 when checkReady resolves true; GET /ready returns 503 when check"
+ ],
+ "cand_tokens": [
+  309,
+  373,
+  333,
+  337
+ ],
+ "gen_seconds": 45.3,
+ "type_only": false,
+ "errors": []
+}

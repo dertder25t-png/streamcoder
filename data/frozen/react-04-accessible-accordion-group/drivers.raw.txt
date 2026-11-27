@@ -1,0 +1,32 @@
+```ts
+probe("Single item, toggle open and close", async () => {
+  render(<AccordionGroup items={[{ id: "1", title: "Item 1", content: "Content 1" }]} />);
+  fireEvent.click(screen.getByRole("button", { name: "Item 1" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "Item 1" })).toHaveAttribute("aria-expanded", "true"));
+  fireEvent.click(screen.getByRole("button", { name: "Item 1" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "Item 1" })).toHaveAttribute("aria-expanded", "false"));
+  return snap();
+});
+
+probe("Multiple items, toggle open and close", async () => {
+  render(<AccordionGroup items={[{ id: "1", title: "Item 1", content: "Content 1" }, { id: "2", title: "Item 2", content: "Content 2" }]} />);
+  fireEvent.click(screen.getByRole("button", { name: "Item 1" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "Item 1" })).toHaveAttribute("aria-expanded", "true"));
+  fireEvent.click(screen.getByRole("button", { name: "Item 2" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "Item 2" })).toHaveAttribute("aria-expanded", "true"));
+  fireEvent.click(screen.getByRole("button", { name: "Item 1" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "Item 1" })).toHaveAttribute("aria-expanded", "false"));
+  return snap();
+});
+
+probe("Multiple items, allowMultiple true", async () => {
+  render(<AccordionGroup items={[{ id: "1", title: "Item 1", content: "Content 1" }, { id: "2", title: "Item 2", content: "Content 2" }]} allowMultiple />);
+  fireEvent.click(screen.getByRole("button", { name: "Item 1" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "Item 1" })).toHaveAttribute("aria-expanded", "true"));
+  fireEvent.click(screen.getByRole("button", { name: "Item 2" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "Item 2" })).toHaveAttribute("aria-expanded", "true"));
+  fireEvent.click(screen.getByRole("button", { name: "Item 1" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "Item 1" })).toHaveAttribute("aria-expanded", "true"));
+  return snap();
+});
+```

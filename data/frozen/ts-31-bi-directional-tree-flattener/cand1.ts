@@ -1,0 +1,77 @@
+import { strict as assert } from 'node:assert';
+
+interface TreeNode<T> {
+  id: string;
+  value: T;
+  children: TreeNode<T>[];
+}
+
+interface FlatNode<T> {
+  id: string;
+  parentId: string | null;
+  value: T;
+}
+
+function flattenTree<T>(roots: readonly TreeNode<T>[]): FlatNode<T>[] {
+  const result: FlatNode<T>[] = [];
+
+  function traverse(node: TreeNode<T>, parentId: string | null) {
+    result.push({ id: node.id, parentId, value: node.value });
+    for (const child of node.children) {
+      traverse(child, node.id);
+    }
+  }
+
+  for (const root of roots) {
+    traverse(root, null);
+  }
+
+  return result;
+}
+
+function rebuildTree<T>(flat: readonly FlatNode<T>[]): TreeNode<T>[] {
+  const map = new Map<string, TreeNode<T>>();
+  const rootIds = new Set<string>();
+
+  for (const node of flat) {
+    if (map.has(node.id)) {
+      throw new Error(`Duplicate node ID: ${node.id}`);
+    }
+    if (node.parentId !== null && !map.has(node.parentId)) {
+      throw new Error(`Orphan reference to nonexistent parent ID: ${node.parentId}`);
+    }
+    map.set(node.id, { id: node.id, value: node.value, children: [] });
+    if (node.parentId === null) {
+      rootIds.add(node.id);
+    }
+  }
+
+  for (const node of flat) {
+    if (node.parentId !== null) {
+      const parent = map.get(node.parentId);
+      if (parent) {
+        parent.children.push(map.get(node.id)!);
+      }
+    }
+  }
+
+  const roots = rootIds.map(id => map.get(id)!);
+  assert(roots.length > 0, 'No valid root nodes found');
+  return roots;
+}
+
+// Example usage:
+const tree: TreeNode<number>[] = [
+  { id: '1', value: 1, children: [
+    { id: '2', value: 2, children: [
+      { id: '4', value: 4, children: [] },
+      { id: '5', value: 5, children: [] }
+    ]},
+    { id: '3', value: 3, children: [] }
+  ]}
+];
+
+const flat = flattenTree(tree);
+const rebuilt = rebuildTree(flat);
+
+console.log(JSON.stringify(rebuilt, null, 2));

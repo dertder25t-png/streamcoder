@@ -1,0 +1,44 @@
+```ts
+probe("Toggle flag synchronously", async () => {
+  const flags = [
+    { id: "flag1", label: "Feature 1", enabled: false },
+    { id: "flag2", label: "Feature 2", enabled: true },
+  ];
+
+  render(<OptimisticFeatureFlags flags={flags} onToggle={vi.fn()} />);
+  fireEvent.click(screen.getByRole("switch", { name: "Feature 1" }));
+  fireEvent.click(screen.getByRole("switch", { name: "Feature 2" }));
+  return snap();
+});
+
+probe("Revert flag on toggle failure", async () => {
+  const flags = [
+    { id: "flag1", label: "Feature 1", enabled: false },
+  ];
+
+  const onToggle = vi.fn().mockRejectedValue(new Error("Failed to update"));
+
+  render(<OptimisticFeatureFlags flags={flags} onToggle={onToggle} />);
+  fireEvent.click(screen.getByRole("switch", { name: "Feature 1" }));
+  await waitFor(() => expect(onToggle).toHaveBeenCalledWith("flag1", true));
+  expect(screen.getByRole("alert")).toHaveTextContent("Failed to update");
+  expect(screen.getByRole("switch", { name: "Feature 1" })).not.toBeChecked();
+  return snap();
+});
+
+probe("Prevent overlapping requests", async () => {
+  const flags = [
+    { id: "flag1", label: "Feature 1", enabled: false },
+    { id: "flag2", label: "Feature 2", enabled: true },
+  ];
+
+  const onToggle = vi.fn().mockResolvedValue(undefined);
+
+  render(<OptimisticFeatureFlags flags={flags} onToggle={onToggle} />);
+  fireEvent.click(screen.getByRole("switch", { name: "Feature 1" }));
+  fireEvent.click(screen.getByRole("switch", { name: "Feature 2" }));
+  await waitFor(() => expect(onToggle).toHaveBeenCalledWith("flag1", true));
+  expect(onToggle).not.toHaveBeenCalledWith("flag2", false);
+  return snap();
+});
+```

@@ -1,0 +1,69 @@
+- Clicking a flag reflects the new state synchronously before onToggle resolves.
+- If onToggle rejects, only that specific flag reverts to its confirmed state and displays an error notice, without disrupting other concurrently toggled flags.
+- Prevents overlapping requests on the same flag while its toggle is in flight, while allowing independent flags to toggle concurrently.
+
+```tsx
+import React from 'react';
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import { OptimisticFeatureFlags } from './OptimisticFeatureFlags';
+
+afterEach(cleanup);
+
+test('clicking a flag reflects the new state synchronously before onToggle resolves', async () => {
+  const flags = [
+    { id: 'flag1', label: 'Feature 1', enabled: false },
+    { id: 'flag2', label: 'Feature 2', enabled: true },
+  ];
+  const onToggle = vi.fn();
+
+  render(<OptimisticFeatureFlags flags={flags} onToggle={onToggle} />);
+
+  const checkbox1 = screen.getByRole('checkbox', { name: 'Feature 1' });
+  fireEvent.click(checkbox1);
+  expect(checkbox1).toBeChecked();
+  expect(onToggle).toHaveBeenCalledWith('flag1', true);
+
+  const checkbox2 = screen.getByRole('checkbox', { name: 'Feature 2' });
+  fireEvent.click(checkbox2);
+  expect(checkbox2).not.toBeChecked();
+  expect(onToggle).toHaveBeenCalledWith('flag2', false);
+});
+
+test('if onToggle rejects, only that specific flag reverts to its confirmed state and displays an error notice', async () => {
+  const flags = [
+    { id: 'flag1', label: 'Feature 1', enabled: false },
+    { id: 'flag2', label: 'Feature 2', enabled: true },
+  ];
+  const onToggle = vi.fn().mockRejectedValue(new Error('Failed to update'));
+
+  render(<OptimisticFeatureFlags flags={flags} onToggle={onToggle} />);
+
+  const checkbox1 = screen.getByRole('checkbox', { name: 'Feature 1' });
+  fireEvent.click(checkbox1);
+  expect(checkbox1).toBeChecked();
+  expect(onToggle).toHaveBeenCalledWith('flag1', true);
+
+  await waitFor(() => {
+    expect(screen.getByRole('alert', { name: 'Failed to update' })).toBeInTheDocument();
+    expect(checkbox1).not.toBeChecked();
+  });
+});
+
+test('prevents overlapping requests on the same flag while its toggle is in flight', async () => {
+  const flags = [
+    { id: 'flag1', label: 'Feature 1', enabled: false },
+  ];
+  const onToggle = vi.fn().mockResolvedValue();
+
+  render(<OptimisticFeatureFlags flags={flags} onToggle={onToggle} />);
+
+  const checkbox1 = screen.getByRole('checkbox', { name: 'Feature 1' });
+  fireEvent.click(checkbox1);
+  expect(checkbox1).toBeChecked();
+  expect(onToggle).toHaveBeenCalledWith('flag1', true);
+
+  fireEvent.click(checkbox1);
+  expect(checkbox1).toBeChecked();
+  expect(onToggle).toHaveBeenCalledTimes(1);
+});
+```

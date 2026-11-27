@@ -1,0 +1,33 @@
+```ts
+probe("empty array", async () => {
+  return movingWindowMean([], 3);
+});
+
+probe("window size larger than array", async () => {
+  return movingWindowMean([1, 2, 3], 4);
+});
+
+probe("window size zero", async () => {
+  try {
+    return movingWindowMean([1, 2, 3], 0);
+  } catch (error) {
+    return error instanceof RangeError;
+  }
+});
+
+probe("window size negative", async () => {
+  try {
+    return movingWindowMean([1, 2, 3], -1);
+  } catch (error) {
+    return error instanceof RangeError;
+  }
+});
+
+probe("valid window size", async () => {
+  return movingWindowMean([1, 2, 3, 4, 5], 2);
+});
+
+probe("large array with identical numbers", async () => {
+  return movingWindowMean(Array(1000000).fill(42), 1000);
+});
+```

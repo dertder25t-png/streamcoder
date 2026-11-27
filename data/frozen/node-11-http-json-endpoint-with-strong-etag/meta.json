@@ -1,0 +1,25 @@
+{
+ "id": "node-11-http-json-endpoint-with-strong-etag",
+ "topic": "node",
+ "cand_hidden": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "cand_hidden_err": [
+  "test failed: returns 304 with empty body and the ETag when If-None-Match matches; matches ETags in a",
+  "type error:         Type 'string | null' is not assignable to type 'OutgoingHttpHeader | undefined'.",
+  "",
+  "test failed: returns 304 with empty body and the ETag when If-None-Match matches; matches ETags in a"
+ ],
+ "cand_tokens": [
+  181,
+  313,
+  217,
+  222
+ ],
+ "gen_seconds": 49.3,
+ "type_only": false,
+ "errors": []
+}

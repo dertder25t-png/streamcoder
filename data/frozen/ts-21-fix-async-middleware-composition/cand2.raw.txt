@@ -1,0 +1,35 @@
+```typescript
+import { Middleware } from './types'; // Assuming you have a types file for Middleware
+
+export type Middleware<Ctx> = (ctx: Ctx, next: () => Promise<void>) => Promise<void> | void;
+
+export function composeMiddleware<Ctx>(
+  middlewares: readonly Middleware<Ctx>[],
+): (ctx: Ctx) => Promise<void> {
+  return async (ctx: Ctx): Promise<void> => {
+    const dispatch = async (i: number): Promise<void> => {
+      if (i >= middlewares.length) return;
+
+      const fn = middlewares[i];
+      if (!fn) return;
+
+      let nextCalled = false;
+      const next = async (): Promise<void> => {
+        if (nextCalled) {
+          throw new Error('next() called multiple times');
+        }
+        nextCalled = true;
+        await dispatch(i + 1);
+      };
+
+      try {
+        await fn(ctx, next);
+      } catch (err) {
+        throw err;
+      }
+    };
+
+    await dispatch(0);
+  };
+}
+```

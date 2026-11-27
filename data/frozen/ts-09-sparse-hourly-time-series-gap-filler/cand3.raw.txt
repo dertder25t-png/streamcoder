@@ -1,0 +1,23 @@
+```ts
+import { cloneDeep } from 'lodash';
+
+export function fillMissingHours(points: readonly { hourMs: number; value: number }[], fillValue: number = 0): { hourMs: number; value: number }[] {
+  if (points.length <= 1) {
+    return cloneDeep(points);
+  }
+
+  const result: { hourMs: number; value: number }[] = [];
+  let currentHourMs = points[0].hourMs;
+
+  for (const point of points) {
+    while (currentHourMs < point.hourMs) {
+      result.push({ hourMs: currentHourMs, value: fillValue });
+      currentHourMs += 3600000;
+    }
+    result.push(point);
+    currentHourMs = point.hourMs + 3600000;
+  }
+
+  return result;
+}
+```

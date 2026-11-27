@@ -1,0 +1,43 @@
+type StateMachineConfig<S extends string> = {
+  initial: S;
+  transitions: {
+    [state in S]: {
+      [event: string]: {
+        target: S;
+        guard?: () => boolean;
+      };
+    };
+  };
+};
+
+export function createStateMachine<S extends string>(config: StateMachineConfig<S>): {
+  getState: () => S;
+  can: (event: string) => boolean;
+  send: (event: string) => boolean;
+} {
+  let currentState: S = config.initial;
+
+  function getState(): S {
+    return currentState;
+  }
+
+  function can(event: string): boolean {
+    const transition = config.transitions[currentState]?.[event];
+    return Boolean(transition);
+  }
+
+  function send(event: string): boolean {
+    const transition = config.transitions[currentState]?.[event];
+    if (transition && (transition.guard ? transition.guard() : true)) {
+      currentState = transition.target;
+      return true;
+    }
+    return false;
+  }
+
+  return {
+    getState,
+    can,
+    send,
+  };
+}

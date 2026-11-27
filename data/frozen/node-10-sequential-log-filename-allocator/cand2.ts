@@ -1,0 +1,29 @@
+import { promises as fs } from 'node:fs';
+import { join } from 'node:path';
+
+export async function nextLogFilePath(dirPath: string, dateStr: string): Promise<string> {
+  const logPattern = `app-${dateStr}\\.(\\d+)\\.log`;
+  const logRegex = new RegExp(logPattern);
+
+  try {
+    const files = await fs.readdir(dirPath);
+    const logFiles = files.filter(file => logRegex.test(file));
+
+    if (logFiles.length === 0) {
+      return join(dirPath, `app-${dateStr}.1.log`);
+    }
+
+    const sequenceNumbers = logFiles.map(file => {
+      const match = file.match(logRegex);
+      return match ? parseInt(match[1], 10) : 0;
+    });
+
+    const maxSequenceNumber = Math.max(...sequenceNumbers);
+    return join(dirPath, `app-${dateStr}.${maxSequenceNumber + 1}.log`);
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return join(dirPath, `app-${dateStr}.1.log`);
+    }
+    throw error;
+  }
+}

@@ -1,0 +1,58 @@
+- Test that invalid concurrency (< 1 or non-integer) throws a RangeError synchronously.
+- Test that empty items resolves to [].
+- Test that the returned array aligns index-for-index with items regardless of completion order.
+- Test that when a worker rejects, the pool rejects with the triggering error.
+- Test that when a worker is aborted, the pool rejects with the abort reason.
+- Test that repeated calls to runTaskPool do not interfere with each other.
+- Test that timers, listeners, files, or other resources are cleaned up after the test.
+
+```ts
+import { runTaskPool } from './runTaskPool'; // Adjust the import path as necessary
+
+test("invalid concurrency throws RangeError", () => {
+  expect(() => runTaskPool([], -1, () => Promise.resolve())).toThrow(RangeError);
+  expect(() => runTaskPool([], 0, () => Promise.resolve())).toThrow(RangeError);
+  expect(() => runTaskPool([], 1.5, () => Promise.resolve())).toThrow(RangeError);
+});
+
+test("empty items resolves to []", async () => {
+  const result = await runTaskPool([], 1, () => Promise.resolve());
+  expect(result).toEqual([]);
+});
+
+test("index-for-index alignment", async () => {
+  const items = [1, 2, 3];
+  const result = await runTaskPool(items, 1, (item, index) => Promise.resolve(item * 2));
+  expect(result).toEqual([2, 4, 6]);
+});
+
+test("worker rejection", async () => {
+  const items = [1, 2, 3];
+  const error = new Error("Worker error");
+  const result = await runTaskPool(items, 1, (item, index) => {
+    if (index === 1) throw error;
+    return Promise.resolve(item * 2);
+  });
+  expect(result).toEqual([2, error, 6]);
+});
+
+test("worker abort", async () => {
+  const items = [1, 2, 3];
+  const abortController = new AbortController();
+  const signal = abortController.signal;
+  const error = new Error("Abort error");
+  const result = await runTaskPool(items, 1, (item, index) => {
+    if (index === 1) abortController.abort();
+    return Promise.resolve(item * 2);
+  }, { signal });
+  expect(result).toEqual([2, error, 6]);
+});
+
+test("repeated calls do not interfere", async () => {
+  const items = [1, 2, 3];
+  const result1 = await runTaskPool(items, 1, (item, index) => Promise.resolve(item * 2));
+  const result2 = await runTaskPool(items, 1, (item, index) => Promise.resolve(item * 3));
+  expect(result1).toEqual([2, 4, 6]);
+  expect(result2).toEqual([3, 6, 9]);
+});
+```

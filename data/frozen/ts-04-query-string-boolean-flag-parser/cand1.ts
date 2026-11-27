@@ -1,0 +1,27 @@
+type BooleanFlag = 'true' | '1' | 'yes' | 'false' | '0' | 'no';
+
+const booleanFlagValues: Record<BooleanFlag, boolean> = {
+  true: true,
+  1: true,
+  yes: true,
+  false: false,
+  0: false,
+  no: false,
+};
+
+export function parseBooleanFlags(query: string): Record<string, boolean> {
+  const result: Record<string, boolean> = {};
+  const queryString = query.startsWith('?') ? query.slice(1) : query;
+  const params = queryString.split('&');
+
+  for (const param of params) {
+    const [key, value] = param.split('=');
+    const lowerCaseKey = key.toLowerCase();
+
+    if (booleanFlagValues[value.toLowerCase() as BooleanFlag]) {
+      result[lowerCaseKey] = booleanFlagValues[value.toLowerCase() as BooleanFlag];
+    }
+  }
+
+  return result;
+}

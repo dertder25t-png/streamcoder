@@ -1,0 +1,49 @@
+- Displays "mobile" for < 640, "tablet" for 640–1023, and "desktop" for >= 1024 immediately on initial render.
+- Updates live when window.innerWidth changes and a resize event fires.
+- Registers only one resize listener on mount and removes it cleanly on unmount.
+
+```tsx
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import ViewportBadge from './ViewportBadge';
+
+afterEach(cleanup);
+
+test("displays 'mobile' for < 640", () => {
+  Object.defineProperty(window, 'innerWidth', { get: () => 639 });
+  render(<ViewportBadge />);
+  expect(screen.getByText('mobile')).toBeInTheDocument();
+});
+
+test("displays 'tablet' for 640–1023", () => {
+  Object.defineProperty(window, 'innerWidth', { get: () => 700 });
+  render(<ViewportBadge />);
+  expect(screen.getByText('tablet')).toBeInTheDocument();
+});
+
+test("displays 'desktop' for >= 1024", () => {
+  Object.defineProperty(window, 'innerWidth', { get: () => 1025 });
+  render(<ViewportBadge />);
+  expect(screen.getByText('desktop')).toBeInTheDocument();
+});
+
+test("updates live when window.innerWidth changes", async () => {
+  Object.defineProperty(window, 'innerWidth', { get: () => 639 });
+  render(<ViewportBadge />);
+  expect(screen.getByText('mobile')).toBeInTheDocument();
+
+  Object.defineProperty(window, 'innerWidth', { get: () => 700 });
+  fireEvent(window, new Event('resize'));
+  await waitFor(() => expect(screen.getByText('tablet')).toBeInTheDocument());
+});
+
+test("registers only one resize listener on mount and removes it cleanly on unmount", () => {
+  const addEventListenerSpy = vi.spyOn(window, 'addEventListener');
+  const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
+
+  render(<ViewportBadge />);
+  expect(addEventListenerSpy).toHaveBeenCalledTimes(1);
+
+  cleanup();
+  expect(removeEventListenerSpy).toHaveBeenCalledTimes(1);
+});
+```

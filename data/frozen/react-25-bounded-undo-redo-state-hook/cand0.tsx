@@ -1,0 +1,72 @@
+import { useState, useCallback, useRef } from 'react';
+
+export function useUndoableState<T>(initialValue: T, maxHistory = 50): {
+  state: T;
+  set: (next: T | ((prev: T) => T)) => void;
+  undo: () => void;
+  redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  reset: () => void;
+} {
+  const [state, setState] = useState<T>(initialValue);
+  const historyRef = useRef<T[]>([initialValue]);
+  const futureRef = useRef<T[]>([]);
+  const currentIndexRef = useRef<number>(0);
+
+  const set = useCallback((next: T | ((prev: T) => T)) => {
+    const prev = historyRef.current[currentIndexRef.current];
+    const nextValue = typeof next === 'function' ? next(prev) : next;
+
+    if (Object.is(prev, nextValue)) {
+      return;
+    }
+
+    historyRef.current = historyRef.current.slice(0, currentIndexRef.current + 1);
+    historyRef.current.push(nextValue);
+    futureRef.current = [];
+
+    if (historyRef.current.length > maxHistory) {
+      historyRef.current.shift();
+    }
+
+    setState(nextValue);
+    currentIndexRef.current++;
+  }, [maxHistory]);
+
+  const undo = useCallback(() => {
+    if (canUndo) {
+      futureRef.current.push(historyRef.current[currentIndexRef.current]);
+      setState(historyRef.current[currentIndexRef.current - 1]);
+      currentIndexRef.current--;
+    }
+  }, []);
+
+  const redo = useCallback(() => {
+    if (canRedo) {
+      setState(futureRef.current[futureRef.current.length - 1]);
+      currentIndexRef.current++;
+      futureRef.current.pop();
+    }
+  }, []);
+
+  const canUndo = currentIndexRef.current > 0;
+  const canRedo = futureRef.current.length > 0;
+
+  const reset = useCallback(() => {
+    historyRef.current = [initialValue];
+    futureRef.current = [];
+    currentIndexRef.current = 0;
+    setState(initialValue);
+  }, [initialValue]);
+
+  return {
+    state,
+    set,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    reset,
+  };
+}

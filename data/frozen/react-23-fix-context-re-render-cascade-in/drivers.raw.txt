@@ -1,0 +1,81 @@
+```ts
+probe("increment unread count", async () => {
+  const { getByRole, getByText, rerender } = render(
+    <SplitStoreProvider initialUnreadCount={0}>
+      <div>Unread Count: {useUnreadCount()}</div>
+      <button onClick={() => useStoreActions().incrementUnread()}>Increment</button>
+    </SplitStoreProvider>
+  );
+
+  fireEvent.click(getByText("Increment"));
+  await waitFor(() => expect(getByText("Unread Count: 1")).toBeInTheDocument());
+  rerender(
+    <SplitStoreProvider initialUnreadCount={0}>
+      <div>Unread Count: {useUnreadCount()}</div>
+      <button onClick={() => useStoreActions().incrementUnread()}>Increment</button>
+    </SplitStoreProvider>
+  );
+  return snap();
+});
+
+probe("update user name", async () => {
+  const { getByRole, getByText, rerender } = render(
+    <SplitStoreProvider initialUserName="John">
+      <div>User Name: {useUserName()}</div>
+      <button onClick={() => useStoreActions().setUserName("Jane")}>Change Name</button>
+    </SplitStoreProvider>
+  );
+
+  fireEvent.click(getByText("Change Name"));
+  await waitFor(() => expect(getByText("User Name: Jane")).toBeInTheDocument());
+  rerender(
+    <SplitStoreProvider initialUserName="John">
+      <div>User Name: {useUserName()}</div>
+      <button onClick={() => useStoreActions().setUserName("Jane")}>Change Name</button>
+    </SplitStoreProvider>
+  );
+  return snap();
+});
+
+probe("increment unread count without re-rendering user name", async () => {
+  const { getByRole, getByText, rerender } = render(
+    <SplitStoreProvider initialUnreadCount={0}>
+      <div>Unread Count: {useUnreadCount()}</div>
+      <div>User Name: {useUserName()}</div>
+      <button onClick={() => useStoreActions().incrementUnread()}>Increment</button>
+    </SplitStoreProvider>
+  );
+
+  fireEvent.click(getByText("Increment"));
+  await waitFor(() => expect(getByText("Unread Count: 1")).toBeInTheDocument());
+  rerender(
+    <SplitStoreProvider initialUnreadCount={0}>
+      <div>Unread Count: {useUnreadCount()}</div>
+      <div>User Name: {useUserName()}</div>
+      <button onClick={() => useStoreActions().incrementUnread()}>Increment</button>
+    </SplitStoreProvider>
+  );
+  return snap();
+});
+
+probe("update user name without re-rendering unread count", async () => {
+  const { getByRole, getByText, rerender } = render(
+    <SplitStoreProvider initialUserName="John">
+      <div>Unread Count: {useUnreadCount()}</div>
+      <div>User Name: {useUserName()}</div>
+      <button onClick={() => useStoreActions().setUserName("Jane")}>Change Name</button>
+    </SplitStoreProvider>
+  );
+
+  fireEvent.click(getByText("Change Name"));
+  await waitFor(() => expect(getByText("User Name: Jane")).toBeInTheDocument());
+  rerender(
+    <SplitStoreProvider initialUserName="John">
+      <div>Unread Count: {useUnreadCount()}</div>
+      <div>User Name: {useUserName()}</div>
+      <button onClick={() => useStoreActions().setUserName("Jane")}>Change Name</button>
+    </SplitStoreProvider>
+  );
+  return snap();
+});
+```

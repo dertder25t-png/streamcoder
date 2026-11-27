@@ -1,0 +1,30 @@
+- Missing optional keys fall back to their declared default values.
+- Missing required keys or unparseable integer values throw an Error whose message lists every failing key name.
+- Empty strings "" for required keys are treated as missing rather than valid values.
+
+```ts
+test("missing optional key falls back to default", () => {
+  const env = { "optionalKey": undefined };
+  const spec = { "optionalKey": { type: "string", default: "defaultVal" } };
+  const result = readEnvConfig(env, spec);
+  expect(result).toEqual({ "optionalKey": "defaultVal" });
+});
+
+test("missing required key throws error", () => {
+  const env = { "requiredKey": undefined };
+  const spec = { "requiredKey": { type: "string", required: true } };
+  expect(() => readEnvConfig(env, spec)).toThrow("requiredKey");
+});
+
+test("unparseable integer value throws error", () => {
+  const env = { "intKey": "12px" };
+  const spec = { "intKey": { type: "int" } };
+  expect(() => readEnvConfig(env, spec)).toThrow("intKey");
+});
+
+test("empty string for required key throws error", () => {
+  const env = { "requiredKey": "" };
+  const spec = { "requiredKey": { type: "string", required: true } };
+  expect(() => readEnvConfig(env, spec)).toThrow("requiredKey");
+});
+```

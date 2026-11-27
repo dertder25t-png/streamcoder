@@ -1,0 +1,25 @@
+{
+ "id": "react-28-fix-external-subscription-hook",
+ "topic": "react",
+ "cand_hidden": [
+  false,
+  false,
+  true,
+  false
+ ],
+ "cand_hidden_err": [
+  "test failed: switches stores: unsubscribes from the old one and follows the new one; under StrictMod",
+  "type error: .runs/react-28-fix-external-subscription-hook/solution.tsx(12,35): error TS2554: Expecte",
+  "",
+  "test failed: switches stores: unsubscribes from the old one and follows the new one; under StrictMod"
+ ],
+ "cand_tokens": [
+  130,
+  160,
+  131,
+  134
+ ],
+ "gen_seconds": 43.3,
+ "type_only": false,
+ "errors": []
+}

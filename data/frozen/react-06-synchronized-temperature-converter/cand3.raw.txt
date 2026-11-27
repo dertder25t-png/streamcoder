@@ -1,0 +1,70 @@
+```tsx
+import React, { useState, useCallback } from 'react';
+
+type TemperatureUnit = 'C' | 'F';
+
+interface TemperaturePairProps {
+  onCelsiusChange?: (celsius: number) => void;
+  onFahrenheitChange?: (fahrenheit: number) => void;
+}
+
+const TemperaturePair: React.FC<TemperaturePairProps> = ({ onCelsiusChange, onFahrenheitChange }) => {
+  const [celsius, setCelsius] = useState<string>('');
+  const [fahrenheit, setFahrenheit] = useState<string>('');
+
+  const handleCelsiusChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setCelsius(value);
+
+    if (value === '') {
+      setFahrenheit('');
+    } else if (value === '-') {
+      setFahrenheit('-');
+    } else {
+      const celsiusNumber = parseFloat(value);
+      if (!isNaN(celsiusNumber)) {
+        const fahrenheitNumber = (celsiusNumber * 9 / 5) + 32;
+        setFahrenheit(fahrenheitNumber.toFixed(2));
+        onCelsiusChange?.(celsiusNumber);
+      }
+    }
+  }, [onCelsiusChange]);
+
+  const handleFahrenheitChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setFahrenheit(value);
+
+    if (value === '') {
+      setCelsius('');
+    } else if (value === '-') {
+      setCelsius('-');
+    } else {
+      const fahrenheitNumber = parseFloat(value);
+      if (!isNaN(fahrenheitNumber)) {
+        const celsiusNumber = (fahrenheitNumber - 32) * 5 / 9;
+        setCelsius(celsiusNumber.toFixed(2));
+        onFahrenheitChange?.(fahrenheitNumber);
+      }
+    }
+  }, [onFahrenheitChange]);
+
+  return (
+    <div>
+      <input
+        type="text"
+        value={celsius}
+        onChange={handleCelsiusChange}
+        placeholder="Celsius"
+      />
+      <input
+        type="text"
+        value={fahrenheit}
+        onChange={handleFahrenheitChange}
+        placeholder="Fahrenheit"
+      />
+    </div>
+  );
+};
+
+export { TemperaturePair };
+```

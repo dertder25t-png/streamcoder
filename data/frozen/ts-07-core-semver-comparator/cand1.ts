@@ -1,0 +1,37 @@
+import { strict as assert } from 'node:assert';
+
+export function compareSemverCore(a: string, b: string): -1 | 0 | 1 {
+    // Helper function to parse version string and return an array of numeric segments
+    const parseVersion = (version: string): number[] => {
+        const cleanedVersion = version.replace(/^v/, ''); // Remove leading 'v' if present
+        const segments = cleanedVersion.split('.');
+
+        if (segments.length !== 3) {
+            throw new Error('Malformed version string');
+        }
+
+        return segments.map(segment => {
+            if (!/^\d+$/.test(segment)) {
+                throw new Error('Malformed version string');
+            }
+            return parseInt(segment, 10);
+        });
+    };
+
+    try {
+        const [aMajor, aMinor, aPatch] = parseVersion(a);
+        const [bMajor, bMinor, bPatch] = parseVersion(b);
+
+        if (aMajor !== bMajor) return aMajor - bMajor;
+        if (aMinor !== bMinor) return aMinor - bMinor;
+        return aPatch - bPatch;
+    } catch (error) {
+        throw new Error('Malformed version string');
+    }
+}
+
+// Example usage:
+// assert(compareSemverCore('1.10.0', '1.2.9') === 1);
+// assert(compareSemverCore('v2.0.0', '2.0.0') === 0);
+// assert(compareSemverCore('1.2', '1.02.0') instanceof Error);
+// assert(compareSemverCore('1.2.x', '1.2.0') instanceof Error);

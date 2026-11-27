@@ -1,0 +1,41 @@
+- on and once return idempotent unsubscribe functions; calling unsubscribe twice does not affect other listeners.
+- A listener added or removed during emit does not disrupt or skip already-registered listeners for that same emission cycle.
+- Events typed as void can be emitted with one argument (bus.emit("reset")), while payload events fail type-checking if the payload is omitted or wrong.
+
+```ts
+import { createTypedBus } from './createTypedBus';
+
+test("on and once return idempotent unsubscribe functions", () => {
+  const bus = createTypedBus<{ click: number; reset: void }>();
+  const handler = vi.fn();
+  const unsubscribe = bus.on("click", handler);
+  unsubscribe();
+  unsubscribe(); // Should not throw or affect other listeners
+  bus.emit("click", 1);
+  expect(handler).not.toHaveBeenCalled();
+});
+
+test("A listener added or removed during emit does not disrupt or skip already-registered listeners for that same emission cycle", () => {
+  const bus = createTypedBus<{ click: number; reset: void }>();
+  const handler1 = vi.fn();
+  const handler2 = vi.fn();
+  const unsubscribe1 = bus.on("click", handler1);
+  bus.on("click", handler2);
+  unsubscribe1();
+  bus.emit("click", 1);
+  expect(handler1).not.toHaveBeenCalled();
+  expect(handler2).toHaveBeenCalledWith(1);
+});
+
+test("Events typed as void can be emitted with one argument", () => {
+  const bus = createTypedBus<{ click: number; reset: void }>();
+  bus.emit("reset");
+  expect(() => bus.emit("click")).toThrowError("Expected payload of type 'number' but received 'undefined'");
+});
+
+test("Payload events fail type-checking if the payload is omitted or wrong", () => {
+  const bus = createTypedBus<{ click: number; reset: void }>();
+  expect(() => bus.emit("click")).toThrowError("Expected payload of type 'number' but received 'undefined'");
+  expect(() => bus.emit("click", "not a number")).toThrowError("Expected payload of type 'number' but received 'string'");
+});
+```

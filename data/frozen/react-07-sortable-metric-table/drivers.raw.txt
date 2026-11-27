@@ -1,0 +1,40 @@
+```ts
+probe("sort ascending", async () => {
+  const { rows, columns } = generateData();
+  render(<SortableTable rows={rows} columns={columns} />);
+  fireEvent.click(screen.getByText(columns[0].label));
+  return snap();
+});
+
+probe("sort descending", async () => {
+  const { rows, columns } = generateData();
+  render(<SortableTable rows={rows} columns={columns} />);
+  fireEvent.click(screen.getByText(columns[0].label));
+  fireEvent.click(screen.getByText(columns[0].label));
+  return snap();
+});
+
+probe("sort none", async () => {
+  const { rows, columns } = generateData();
+  render(<SortableTable rows={rows} columns={columns} />);
+  fireEvent.click(screen.getByText(columns[0].label));
+  fireEvent.click(screen.getByText(columns[0].label));
+  fireEvent.click(screen.getByText(columns[0].label));
+  return snap();
+});
+
+probe("sort different column", async () => {
+  const { rows, columns } = generateData();
+  render(<SortableTable rows={rows} columns={columns} />);
+  fireEvent.click(screen.getByText(columns[0].label));
+  fireEvent.click(screen.getByText(columns[1].label));
+  return snap();
+});
+
+probe("numeric sort", async () => {
+  const { rows, columns } = generateData({ numeric: true });
+  render(<SortableTable rows={rows} columns={columns} />);
+  fireEvent.click(screen.getByText(columns[0].label));
+  return snap();
+});
+```

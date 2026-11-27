@@ -1,0 +1,77 @@
+```ts
+probe("basic usage", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const handler = vi.fn(async (req: IncomingMessage, res: ServerResponse) => {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ message: "Hello, world!" }));
+  });
+  const wrapper = createIdempotencyWrapper({ ttlMs: 1000, now: () => Date.now() })(handler);
+
+  const req1 = new http.IncomingMessage({ httpVersion: "1.1", headers: { "idempotency-key": "test-key" } });
+  const res1 = new http.ServerResponse(req1);
+  await wrapper(req1, res1);
+
+  const req2 = new http.IncomingMessage({ httpVersion: "1.1", headers: { "idempotency-key": "test-key" } });
+  const res2 = new http.ServerResponse(req2);
+  await wrapper(req2, res2);
+
+  return { req1, res1, req2, res2, handler };
+});
+
+probe("different body", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const handler = vi.fn(async (req: IncomingMessage, res: ServerResponse) => {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ message: "Hello, world!" }));
+  });
+  const wrapper = createIdempotencyWrapper({ ttlMs: 1000, now: () => Date.now() })(handler);
+
+  const req1 = new http.IncomingMessage({ httpVersion: "1.1", headers: { "idempotency-key": "test-key" } });
+  const res1 = new http.ServerResponse(req1);
+  await wrapper(req1, res1);
+
+  const req2 = new http.IncomingMessage({ httpVersion: "1.1", headers: { "idempotency-key": "test-key" } });
+  req2.on("data", () => {});
+  const res2 = new http.ServerResponse(req2);
+  await wrapper(req2, res2);
+
+  return { req1, res1, req2, res2, handler };
+});
+
+probe("handler throws", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const handler = vi.fn(async (req: IncomingMessage, res: ServerResponse) => {
+    throw new Error("Something went wrong");
+  });
+  const wrapper = createIdempotencyWrapper({ ttlMs: 1000, now: () => Date.now() })(handler);
+
+  const req1 = new http.IncomingMessage({ httpVersion: "1.1", headers: { "idempotency-key": "test-key" } });
+  const res1 = new http.ServerResponse(req1);
+  await wrapper(req1, res1);
+
+  const req2 = new http.IncomingMessage({ httpVersion: "1.1", headers: { "idempotency-key": "test-key" } });
+  const res2 = new http.ServerResponse(req2);
+  await wrapper(req2, res2);
+
+  return { req1, res1, req2, res2, handler };
+});
+
+probe("handler returns 409", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const handler = vi.fn(async (req: IncomingMessage, res: ServerResponse) => {
+    res.writeHead(409, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ message: "Conflict" }));
+  });
+  const wrapper = createIdempotencyWrapper({ ttlMs: 1000, now: () => Date.now() })(handler);
+
+  const req1 = new http.IncomingMessage({ httpVersion: "1.1", headers: { "idempotency-key": "test-key" } });
+  const res1 = new http.ServerResponse(req1);
+  await wrapper(req1, res1);
+
+  const req2 = new http.IncomingMessage({ httpVersion: "1.1", headers: { "idempotency-key": "test-key" } });
+  const res2 = new http.ServerResponse(req2);
+  await wrapper(req2, res2);
+
+  return { req1, res1, req2, res2, handler };
+});
+```

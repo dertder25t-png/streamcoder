@@ -1,0 +1,25 @@
+{
+ "id": "node-30-csv-line-parser",
+ "topic": "node",
+ "cand_hidden": [
+  false,
+  true,
+  false,
+  true
+ ],
+ "cand_hidden_err": [
+  "test failed: splits simple unquoted fields; keeps commas inside double-quoted fields and strips the ",
+  "",
+  "test failed: handles empty fields",
+  ""
+ ],
+ "cand_tokens": [
+  221,
+  188,
+  184,
+  215
+ ],
+ "gen_seconds": 48.4,
+ "type_only": false,
+ "errors": []
+}

@@ -1,0 +1,25 @@
+{
+ "id": "react-25-bounded-undo-redo-state-hook",
+ "topic": "react",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error:   Not all constituents of type '((prev: T) => T) | (T & Function)' are callable. |     T",
+  "type error:   Not all constituents of type '((prev: T) => T) | (T & Function)' are callable. |     T",
+  "type error:   Not all constituents of type '((prev: T) => T) | (T & Function)' are callable. |     T",
+  "type error:   Not all constituents of type '((prev: T) => T) | (T & Function)' are callable. |     T"
+ ],
+ "cand_tokens": [
+  474,
+  408,
+  499,
+  638
+ ],
+ "gen_seconds": 43.7,
+ "type_only": false,
+ "errors": []
+}

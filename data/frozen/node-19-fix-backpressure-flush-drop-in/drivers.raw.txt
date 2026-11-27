@@ -1,0 +1,45 @@
+```ts
+probe("empty input", async () => {
+  const stream = createLinePrefixStream("prefix");
+  const result = await stream.read();
+  return result;
+});
+
+probe("single line", async () => {
+  const stream = createLinePrefixStream("prefix");
+  stream.write("line\n");
+  const result = await stream.read();
+  return result;
+});
+
+probe("multiple lines", async () => {
+  const stream = createLinePrefixStream("prefix");
+  stream.write("line1\nline2\nline3\n");
+  const result = await stream.read();
+  return result;
+});
+
+probe("no trailing newline", async () => {
+  const stream = createLinePrefixStream("prefix");
+  stream.write("line1\nline2");
+  const result = await stream.read();
+  return result;
+});
+
+probe("empty chunk", async () => {
+  const stream = createLinePrefixStream("prefix");
+  stream.write("line1\n");
+  stream.write("");
+  stream.write("line2\n");
+  const result = await stream.read();
+  return result;
+});
+
+probe("large chunk", async () => {
+  const stream = createLinePrefixStream("prefix");
+  const largeChunk = "a".repeat(1024 * 1024) + "\n";
+  stream.write(largeChunk);
+  const result = await stream.read();
+  return result;
+});
+```

@@ -1,0 +1,25 @@
+{
+ "id": "node-22-sliding-window-per-client-http-rate",
+ "topic": "node",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "test failed: sets X-RateLimit-Limit and Remaining on allowed and blocked responses; window slides: c",
+  "test failed: window slides: capacity returns as the oldest requests expire",
+  "type error: .runs/node-22-sliding-window-per-client-http-rate/solution.ts(64,50): error TS2341: Prop",
+  "type error: .runs/node-22-sliding-window-per-client-http-rate/solution.ts(48,9): error TS18046: 'res"
+ ],
+ "cand_tokens": [
+  472,
+  625,
+  601,
+  483
+ ],
+ "gen_seconds": 46.2,
+ "type_only": false,
+ "errors": []
+}

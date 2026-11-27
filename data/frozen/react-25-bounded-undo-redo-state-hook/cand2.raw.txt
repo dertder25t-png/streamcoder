@@ -1,0 +1,73 @@
+```tsx
+import { useState, useCallback, useRef } from 'react';
+
+export function useUndoableState<T>(initialValue: T, maxHistory = 50): {
+  state: T;
+  set: (next: T | ((prev: T) => T)) => void;
+  undo: () => void;
+  redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  reset: () => void;
+} {
+  const [currentState, setCurrentState] = useState<T>(initialValue);
+  const historyRef = useRef<{ state: T; index: number }[]>([{ state: initialValue, index: 0 }]);
+  const currentIndexRef = useRef<number>(0);
+
+  const set = useCallback((next: T | ((prev: T) => T)) => {
+    let nextState: T;
+    if (typeof next === 'function') {
+      nextState = next(currentState);
+    } else {
+      nextState = next;
+    }
+
+    if (Object.is(currentState, nextState)) {
+      return;
+    }
+
+    const newHistory = historyRef.current.slice(0, currentIndexRef.current + 1);
+    newHistory.push({ state: nextState, index: newHistory.length });
+    if (newHistory.length > maxHistory) {
+      newHistory.shift();
+    }
+
+    historyRef.current = newHistory;
+    currentIndexRef.current = newHistory.length - 1;
+    setCurrentState(nextState);
+  }, [currentState, maxHistory]);
+
+  const undo = useCallback(() => {
+    if (currentIndexRef.current > 0) {
+      currentIndexRef.current--;
+      setCurrentState(historyRef.current[currentIndexRef.current].state);
+    }
+  }, []);
+
+  const redo = useCallback(() => {
+    if (currentIndexRef.current < historyRef.current.length - 1) {
+      currentIndexRef.current++;
+      setCurrentState(historyRef.current[currentIndexRef.current].state);
+    }
+  }, []);
+
+  const canUndo = currentIndexRef.current > 0;
+  const canRedo = currentIndexRef.current < historyRef.current.length - 1;
+
+  const reset = useCallback(() => {
+    historyRef.current = [{ state: initialValue, index: 0 }];
+    currentIndexRef.current = 0;
+    setCurrentState(initialValue);
+  }, [initialValue]);
+
+  return {
+    state: currentState,
+    set,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    reset,
+  };
+}
+```

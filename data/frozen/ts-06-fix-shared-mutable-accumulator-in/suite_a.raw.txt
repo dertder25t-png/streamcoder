@@ -1,0 +1,61 @@
+- Each currency code receives its own independent { count: number; totalMinor: number; ids: string[] } bucket.
+- Calling the function twice with unrelated datasets produces completely isolated results with no cross-call state leakage.
+- Negative refund amounts decrease totalMinor accurately while still incrementing count.
+
+```ts
+test("each currency code receives its own independent bucket", () => {
+  const items1: Transaction[] = [
+    { id: "1", currency: "USD", amountMinor: 100 },
+    { id: "2", currency: "USD", amountMinor: 200 },
+  ];
+  const items2: Transaction[] = [
+    { id: "3", currency: "EUR", amountMinor: 50 },
+    { id: "4", currency: "EUR", amountMinor: 150 },
+  ];
+
+  const result1 = groupTransactionsByCurrency(items1);
+  const result2 = groupTransactionsByCurrency(items2);
+
+  expect(result1).toEqual({
+    USD: { count: 2, totalMinor: 300, ids: ["1", "2"] },
+  });
+  expect(result2).toEqual({
+    EUR: { count: 2, totalMinor: 200, ids: ["3", "4"] },
+  });
+});
+
+test("calling the function twice with unrelated datasets produces completely isolated results", () => {
+  const items1: Transaction[] = [
+    { id: "1", currency: "USD", amountMinor: 100 },
+    { id: "2", currency: "USD", amountMinor: 200 },
+  ];
+  const items2: Transaction[] = [
+    { id: "3", currency: "EUR", amountMinor: 50 },
+    { id: "4", currency: "EUR", amountMinor: 150 },
+  ];
+
+  const result1 = groupTransactionsByCurrency(items1);
+  const result2 = groupTransactionsByCurrency(items2);
+
+  expect(result1).toEqual({
+    USD: { count: 2, totalMinor: 300, ids: ["1", "2"] },
+  });
+  expect(result2).toEqual({
+    EUR: { count: 2, totalMinor: 200, ids: ["3", "4"] },
+  });
+});
+
+test("negative refund amounts decrease totalMinor accurately while still incrementing count", () => {
+  const items: Transaction[] = [
+    { id: "1", currency: "USD", amountMinor: 100 },
+    { id: "2", currency: "USD", amountMinor: -50 },
+    { id: "3", currency: "USD", amountMinor: -50 },
+  ];
+
+  const result = groupTransactionsByCurrency(items);
+
+  expect(result).toEqual({
+    USD: { count: 3, totalMinor: 0, ids: ["1", "2", "3"] },
+  });
+});
+```

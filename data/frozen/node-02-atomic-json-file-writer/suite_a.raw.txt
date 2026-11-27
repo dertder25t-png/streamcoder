@@ -1,0 +1,61 @@
+- Writes valid pretty-printed UTF-8 JSON with a trailing newline and leaves zero leftover temporary files on success.
+- If serialization fails (e.g., circular object) or the write fails, the existing file at filePath remains untouched and no stray temp file remains.
+- Two concurrent calls targeting the same filePath use distinct temp filenames and neither corrupts the final JSON file.
+
+```ts
+import { writeJsonAtomic } from './writeJsonAtomic'; // Adjust the import path as necessary
+import fs from 'fs/promises';
+import path from 'path';
+import os from 'os';
+import { test, expect, vi } from 'vitest';
+
+vi.mock('fs/promises');
+
+test('writes valid pretty-printed UTF-8 JSON with a trailing newline and leaves zero leftover temporary files on success', async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const filePath = path.join(dir, 'test.json');
+  const data = { key: 'value' };
+
+  await writeJsonAtomic(filePath, data);
+
+  const fileContent = await fs.promises.readFile(filePath, 'utf-8');
+  expect(fileContent).toBe('{"key":"value"}\n');
+
+  const tempFiles = await fs.promises.readdir(dir);
+  expect(tempFiles).toEqual([]);
+});
+
+test('if serialization fails, the existing file at filePath remains untouched and no stray temp file remains', async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const filePath = path.join(dir, 'test.json');
+  const data = { key: 'value' };
+
+  await fs.promises.writeFile(filePath, 'invalid json');
+
+  await expect(writeJsonAtomic(filePath, data)).rejects.toThrow();
+
+  const fileContent = await fs.promises.readFile(filePath, 'utf-8');
+  expect(fileContent).toBe('invalid json');
+
+  const tempFiles = await fs.promises.readdir(dir);
+  expect(tempFiles).toEqual([]);
+});
+
+test('two concurrent calls targeting the same filePath use distinct temp filenames and neither corrupts the final JSON file', async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const filePath = path.join(dir, 'test.json');
+  const data = { key: 'value' };
+
+  const write1 = writeJsonAtomic(filePath, data);
+  const write2 = writeJsonAtomic(filePath, data);
+
+  await Promise.all([write1, write2]);
+
+  const fileContent = await fs.promises.readFile(filePath, 'utf-8');
+  expect(fileContent).toBe('{"key":"value"}\n');
+
+  const tempFiles = await fs.promises.readdir(dir);
+  expect(tempFiles.length).toBe(2);
+  expect(tempFiles.every(file => file.startsWith('test.json.tmp'))).toBe(true);
+});
+```

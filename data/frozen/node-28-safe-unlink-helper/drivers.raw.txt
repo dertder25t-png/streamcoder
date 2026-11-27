@@ -1,0 +1,31 @@
+```ts
+probe("file exists", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const filePath = path.join(dir, "test.txt");
+  await fs.promises.writeFile(filePath, "Hello, world!");
+  const result = await removeFileSafe(filePath);
+  return result;
+});
+
+probe("file does not exist", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const filePath = path.join(dir, "nonexistent.txt");
+  const result = await removeFileSafe(filePath);
+  return result;
+});
+
+probe("empty file path", async () => {
+  const result = await removeFileSafe("");
+  return result;
+});
+
+probe("null file path", async () => {
+  const result = await removeFileSafe(null);
+  return result;
+});
+
+probe("undefined file path", async () => {
+  const result = await removeFileSafe(undefined);
+  return result;
+});
+```

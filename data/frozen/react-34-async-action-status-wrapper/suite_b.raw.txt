@@ -1,0 +1,75 @@
+- Sets `isLoading` to `true` while the promise is pending.
+- Captures any thrown error into `error`.
+- Resets status correctly on subsequent executions.
+- Handles empty or invalid input.
+- Cleans up resources on subsequent executions.
+
+```ts
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import { useAsyncAction } from './useAsyncAction'; // Adjust the import path as necessary
+
+test("sets isLoading to true while the promise is pending", async () => {
+  const mockAction = vi.fn().mockResolvedValue("success");
+  const { execute, isLoading } = useAsyncAction(mockAction);
+
+  render(<button onClick={execute}>Click me</button>);
+
+  fireEvent.click(screen.getByRole("button"));
+
+  expect(isLoading).toBe(true);
+  await waitFor(() => expect(isLoading).toBe(false));
+});
+
+test("captures any thrown error into error", async () => {
+  const mockAction = vi.fn().mockRejectedValue(new Error("error"));
+  const { execute, error } = useAsyncAction(mockAction);
+
+  render(<button onClick={execute}>Click me</button>);
+
+  fireEvent.click(screen.getByRole("button"));
+
+  await waitFor(() => expect(error).toBeInstanceOf(Error));
+  expect(error?.message).toBe("error");
+});
+
+test("resets status correctly on subsequent executions", async () => {
+  const mockAction = vi.fn().mockResolvedValue("success");
+  const { execute, isLoading } = useAsyncAction(mockAction);
+
+  render(<button onClick={execute}>Click me</button>);
+
+  fireEvent.click(screen.getByRole("button"));
+  await waitFor(() => expect(isLoading).toBe(false));
+
+  fireEvent.click(screen.getByRole("button"));
+  expect(isLoading).toBe(true);
+  await waitFor(() => expect(isLoading).toBe(false));
+});
+
+test("handles empty or invalid input", async () => {
+  const mockAction = vi.fn();
+  const { execute, isLoading, error } = useAsyncAction(mockAction as any);
+
+  render(<button onClick={execute}>Click me</button>);
+
+  fireEvent.click(screen.getByRole("button"));
+
+  await waitFor(() => expect(isLoading).toBe(false));
+  expect(error).toBeInstanceOf(Error);
+  expect(error?.message).toBe("Invalid input");
+});
+
+test("cleans up resources on subsequent executions", async () => {
+  const mockAction = vi.fn().mockResolvedValue("success");
+  const { execute, isLoading } = useAsyncAction(mockAction);
+
+  render(<button onClick={execute}>Click me</button>);
+
+  fireEvent.click(screen.getByRole("button"));
+  await waitFor(() => expect(isLoading).toBe(false));
+
+  fireEvent.click(screen.getByRole("button"));
+  expect(isLoading).toBe(true);
+  await waitFor(() => expect(isLoading).toBe(false));
+});
+```

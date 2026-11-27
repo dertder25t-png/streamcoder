@@ -1,0 +1,64 @@
+- Returns the exact 64-character lowercase hex SHA-256 digest for both empty (0-byte) files and multi-megabyte binary files.
+- Rejects with the underlying filesystem error if the file does not exist or cannot be read.
+- Closes the file descriptor promptly after completion or error.
+
+```ts
+import { hashFileStream } from './hashFileStream';
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+import { afterEach, beforeEach, test, expect, vi } from 'vitest';
+
+let dir: string;
+
+beforeEach(async () => {
+  dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+});
+
+afterEach(async () => {
+  await fs.promises.rm(dir, { recursive: true, force: true });
+});
+
+test('returns the exact 64-character lowercase hex SHA-256 digest for an empty file', async () => {
+  const filePath = path.join(dir, 'empty.txt');
+  await fs.promises.writeFile(filePath, '');
+
+  const digest = await hashFileStream(filePath);
+  expect(digest).toBe('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
+});
+
+test('returns the exact 64-character lowercase hex SHA-256 digest for a multi-megabyte binary file', async () => {
+  const filePath = path.join(dir, 'large.bin');
+  const largeData = Buffer.alloc(1024 * 1024 * 5, 0); // 5MB of zeros
+  await fs.promises.writeFile(filePath, largeData);
+
+  const digest = await hashFileStream(filePath);
+  expect(digest).toBe('d41d8cd98f00b204e9800998ecf8427e');
+});
+
+test('rejects with the underlying filesystem error if the file does not exist', async () => {
+  const filePath = path.join(dir, 'nonexistent.txt');
+
+  await expect(hashFileStream(filePath)).rejects.toThrowError('ENOENT');
+});
+
+test('rejects with the underlying filesystem error if the file cannot be read', async () => {
+  const filePath = path.join(dir, 'unreadable.txt');
+  await fs.promises.writeFile(filePath, '');
+  await fs.promises.chmod(filePath, 0o000); // Make the file unreadable
+
+  await expect(hashFileStream(filePath)).rejects.toThrowError('EACCES');
+});
+
+test('closes the file descriptor promptly after completion or error', async () => {
+  const filePath = path.join(dir, 'empty.txt');
+  await fs.promises.writeFile(filePath, '');
+
+  const spy = vi.spyOn(fs, 'closeSync');
+
+  await hashFileStream(filePath);
+  expect(spy).toHaveBeenCalled();
+
+  spy.mockRestore();
+});
+```

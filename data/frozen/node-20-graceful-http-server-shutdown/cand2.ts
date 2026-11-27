@@ -1,0 +1,34 @@
+import http from 'http';
+
+export function attachGracefulShutdown(server: http.Server, { drainTimeoutMs }: { drainTimeoutMs: number }): () => Promise<void> {
+    let shutdownPromise: Promise<void> | null = null;
+
+    function shutdown(): Promise<void> {
+        if (shutdownPromise) return shutdownPromise;
+
+        shutdownPromise = new Promise((resolve, reject) => {
+            server.close((err) => {
+                if (err) return reject(err);
+                resolve();
+            });
+
+            const timeoutId = setTimeout(() => {
+                server.destroy((err) => {
+                    if (err) return reject(err);
+                    resolve();
+                });
+            }, drainTimeoutMs);
+
+            server.on('connection', (socket) => {
+                socket.setTimeout(drainTimeoutMs);
+                socket.on('close', () => {
+                    clearTimeout(timeoutId);
+                });
+            });
+        });
+
+        return shutdownPromise;
+    }
+
+    return shutdown;
+}

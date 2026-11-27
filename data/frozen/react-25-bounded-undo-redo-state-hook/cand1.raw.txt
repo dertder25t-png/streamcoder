@@ -1,0 +1,61 @@
+```tsx
+import { useState, useCallback } from 'react';
+
+export function useUndoableState<T>(initialValue: T, maxHistory: number = 50) {
+  const [history, setHistory] = useState<{ snapshot: T; index: number }[]>([
+    { snapshot: initialValue, index: 0 },
+  ]);
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
+
+  const set = useCallback((next: T | ((prev: T) => T)) => {
+    let nextSnapshot: T;
+    if (typeof next === 'function') {
+      nextSnapshot = next(history[currentIndex].snapshot);
+    } else {
+      nextSnapshot = next;
+    }
+
+    if (Object.is(history[currentIndex].snapshot, nextSnapshot)) {
+      return;
+    }
+
+    const newHistory = history.slice(0, currentIndex + 1);
+    newHistory.push({ snapshot: nextSnapshot, index: newHistory.length - 1 });
+    if (newHistory.length > maxHistory) {
+      newHistory.shift();
+    }
+    setCurrentIndex(newHistory.length - 1);
+    setHistory(newHistory);
+  }, [history, maxHistory, currentIndex]);
+
+  const undo = useCallback(() => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+    }
+  }, [currentIndex]);
+
+  const redo = useCallback(() => {
+    if (currentIndex < history.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    }
+  }, [currentIndex, history]);
+
+  const canUndo = currentIndex > 0;
+  const canRedo = currentIndex < history.length - 1;
+
+  const reset = useCallback(() => {
+    setHistory([{ snapshot: initialValue, index: 0 }]);
+    setCurrentIndex(0);
+  }, [initialValue]);
+
+  return {
+    state: history[currentIndex].snapshot,
+    set,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    reset,
+  };
+}
+```

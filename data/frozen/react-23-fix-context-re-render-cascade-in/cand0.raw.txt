@@ -1,0 +1,78 @@
+```tsx
+import { createContext, useContext, useState, type ReactNode, useRef } from "react";
+
+type Store = {
+  userName: string;
+  unreadCount: number;
+  incrementUnread: () => void;
+  setUserName: (name: string) => void;
+};
+
+const StoreContext = createContext<Store | null>(null);
+
+export function SplitStoreProvider({
+  children,
+  initialUserName = "",
+  initialUnreadCount = 0,
+}: {
+  children: ReactNode;
+  initialUserName?: string;
+  initialUnreadCount?: number;
+}) {
+  const [userName, setUserName] = useState(initialUserName);
+  const [unreadCount, setUnreadCount] = useState(initialUnreadCount);
+
+  const value: Store = {
+    userName,
+    unreadCount,
+    incrementUnread: () => setUnreadCount((c) => c + 1),
+    setUserName: (name: string) => setUserName(name),
+  };
+
+  return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
+}
+
+function useStore(): Store {
+  const ctx = useContext(StoreContext);
+  if (!ctx) throw new Error("Store hooks must be used inside <SplitStoreProvider>");
+  return ctx;
+}
+
+const userNameListeners = new Set<() => void>();
+const unreadCountListeners = new Set<() => void>();
+
+export function useUserName(): string {
+  const ctx = useStore();
+  if (!ctx) throw new Error("Store hooks must be used inside <SplitStoreProvider>");
+
+  const [userName, setUserName] = useState(ctx.userName);
+
+  useRef(() => {
+    const listener = () => setUserName(ctx.userName);
+    userNameListeners.add(listener);
+    return () => userNameListeners.delete(listener);
+  }).current();
+
+  return userName;
+}
+
+export function useUnreadCount(): number {
+  const ctx = useStore();
+  if (!ctx) throw new Error("Store hooks must be used inside <SplitStoreProvider>");
+
+  const [unreadCount, setUnreadCount] = useState(ctx.unreadCount);
+
+  useRef(() => {
+    const listener = () => setUnreadCount(ctx.unreadCount);
+    unreadCountListeners.add(listener);
+    return () => unreadCountListeners.delete(listener);
+  }).current();
+
+  return unreadCount;
+}
+
+export function useStoreActions(): { incrementUnread: () => void; setUserName: (name: string) => void } {
+  const { incrementUnread, setUserName } = useStore();
+  return { incrementUnread, setUserName };
+}
+```

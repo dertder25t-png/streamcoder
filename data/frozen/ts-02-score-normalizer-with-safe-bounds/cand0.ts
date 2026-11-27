@@ -1,0 +1,24 @@
+function normalizeScores(
+  values: readonly number[],
+  targetMin: number = 0,
+  targetMax: number = 1
+): number[] {
+  if (values.length === 0) return [];
+
+  const finiteValues = values.filter((v) => Number.isFinite(v));
+  if (finiteValues.length === 0) return values.map(() => targetMin);
+
+  const minValue = Math.min(...finiteValues);
+  const maxValue = Math.max(...finiteValues);
+
+  if (minValue === maxValue) return values.map(() => targetMin);
+
+  if (targetMin > targetMax) throw new RangeError('targetMin must be less than targetMax');
+
+  return values.map((v) => {
+    if (!Number.isFinite(v)) throw new RangeError('Array contains non-finite values');
+    return ((v - minValue) / (maxValue - minValue)) * (targetMax - targetMin) + targetMin;
+  });
+}
+
+export { normalizeScores };

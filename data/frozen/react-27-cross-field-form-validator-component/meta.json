@@ -1,0 +1,25 @@
+{
+ "id": "react-27-cross-field-form-validator-component",
+ "topic": "react",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "test failed: hides errors until blur, then updates live; validates end >= start and re-validates whe",
+  "test failed: hides errors until blur, then updates live; validates end >= start and re-validates whe",
+  "type error: .runs/react-27-cross-field-form-validator-component/solution.tsx(37,60): error TS7006: P",
+  "type error: .runs/react-27-cross-field-form-validator-component/solution.tsx(63,45): error TS18047: "
+ ],
+ "cand_tokens": [
+  772,
+  778,
+  732,
+  942
+ ],
+ "gen_seconds": 68.5,
+ "type_only": false,
+ "errors": []
+}

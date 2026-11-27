@@ -1,0 +1,36 @@
+- Reads initial value from `localStorage` or falls back to `initialValue`.
+- Updates `localStorage` when state setter is invoked.
+- Listens to window `storage` events and updates state if another tab modifies the same key.
+
+```tsx
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import { useLocalStorageState } from './useLocalStorageState';
+
+test("reads initial value from localStorage or falls back to initialValue", async () => {
+  localStorage.setItem('testKey', JSON.stringify('initialValueFromStorage'));
+  render(<div>{useLocalStorageState('testKey', 'initialValue')[0]}</div>);
+  await waitFor(() => expect(screen.getByText('initialValueFromStorage')).toBeInTheDocument());
+  cleanup();
+});
+
+test("updates localStorage when state setter is invoked", async () => {
+  render(<div>{useLocalStorageState('testKey', 'initialValue')[1]('newValue')}</div>);
+  await waitFor(() => expect(localStorage.getItem('testKey')).toBe(JSON.stringify('newValue')));
+  cleanup();
+});
+
+test("listens to window storage events and updates state if another tab modifies the same key", async () => {
+  const { getByText } = render(<div>{useLocalStorageState('testKey', 'initialValue')[0]}</div>);
+  await waitFor(() => expect(screen.getByText('initialValue')).toBeInTheDocument());
+
+  // Simulate another tab changing the value
+  const event = new StorageEvent('storage', {
+    key: 'testKey',
+    newValue: JSON.stringify('newValueFromAnotherTab')
+  });
+  window.dispatchEvent(event);
+
+  await waitFor(() => expect(getByText('newValueFromAnotherTab')).toBeInTheDocument());
+  cleanup();
+});
+```

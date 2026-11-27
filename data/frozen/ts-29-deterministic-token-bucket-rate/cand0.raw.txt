@@ -1,0 +1,28 @@
+```typescript
+export function createTokenBucket({ capacity, refillPerSecond, now }: { capacity: number; refillPerSecond: number; now: () => number }) {
+    let tokens = capacity;
+    let lastRefillTime = now();
+
+    function refill() {
+        const currentTime = now();
+        const timeElapsed = Math.max(currentTime - lastRefillTime, 0);
+        const tokensToAdd = Math.floor(timeElapsed * refillPerSecond);
+        tokens = Math.min(capacity, tokens + tokensToAdd);
+        lastRefillTime = currentTime;
+    }
+
+    function tryConsume(cost: number = 1): { allowed: boolean; remaining: number; retryAfterMs: number } {
+        refill();
+
+        if (tokens >= cost) {
+            tokens -= cost;
+            return { allowed: true, remaining: tokens, retryAfterMs: 0 };
+        } else {
+            const timeToRefill = Math.ceil((cost - tokens) / refillPerSecond);
+            return { allowed: false, remaining: tokens, retryAfterMs: timeToRefill };
+        }
+    }
+
+    return tryConsume;
+}
+```

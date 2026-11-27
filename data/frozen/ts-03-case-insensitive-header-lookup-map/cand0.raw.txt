@@ -1,0 +1,63 @@
+```typescript
+export function createHeaderMap(entries?: Iterable<[string, string]>): HeaderMap {
+  const headers = new Map<string, string>();
+  const caseInsensitiveKeys = new Map<string, string>();
+
+  if (entries) {
+    for (const [key, value] of entries) {
+      set(key, value);
+    }
+  }
+
+  function get(name: string): string | undefined {
+    return headers.get(caseInsensitiveKeys.get(name.toLowerCase()) || name);
+  }
+
+  function set(name: string, value: string): void {
+    const lowerCaseName = name.toLowerCase();
+    if (caseInsensitiveKeys.has(lowerCaseName)) {
+      headers.delete(caseInsensitiveKeys.get(lowerCaseName)!);
+    }
+    headers.set(name, value);
+    caseInsensitiveKeys.set(lowerCaseName, name);
+  }
+
+  function has(name: string): boolean {
+    return caseInsensitiveKeys.has(name.toLowerCase());
+  }
+
+  function delete(name: string): boolean {
+    const lowerCaseName = name.toLowerCase();
+    if (caseInsensitiveKeys.has(lowerCaseName)) {
+      headers.delete(caseInsensitiveKeys.get(lowerCaseName)!);
+      caseInsensitiveKeys.delete(lowerCaseName);
+      return true;
+    }
+    return false;
+  }
+
+  function toRecord(): Record<string, string> {
+    const record: Record<string, string> = {};
+    for (const [key, value] of headers) {
+      record[key] = value;
+    }
+    return record;
+  }
+
+  return {
+    get,
+    set,
+    has,
+    delete,
+    toRecord,
+  };
+}
+
+interface HeaderMap {
+  get(name: string): string | undefined;
+  set(name: string, value: string): void;
+  has(name: string): boolean;
+  delete(name: string): boolean;
+  toRecord(): Record<string, string>;
+}
+```

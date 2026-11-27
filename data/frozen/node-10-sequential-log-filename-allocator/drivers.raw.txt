@@ -1,0 +1,46 @@
+```ts
+probe("no logs exist", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const result = await nextLogFilePath(dir, "2026-05-01");
+  await fs.promises.rmdir(dir, { recursive: true });
+  return result;
+});
+
+probe("one log exists", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  await fs.promises.writeFile(path.join(dir, "app-2026-05-01.1.log"), "");
+  const result = await nextLogFilePath(dir, "2026-05-01");
+  await fs.promises.unlink(path.join(dir, "app-2026-05-01.1.log"));
+  await fs.promises.rmdir(dir, { recursive: true });
+  return result;
+});
+
+probe("multiple logs exist", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  await fs.promises.writeFile(path.join(dir, "app-2026-05-01.1.log"), "");
+  await fs.promises.writeFile(path.join(dir, "app-2026-05-01.2.log"), "");
+  await fs.promises.writeFile(path.join(dir, "app-2026-05-01.9.log"), "");
+  const result = await nextLogFilePath(dir, "2026-05-01");
+  await fs.promises.unlink(path.join(dir, "app-2026-05-01.1.log"));
+  await fs.promises.unlink(path.join(dir, "app-2026-05-01.2.log"));
+  await fs.promises.unlink(path.join(dir, "app-2026-05-01.9.log"));
+  await fs.promises.rmdir(dir, { recursive: true });
+  return result;
+});
+
+probe("log from another date exists", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  await fs.promises.writeFile(path.join(dir, "app-2026-05-02.1.log"), "");
+  const result = await nextLogFilePath(dir, "2026-05-01");
+  await fs.promises.unlink(path.join(dir, "app-2026-05-02.1.log"));
+  await fs.promises.rmdir(dir, { recursive: true });
+  return result;
+});
+
+probe("empty directory", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const result = await nextLogFilePath(dir, "2026-05-01");
+  await fs.promises.rmdir(dir, { recursive: true });
+  return result;
+});
+```

@@ -34,7 +34,7 @@ def test_header_react_and_node():
     assert h.startswith("// @vitest-environment jsdom") and 'import { Counter } from "./solution"' in h
     assert "cleanup(); vi.useRealTimers()" in h and '"/x/c.json"' in h
     n = tdd.test_header(T_NODE, "/x/c.json")
-    assert 'import fs from "node:fs"' in n and "cleanup()" not in n and "readAll, writeAll" in n
+    assert 'const fs = { ...fsBase' in n and "cleanup()" not in n and "readAll, writeAll" in n
     assert "import * as S" in tdd.test_header({**T_NODE, "must_export": None, "prompt": "do it"}, "c")
 
 
@@ -77,3 +77,26 @@ def test_typecheck_line_mapping():
     one = tdd.grade_typecheck(text, 2, [(5, "TS2322")])  # error on line after the directive is not a test line
     assert all(one.values())
     assert not any(tdd.grade_typecheck(text, 2, [(1, "TS2305")]).values())  # missing export fails all
+
+
+def test_driver_file_react_assembly():
+    raw = ("```tsx\nimport { Counter } from './solution';\nafterEach(() => {});\n"
+           "probe(\"click\", async () => { render(<Counter />); fireEvent.click(screen.getByRole('button')); return snap(); });\n```")
+    f = tdd.driver_file(T_REACT, raw, "/x/fp.json")
+    assert f.startswith("// @vitest-environment jsdom") and "cleanup(); vi.useRealTimers()" in f
+    assert "const snap = () =>" in f and "function probe(" in f and "stableJSON" in f
+    assert f.count("from './solution'") == 0 and f.count('from "./solution"') == 1   # model import dropped
+    assert 'probe("click"' in f and '"/x/fp.json"' in f and f.rstrip().endswith("});")
+
+
+def test_driver_file_node_and_no_code():
+    f = tdd.driver_file(T_NODE, "```ts\nprobe(\"a\", async () => 1);\n```", "/x/fp.json")
+    assert 'const fs = { ...fsBase' in f and "jsdom" not in f and 'probe("a"' in f
+    assert "probe(" in tdd.driver_file(T_NODE, "no code", "/x/fp.json")   # still valid file (runtime only)
+
+
+def test_driver_messages_mentions_helpers():
+    m = tdd.driver_messages({**T_REACT, "criteria": ["c"]})[1]["content"]
+    assert "snap()" in m and "getByRole" in m and "Counter" in m
+    n = tdd.driver_messages({**T_NODE, "criteria": ["c"]})[1]["content"]
+    assert '"pr-"' in n and "snap()" not in n

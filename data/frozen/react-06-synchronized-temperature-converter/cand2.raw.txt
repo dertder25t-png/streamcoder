@@ -1,0 +1,91 @@
+```tsx
+import React, { useState, useCallback } from 'react';
+
+interface TemperaturePairProps {
+  celsius: number;
+  onCelsiusChange: (celsius: number) => void;
+  fahrenheit: number;
+  onFahrenheitChange: (fahrenheit: number) => void;
+}
+
+const TemperaturePair: React.FC<TemperaturePairProps> = ({
+  celsius,
+  onCelsiusChange,
+  fahrenheit,
+  onFahrenheitChange,
+}) => {
+  const [activeField, setActiveField] = useState<'celsius' | 'fahrenheit' | null>(null);
+  const [celsiusInput, setCelsiusInput] = useState<string>(celsius.toString());
+  const [fahrenheitInput, setFahrenheitInput] = useState<string>(fahrenheit.toString());
+
+  const handleCelsiusChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setCelsiusInput(value);
+    if (activeField === 'celsius') {
+      const parsed = parseFloat(value);
+      if (!isNaN(parsed)) {
+        onCelsiusChange(parsed);
+        const f = (parsed * 9) / 5 + 32;
+        setFahrenheitInput(f.toFixed(2));
+      } else {
+        setFahrenheitInput('');
+      }
+    }
+  }, [activeField, onCelsiusChange]);
+
+  const handleFahrenheitChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setFahrenheitInput(value);
+    if (activeField === 'fahrenheit') {
+      const parsed = parseFloat(value);
+      if (!isNaN(parsed)) {
+        onFahrenheitChange(parsed);
+        const c = ((parsed - 32) * 5) / 9;
+        setCelsiusInput(c.toFixed(2));
+      } else {
+        setCelsiusInput('');
+      }
+    }
+  }, [activeField, onFahrenheitChange]);
+
+  const handleFocus = useCallback((field: 'celsius' | 'fahrenheit') => {
+    setActiveField(field);
+    if (field === 'celsius') {
+      setCelsiusInput(celsius.toString());
+    } else {
+      setFahrenheitInput(fahrenheit.toString());
+    }
+  }, [celsius, fahrenheit]);
+
+  const handleBlur = useCallback(() => {
+    setActiveField(null);
+  }, []);
+
+  return (
+    <div>
+      <label>
+        Celsius:
+        <input
+          type="text"
+          value={celsiusInput}
+          onChange={handleCelsiusChange}
+          onFocus={() => handleFocus('celsius')}
+          onBlur={handleBlur}
+        />
+      </label>
+      <label>
+        Fahrenheit:
+        <input
+          type="text"
+          value={fahrenheitInput}
+          onChange={handleFahrenheitChange}
+          onFocus={() => handleFocus('fahrenheit')}
+          onBlur={handleBlur}
+        />
+      </label>
+    </div>
+  );
+};
+
+export { TemperaturePair };
+```

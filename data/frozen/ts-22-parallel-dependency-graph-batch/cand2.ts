@@ -1,0 +1,89 @@
+import { Set } from 'node:util';
+
+function planExecutionBatches(tasks: readonly { id: string; dependsOn: readonly string[] }[]): string[][] {
+    const taskMap = new Map<string, { id: string; dependsOn: Set<string> }>();
+    const dependencyMap = new Map<string, Set<string>>();
+
+    // Populate taskMap and dependencyMap
+    tasks.forEach(task => {
+        if (taskMap.has(task.id)) {
+            throw new Error(`Duplicate task ID: ${task.id}`);
+        }
+        taskMap.set(task.id, { id: task.id, dependsOn: new Set(task.dependsOn) });
+        task.dependsOn.forEach(dep => {
+            if (!taskMap.has(dep)) {
+                throw new Error(`Missing dependency ID: ${dep}`);
+            }
+            if (!dependencyMap.has(dep)) {
+                dependencyMap.set(dep, new Set());
+            }
+            dependencyMap.get(dep)!.add(task.id);
+        });
+    });
+
+    // Detect cycles
+    const visited = new Set<string>();
+    const recStack = new Set<string>();
+
+    function hasCycle(node: string): boolean {
+        if (recStack.has(node)) {
+            return true;
+        }
+        if (visited.has(node)) {
+            return false;
+        }
+        visited.add(node);
+        recStack.add(node);
+
+        const dependents = dependencyMap.get(node);
+        if (dependents) {
+            for (const dependent of dependents) {
+                if (hasCycle(dependent)) {
+                    return true;
+                }
+            }
+        }
+
+        recStack.delete(node);
+        return false;
+    }
+
+    for (const task of taskMap.keys()) {
+        if (hasCycle(task)) {
+            throw new Error(`Cyclic dependency detected involving task: ${task}`);
+        }
+    }
+
+    // Topological sort
+    const result: string[][] = [];
+    const tempMark = new Set<string>();
+    const permanentMark = new Set<string>();
+
+    function visit(node: string): void {
+        if (permanentMark.has(node)) {
+            return;
+        }
+        if (tempMark.has(node)) {
+            throw new Error(`Cyclic dependency detected involving task: ${node}`);
+        }
+        tempMark.add(node);
+        const dependents = dependencyMap.get(node);
+        if (dependents) {
+            for (const dependent of dependents) {
+                visit(dependent);
+            }
+        }
+        tempMark.delete(node);
+        permanentMark.add(node);
+        result[result.length - 1].push(node);
+    }
+
+    for (const task of taskMap.keys()) {
+        if (!permanentMark.has(task)) {
+            result.push([]);
+            visit(task);
+        }
+    }
+
+    return result;
+}

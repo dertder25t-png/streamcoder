@@ -1,0 +1,80 @@
+```tsx
+import React, { useState, useCallback } from 'react';
+
+interface Column {
+  key: string;
+  label: string;
+  numeric?: boolean;
+}
+
+interface Row {
+  [key: string]: string | number;
+}
+
+interface SortState {
+  key: string | null;
+  direction: 'ascending' | 'descending' | 'none';
+}
+
+const SortableTable: React.FC<{ rows: Row[]; columns: Column[] }> = ({ rows, columns }) => {
+  const [sortState, setSortState] = useState<SortState>({ key: null, direction: 'none' });
+
+  const handleSort = useCallback((key: string) => {
+    if (sortState.key === key) {
+      setSortState(prevState => ({
+        ...prevState,
+        direction: prevState.direction === 'ascending' ? 'descending' : 'none'
+      }));
+    } else {
+      setSortState({ key, direction: 'ascending' });
+    }
+  }, [sortState]);
+
+  const sortedRows = React.useMemo(() => {
+    if (!sortState.key) return rows;
+
+    const { key, direction } = sortState;
+    const sorted = [...rows].sort((a, b) => {
+      const valueA = a[key];
+      const valueB = b[key];
+
+      if (columns.find(col => col.key === key)?.numeric) {
+        return direction === 'ascending' ? (valueA as number) - (valueB as number) : (valueB as number) - (valueA as number);
+      } else {
+        return direction === 'ascending' ? (valueA as string).localeCompare(valueB as string) : (valueB as string).localeCompare(valueA as string);
+      }
+    });
+
+    return sorted;
+  }, [rows, sortState, columns]);
+
+  return (
+    <table>
+      <thead>
+        <tr>
+          {columns.map(column => (
+            <th
+              key={column.key}
+              onClick={() => handleSort(column.key)}
+              aria-sort={sortState.key === column.key ? sortState.direction : 'none'}
+            >
+              {column.label}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {sortedRows.map((row, index) => (
+          <tr key={index}>
+            {columns.map(column => (
+              <td key={column.key}>{row[column.key]}</td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+};
+
+export { SortableTable };
+```

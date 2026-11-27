@@ -1,0 +1,58 @@
+- An empty token renders "No token provided" with no Show or Copy buttons.
+- By default renders • repeated token.length times; clicking "Show" reveals the raw token and switches the button label to "Hide".
+- Clicking "Copy" calls navigator.clipboard.writeText(token), displays "Copied" for 2000 ms, and clears its timer on unmount.
+- Changing the token prop while revealed automatically re-masks the new token.
+
+```tsx
+import React from 'react';
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom/extend-expect';
+import RevealableToken from './RevealableToken';
+
+afterEach(cleanup);
+
+test("renders 'No token provided' with no Show or Copy buttons for empty token", () => {
+  render(<RevealableToken token="" />);
+  expect(screen.getByText('No token provided')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Show' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Copy' })).not.toBeInTheDocument();
+});
+
+test("renders masked token and Show button for non-empty token", () => {
+  render(<RevealableToken token="12345" />);
+  expect(screen.getByText('•••••')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Show' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Copy' })).not.toBeInTheDocument();
+});
+
+test("clicking 'Show' reveals the raw token and switches button label to 'Hide'", async () => {
+  render(<RevealableToken token="12345" />);
+  fireEvent.click(screen.getByRole('button', { name: 'Show' }));
+  expect(screen.getByText('12345')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Hide' })).toBeInTheDocument();
+});
+
+test("clicking 'Copy' copies the token to clipboard and displays 'Copied'", async () => {
+  const mockWriteText = vi.fn();
+  Object.assign(navigator.clipboard, { writeText: mockWriteText });
+
+  render(<RevealableToken token="12345" />);
+  fireEvent.click(screen.getByRole('button', { name: 'Show' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
+
+  await waitFor(() => expect(mockWriteText).toHaveBeenCalledWith('12345'));
+  expect(screen.getByText('Copied')).toBeInTheDocument();
+
+  vi.advanceTimersByTime(2000);
+  expect(screen.queryByText('Copied')).not.toBeInTheDocument();
+});
+
+test("changing the token prop while revealed re-masks the new token", () => {
+  render(<RevealableToken token="12345" />);
+  fireEvent.click(screen.getByRole('button', { name: 'Show' }));
+  expect(screen.getByText('12345')).toBeInTheDocument();
+
+  render(<RevealableToken token="67890" />);
+  expect(screen.getByText('•••••')).toBeInTheDocument();
+});
+```

@@ -1,0 +1,25 @@
+{
+ "id": "ts-35-array-chunking-utility-with",
+ "topic": "typescript",
+ "cand_hidden": [
+  true,
+  true,
+  true,
+  true
+ ],
+ "cand_hidden_err": [
+  "",
+  "",
+  "",
+  ""
+ ],
+ "cand_tokens": [
+  97,
+  93,
+  97,
+  97
+ ],
+ "gen_seconds": 16.4,
+ "type_only": false,
+ "errors": []
+}

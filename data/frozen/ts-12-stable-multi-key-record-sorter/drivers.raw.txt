@@ -1,0 +1,45 @@
+```ts
+probe("empty array", async () => {
+  return sortRecordsByKeys([], [{ key: "name" }]);
+});
+
+probe("single record", async () => {
+  return sortRecordsByKeys([{ name: "Alice" }], [{ key: "name" }]);
+});
+
+probe("multiple records ascending", async () => {
+  return sortRecordsByKeys(
+    [{ name: "Alice" }, { name: "Bob" }, { name: "Charlie" }],
+    [{ key: "name" }]
+  );
+});
+
+probe("multiple records descending", async () => {
+  return sortRecordsByKeys(
+    [{ name: "Alice" }, { name: "Bob" }, { name: "Charlie" }],
+    [{ key: "name", direction: "desc" }]
+  );
+});
+
+probe("multiple records with tie-breaker", async () => {
+  return sortRecordsByKeys(
+    [
+      { name: "Alice", age: 30 },
+      { name: "Alice", age: 25 },
+      { name: "Bob", age: 30 },
+    ],
+    [{ key: "name" }, { key: "age" }]
+  );
+});
+
+probe("multiple records with mixed types", async () => {
+  return sortRecordsByKeys(
+    [
+      { name: "Alice", age: 30, isStudent: false },
+      { name: "Bob", age: 25, isStudent: true },
+      { name: "Charlie", age: 30, isStudent: false },
+    ],
+    [{ key: "age" }, { key: "isStudent" }]
+  );
+});
+```

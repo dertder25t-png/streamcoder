@@ -1,0 +1,31 @@
+```ts
+probe("empty stream", async () => {
+  const { bytes, lines } = await measureStream(new Readable());
+  return { bytes, lines };
+});
+
+probe("single line", async () => {
+  const { bytes, lines } = await measureStream(new Readable({ read() {} }));
+  return { bytes, lines };
+});
+
+probe("multiple lines", async () => {
+  const { bytes, lines } = await measureStream(new Readable({ read() {} }));
+  return { bytes, lines };
+});
+
+probe("trailing newline", async () => {
+  const { bytes, lines } = await measureStream(new Readable({ read() {} }));
+  return { bytes, lines };
+});
+
+probe("no trailing newline", async () => {
+  const { bytes, lines } = await measureStream(new Readable({ read() {} }));
+  return { bytes, lines };
+});
+
+probe("multi-byte UTF-8 characters", async () => {
+  const { bytes, lines } = await measureStream(new Readable({ read() {} }));
+  return { bytes, lines };
+});
+```

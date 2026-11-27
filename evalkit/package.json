@@ -4,6 +4,7 @@
   "type": "module",
   "description": "Runs eval tasks: strict type check (tsc) + hidden tests (vitest)",
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.1.0",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",

@@ -1,0 +1,25 @@
+```ts
+probe("empty line", async () => {
+  return parseCsvLine("");
+});
+
+probe("single field", async () => {
+  return parseCsvLine("field");
+});
+
+probe("two fields", async () => {
+  return parseCsvLine("field1,field2");
+});
+
+probe("quoted field with comma", async () => {
+  return parseCsvLine('"field, with, commas",field2');
+});
+
+probe("escaped double quote", async () => {
+  return parseCsvLine('"field""with""quotes",field2');
+});
+
+probe("leading and trailing spaces", async () => {
+  return parseCsvLine("  field1,  field2  ");
+});
+```

@@ -1,0 +1,49 @@
+- Recursively freezes nested plain objects, arrays, and symbol-keyed nested objects.
+- Handles self-referential and mutually cyclic graphs using a WeakSet without throwing or infinite recursion.
+- Primitives and null return unchanged without throwing.
+
+```ts
+test("deepFreezeSafe returns unchanged for primitives and null", () => {
+  expect(deepFreezeSafe(42)).toBe(42);
+  expect(deepFreezeSafe(null)).toBeNull();
+});
+
+test("deepFreezeSafe freezes plain objects", () => {
+  const obj = { a: 1, b: { c: 2 } };
+  const frozenObj = deepFreezeSafe(obj);
+  expect(Object.isFrozen(frozenObj)).toBe(true);
+  expect(Object.isFrozen(frozenObj.b)).toBe(true);
+});
+
+test("deepFreezeSafe handles self-referential graphs", () => {
+  const obj: { a?: number } = {};
+  obj.a = obj;
+  const frozenObj = deepFreezeSafe(obj);
+  expect(Object.isFrozen(frozenObj)).toBe(true);
+  expect(Object.isFrozen(frozenObj.a)).toBe(true);
+  expect(frozenObj.a).toBe(frozenObj);
+});
+
+test("deepFreezeSafe handles mutually cyclic graphs", () => {
+  const obj1: { a?: number } = {};
+  const obj2: { b?: number } = {};
+  obj1.a = obj2;
+  obj2.b = obj1;
+  const frozenObj1 = deepFreezeSafe(obj1);
+  const frozenObj2 = deepFreezeSafe(obj2);
+  expect(Object.isFrozen(frozenObj1)).toBe(true);
+  expect(Object.isFrozen(frozenObj1.a)).toBe(true);
+  expect(Object.isFrozen(frozenObj2)).toBe(true);
+  expect(Object.isFrozen(frozenObj2.b)).toBe(true);
+  expect(frozenObj1.a).toBe(frozenObj2);
+  expect(frozenObj2.b).toBe(frozenObj1);
+});
+
+test("deepFreezeSafe handles symbol-keyed properties", () => {
+  const sym = Symbol("key");
+  const obj = { [sym]: 1 };
+  const frozenObj = deepFreezeSafe(obj);
+  expect(Object.isFrozen(frozenObj)).toBe(true);
+  expect(frozenObj[sym]).toBe(1);
+});
+```

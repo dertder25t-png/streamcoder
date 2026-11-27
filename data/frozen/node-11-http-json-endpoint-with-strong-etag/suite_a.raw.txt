@@ -1,0 +1,77 @@
+- Returns 200 with Content-Type: application/json, ETag, and the JSON body on normal requests.
+- Returns 304 Not Modified with an empty body and the matching ETag header when If-None-Match matches (including comma-separated ETag lists or *).
+- Returns 200 with a fresh ETag as soon as getConfig() returns modified content.
+
+```ts
+import { createConfigHandler } from './createConfigHandler'; // Adjust the import path as necessary
+import { test, expect, vi } from 'vitest';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
+
+test('returns 200 with Content-Type: application/json, ETag, and the JSON body on normal requests', async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const getConfig = vi.fn(() => ({ key: 'value' }));
+  const handler = createConfigHandler(getConfig);
+
+  const req = { headers: {} } as any;
+  const res = {
+    statusCode: 0,
+    statusMessage: '',
+    setHeader: vi.fn(),
+    end: vi.fn(),
+  } as any;
+
+  handler(req, res);
+
+  expect(res.statusCode).toBe(200);
+  expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'application/json');
+  expect(res.setHeader).toHaveBeenCalledWith('ETag', '"sha256:2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"');
+  expect(res.end).toHaveBeenCalledWith(JSON.stringify({ key: 'value' }));
+});
+
+test('returns 304 Not Modified with an empty body and the matching ETag header when If-None-Match matches (including comma-separated ETag lists or *)', async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const getConfig = vi.fn(() => ({ key: 'value' }));
+  const handler = createConfigHandler(getConfig);
+
+  const req = { headers: { 'If-None-Match': '"sha256:2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"' } } as any;
+  const res = {
+    statusCode: 0,
+    statusMessage: '',
+    setHeader: vi.fn(),
+    end: vi.fn(),
+  } as any;
+
+  handler(req, res);
+
+  expect(res.statusCode).toBe(304);
+  expect(res.end).toHaveBeenCalledWith('');
+});
+
+test('returns 200 with a fresh ETag as soon as getConfig() returns modified content', async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const getConfig = vi.fn(() => ({ key: 'value' }));
+  const handler = createConfigHandler(getConfig);
+
+  const req = { headers: {} } as any;
+  const res = {
+    statusCode: 0,
+    statusMessage: '',
+    setHeader: vi.fn(),
+    end: vi.fn(),
+  } as any;
+
+  handler(req, res);
+
+  expect(res.statusCode).toBe(200);
+  expect(res.setHeader).toHaveBeenCalledWith('ETag', '"sha256:2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"');
+
+  getConfig.mockReturnValue({ key: 'new value' });
+
+  handler(req, res);
+
+  expect(res.statusCode).toBe(200);
+  expect(res.setHeader).toHaveBeenCalledWith('ETag', '"sha256:6f8db599de986fab7a21625b7916589c9a497397d929b75d9629a4939b37314a"');
+});
+```

@@ -1,0 +1,31 @@
+- Returns parsed JSON or `fallback` if `ENOENT` occurs or JSON parsing fails.
+
+```ts
+test("returns parsed JSON if file exists", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const filePath = path.join(dir, "test.json");
+  const content = JSON.stringify({ key: "value" });
+  await fs.promises.writeFile(filePath, content);
+
+  const result = await readJsonSafe<{ key: string }>(filePath, { key: "default" });
+  expect(result).toEqual({ key: "value" });
+});
+
+test("returns fallback if file does not exist", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const filePath = path.join(dir, "nonexistent.json");
+
+  const result = await readJsonSafe<{ key: string }>(filePath, { key: "default" });
+  expect(result).toEqual({ key: "default" });
+});
+
+test("returns fallback if JSON parsing fails", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const filePath = path.join(dir, "test.json");
+  const content = "invalid json";
+  await fs.promises.writeFile(filePath, content);
+
+  const result = await readJsonSafe<{ key: string }>(filePath, { key: "default" });
+  expect(result).toEqual({ key: "default" });
+});
+```

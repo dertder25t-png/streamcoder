@@ -1,0 +1,65 @@
+```ts
+probe("basic rate limiting", async () => {
+  const { wrap, size } = createRateLimiter({ windowMs: 1000, maxRequests: 2, keyFn: (req) => "client1", now: () => Date.now() });
+  const handler = vi.fn();
+  const req = { headers: {} };
+  const res = { setHeader: vi.fn(), statusCode: 0, end: vi.fn() };
+
+  wrap(handler)(req, res);
+  expect(handler).toBeCalledTimes(1);
+  expect(res.setHeader).toBeCalledWith("X-RateLimit-Limit", "2");
+  expect(res.setHeader).toBeCalledWith("X-RateLimit-Remaining", "1");
+  expect(res.statusCode).toBe(0);
+
+  wrap(handler)(req, res);
+  expect(handler).toBeCalledTimes(2);
+  expect(res.setHeader).toBeCalledWith("X-RateLimit-Limit", "2");
+  expect(res.setHeader).toBeCalledWith("X-RateLimit-Remaining", "0");
+  expect(res.statusCode).toBe(429);
+
+  wrap(handler)(req, res);
+  expect(handler).toBeCalledTimes(2);
+  expect(res.setHeader).toBeCalledWith("X-RateLimit-Limit", "2");
+  expect(res.setHeader).toBeCalledWith("X-RateLimit-Remaining", "0");
+  expect(res.statusCode).toBe(429);
+
+  return { size: size() };
+});
+
+probe("different client keys", async () => {
+  const { wrap, size } = createRateLimiter({ windowMs: 1000, maxRequests: 2, keyFn: (req) => req.headers["x-client-key"] || "default", now: () => Date.now() });
+  const handler = vi.fn();
+  const req1 = { headers: { "x-client-key": "client1" } };
+  const req2 = { headers: { "x-client-key": "client2" } };
+  const res = { setHeader: vi.fn(), statusCode: 0, end: vi.fn() };
+
+  wrap(handler)(req1, res);
+  expect(handler).toBeCalledTimes(1);
+  expect(res.setHeader).toBeCalledWith("X-RateLimit-Limit", "2");
+  expect(res.setHeader).toBeCalledWith("X-RateLimit-Remaining", "1");
+
+  wrap(handler)(req2, res);
+  expect(handler).toBeCalledTimes(2);
+  expect(res.setHeader).toBeCalledWith("X-RateLimit-Limit", "2");
+  expect(res.setHeader).toBeCalledWith("X-RateLimit-Remaining", "1");
+
+  return { size: size() };
+});
+
+probe("expired buckets", async () => {
+  const { wrap, size } = createRateLimiter({ windowMs: 1000, maxRequests: 2, keyFn: (req) => "client1", now: () => Date.now() });
+  const handler = vi.fn();
+  const req = { headers: {} };
+  const res = { setHeader: vi.fn(), statusCode: 0, end: vi.fn() };
+
+  wrap(handler)(req, res);
+  expect(handler).toBeCalledTimes(1);
+
+  await vi.advanceTimersByTimeAsync(1500);
+
+  wrap(handler)(req, res);
+  expect(handler).toBeCalledTimes(2);
+
+  return { size: size() };
+});
+```

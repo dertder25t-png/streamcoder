@@ -1,0 +1,44 @@
+```tsx
+import React from 'react';
+
+interface HighlightedSnippetProps {
+  code: string;
+  highlightLines: string;
+}
+
+const HighlightedSnippet: React.FC<HighlightedSnippetProps> = ({ code, highlightLines }) => {
+  const lines = code.split(/\r?\n/);
+  const highlightRange = highlightLines.split(',').map(range => {
+    const [start, end] = range.split('-').map(Number);
+    return { start, end };
+  });
+
+  return (
+    <pre>
+      {lines.map((line, index) => {
+        const lineNumber = index + 1;
+        const isHighlighted = highlightRange.some(({ start, end }) => lineNumber >= start && lineNumber <= end);
+        return (
+          <code
+            key={index}
+            data-highlighted={isHighlighted ? 'true' : undefined}
+            style={{
+              display: 'block',
+              whiteSpace: 'pre-wrap',
+              wordWrap: 'break-word',
+              margin: '0',
+              padding: '0 4px',
+              lineHeight: '1.5',
+              backgroundColor: isHighlighted ? '#ffffd9' : 'transparent',
+            }}
+          >
+            {line}
+          </code>
+        );
+      })}
+    </pre>
+  );
+};
+
+export { HighlightedSnippet };
+```

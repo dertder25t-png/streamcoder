@@ -1,0 +1,42 @@
+- Returns an ordered array from root to targetId, or [] if targetId does not exist.
+- Detects circular parent chains and throws an Error.
+- Stops cleanly if an intermediate parentId points to a missing node by returning the partial path up to the highest existing node.
+
+```ts
+import { buildCategoryPath } from './buildCategoryPath'; // Adjust the import path as necessary
+
+test("returns an ordered array from root to targetId", () => {
+  const nodes = [
+    { id: '1', parentId: null, name: 'Root' },
+    { id: '2', parentId: '1', name: 'Child' },
+    { id: '3', parentId: '2', name: 'Grandchild' }
+  ];
+  expect(buildCategoryPath(nodes, '3')).toEqual(['Root', 'Child', 'Grandchild']);
+});
+
+test("returns an empty array if targetId does not exist", () => {
+  const nodes = [
+    { id: '1', parentId: null, name: 'Root' },
+    { id: '2', parentId: '1', name: 'Child' }
+  ];
+  expect(buildCategoryPath(nodes, '3')).toEqual([]);
+});
+
+test("throws an Error for circular parent chains", () => {
+  const nodes = [
+    { id: '1', parentId: null, name: 'Root' },
+    { id: '2', parentId: '1', name: 'Child' },
+    { id: '1', parentId: '2', name: 'Root' } // Circular chain
+  ];
+  expect(() => buildCategoryPath(nodes, '1')).toThrow(Error);
+});
+
+test("stops cleanly if an intermediate parentId points to a missing node", () => {
+  const nodes = [
+    { id: '1', parentId: null, name: 'Root' },
+    { id: '2', parentId: '1', name: 'Child' },
+    { id: '3', parentId: '4', name: 'Grandchild' } // Missing parent
+  ];
+  expect(buildCategoryPath(nodes, '3')).toEqual(['Root', 'Child']);
+});
+```

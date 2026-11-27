@@ -1,0 +1,63 @@
+```ts
+probe("basic memoization", async () => {
+  const memoized = memoizeAsync(async (key: string) => {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    return key;
+  }, { ttlMs: 1000, maxEntries: 2 });
+
+  const result1 = await memoized("a");
+  const result2 = await memoized("a");
+  return { result1, result2 };
+});
+
+probe("concurrent calls share promise", async () => {
+  const memoized = memoizeAsync(async (key: string) => {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    return key;
+  }, { ttlMs: 1000, maxEntries: 2 });
+
+  const start = Date.now();
+  const [result1, result2] = await Promise.all([memoized("a"), memoized("a")]);
+  const end = Date.now();
+  return { result1, result2, timeTaken: end - start };
+});
+
+probe("rejected promise is evicted", async () => {
+  const memoized = memoizeAsync(async (key: string) => {
+    if (key === "a") throw new Error("Rejected");
+    return key;
+  }, { ttlMs: 1000, maxEntries: 2 });
+
+  try {
+    await memoized("a");
+  } catch (e) {}
+  const result = await memoized("a");
+  return result;
+});
+
+probe("ttl expiration", async () => {
+  const memoized = memoizeAsync(async (key: string) => {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    return key;
+  }, { ttlMs: 100, maxEntries: 2 });
+
+  const start = Date.now();
+  const result1 = await memoized("a");
+  await new Promise(resolve => setTimeout(resolve, 200));
+  const result2 = await memoized("a");
+  const end = Date.now();
+  return { result1, result2, timeTaken: end - start };
+});
+
+probe("max entries eviction", async () => {
+  const memoized = memoizeAsync(async (key: string) => {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    return key;
+  }, { ttlMs: 1000, maxEntries: 2 });
+
+  const result1 = await memoized("a");
+  const result2 = await memoized("b");
+  const result3 = await memoized("c");
+  return { result1, result2, result3 };
+});
+```

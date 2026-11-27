@@ -1,0 +1,25 @@
+{
+ "id": "ts-31-bi-directional-tree-flattener",
+ "topic": "typescript",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/ts-31-bi-directional-tree-flattener/solution.ts(57,36): error TS1205: Re-exporting",
+  "type error: .runs/ts-31-bi-directional-tree-flattener/solution.ts(58,25): error TS2339: Property 'ma",
+  "type error: .runs/ts-31-bi-directional-tree-flattener/solution.ts(52,36): error TS1205: Re-exporting",
+  "type error: .runs/ts-31-bi-directional-tree-flattener/solution.test.ts(2,42): error TS2306: File '/h"
+ ],
+ "cand_tokens": [
+  385,
+  523,
+  328,
+  337
+ ],
+ "gen_seconds": 50.2,
+ "type_only": false,
+ "errors": []
+}

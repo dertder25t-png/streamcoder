@@ -1,0 +1,51 @@
+- Identifies files present only in dirB as added, only in dirA as removed, and present in both with differing byte content as modified.
+- Files with identical bytes but different modification timestamps are not reported as modified.
+- Returns sorted forward-slash relative paths across nested subdirectories.
+
+```ts
+import { compareDirectories } from './compareDirectories'; // Adjust the import path as necessary
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
+
+test("identifies files present only in dirB as added", async () => {
+  const dirA = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const dirB = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  await fs.promises.writeFile(path.join(dirB, 'file.txt'), 'content');
+
+  const result = await compareDirectories(dirA, dirB);
+  expect(result).toEqual({ added: ['file.txt'], removed: [], modified: [] });
+});
+
+test("identifies files present only in dirA as removed", async () => {
+  const dirA = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const dirB = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  await fs.promises.writeFile(path.join(dirA, 'file.txt'), 'content');
+
+  const result = await compareDirectories(dirA, dirB);
+  expect(result).toEqual({ added: [], removed: ['file.txt'], modified: [] });
+});
+
+test("identifies files present in both with differing byte content as modified", async () => {
+  const dirA = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const dirB = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  await fs.promises.writeFile(path.join(dirA, 'file.txt'), 'contentA');
+  await fs.promises.writeFile(path.join(dirB, 'file.txt'), 'contentB');
+
+  const result = await compareDirectories(dirA, dirB);
+  expect(result).toEqual({ added: [], removed: [], modified: ['file.txt'] });
+});
+
+test("does not report files with identical bytes but different modification timestamps as modified", async () => {
+  const dirA = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const dirB = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  await fs.promises.writeFile(path.join(dirA, 'file.txt'), 'content');
+  await fs.promises.writeFile(path.join(dirB, 'file.txt'), 'content');
+
+  // Change the modification timestamp of file in dirA
+  await fs.promises.utimes(path.join(dirA, 'file.txt'), new Date(), new Date(Date.now() + 1000));
+
+  const result = await compareDirectories(dirA, dirB);
+  expect(result).toEqual({ added: [], removed: [], modified: [] });
+});
+```

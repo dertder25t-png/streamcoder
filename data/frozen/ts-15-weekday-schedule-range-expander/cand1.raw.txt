@@ -1,0 +1,51 @@
+```ts
+enum Weekday {
+  Monday = 'Mon',
+  Tuesday = 'Tue',
+  Wednesday = 'Wed',
+  Thursday = 'Thu',
+  Friday = 'Fri',
+  Saturday = 'Sat',
+  Sunday = 'Sun',
+}
+
+function expandWeekdaySpec(spec: string): Weekday[] {
+  if (!spec) {
+    throw new Error('Empty spec');
+  }
+
+  const tokens = spec.split(',');
+  const weekdays: Weekday[] = [];
+
+  for (const token of tokens) {
+    const [start, end] = token.split('-').map(s => s.trim().toLowerCase());
+
+    if (!start || !end) {
+      throw new Error(`Malformed range: ${token}`);
+    }
+
+    if (start === end) {
+      weekdays.push(Weekday[start.toUpperCase()]);
+    } else if (start < end) {
+      const startDay = Weekday[start.toUpperCase()];
+      const endDay = Weekday[end.toUpperCase()];
+      for (let i = startDay; i <= endDay; i++) {
+        weekdays.push(i);
+      }
+    } else {
+      const startDay = Weekday[start.toUpperCase()];
+      const endDay = Weekday[end.toUpperCase()];
+      for (let i = startDay; i <= Weekday.Sunday; i++) {
+        weekdays.push(i);
+      }
+      for (let i = Weekday.Monday; i <= endDay; i++) {
+        weekdays.push(i);
+      }
+    }
+  }
+
+  return Array.from(new Set(weekdays)).sort((a, b) => a - b);
+}
+
+export { expandWeekdaySpec };
+```

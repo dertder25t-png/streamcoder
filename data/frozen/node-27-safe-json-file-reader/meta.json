@@ -1,0 +1,25 @@
+{
+ "id": "node-27-safe-json-file-reader",
+ "topic": "node",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/node-27-safe-json-file-reader/solution.ts(10,13): error TS18046: 'error' is of typ",
+  "type error: .runs/node-27-safe-json-file-reader/solution.ts(10,13): error TS18046: 'error' is of typ",
+  "type error: .runs/node-27-safe-json-file-reader/solution.ts(8,9): error TS18046: 'error' is of type ",
+  "type error: .runs/node-27-safe-json-file-reader/solution.ts(10,9): error TS18046: 'error' is of type"
+ ],
+ "cand_tokens": [
+  126,
+  126,
+  109,
+  117
+ ],
+ "gen_seconds": 31.5,
+ "type_only": false,
+ "errors": []
+}

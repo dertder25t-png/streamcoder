@@ -1,0 +1,25 @@
+{
+ "id": "react-04-accessible-accordion-group",
+ "topic": "react",
+ "cand_hidden": [
+  true,
+  true,
+  false,
+  true
+ ],
+ "cand_hidden_err": [
+  "",
+  "",
+  "test failed: single mode: opening one closes the other; clicking the open one closes it",
+  ""
+ ],
+ "cand_tokens": [
+  320,
+  424,
+  331,
+  314
+ ],
+ "gen_seconds": 55.6,
+ "type_only": false,
+ "errors": []
+}

@@ -1,0 +1,25 @@
+{
+ "id": "react-21-optimistic-feature-flag-list-with",
+ "topic": "react",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/react-21-optimistic-feature-flag-list-with/solution.tsx(36,48): error TS2304: Cann",
+  "type error: .runs/react-21-optimistic-feature-flag-list-with/solution.tsx(28,50): error TS2304: Cann",
+  "test failed: reflects the initial state; updates synchronously on click, before onToggle resolves, a",
+  "type error:   Type '(prev: Set<string>) => boolean' is not assignable to type '(prevState: Set<strin"
+ ],
+ "cand_tokens": [
+  475,
+  462,
+  501,
+  504
+ ],
+ "gen_seconds": 46.9,
+ "type_only": false,
+ "errors": []
+}

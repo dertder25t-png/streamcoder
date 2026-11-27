@@ -1,0 +1,28 @@
+- Replaces known keys with their stringified values without recursively re-interpolating replacement values that themselves contain {{...}}.
+- When strict is true, any missing key throws an Error naming the missing variable.
+- When strict is omitted or false, unknown placeholders remain untouched in the output.
+
+```ts
+test("replaces known keys with their stringified values", () => {
+  expect(renderTemplate("Hello, {{name}}!", { name: "Alice" })).toBe("Hello, Alice!");
+  expect(renderTemplate("The answer is {{answer}}.", { answer: 42 })).toBe("The answer is 42.");
+  expect(renderTemplate("Empty value: {{empty}}.", { empty: "" })).toBe("Empty value: .");
+});
+
+test("does not re-interpolate replacement values", () => {
+  expect(renderTemplate("Value: {{value}}.", { value: "{{nested}}" })).toBe("Value: {{nested}}.");
+});
+
+test("throws an error for missing keys when strict is true", () => {
+  expect(() => renderTemplate("Missing key: {{unknown}}.", {}, { strict: true })).toThrow("unknown");
+});
+
+test("leaves unknown placeholders untouched when strict is false", () => {
+  expect(renderTemplate("Unknown key: {{unknown}}.", {})).toBe("Unknown key: {{unknown}}.");
+});
+
+test("uses stringified values for 0 and empty string", () => {
+  expect(renderTemplate("Zero: {{zero}}.", { zero: 0 })).toBe("Zero: 0.");
+  expect(renderTemplate("Empty string: {{empty}}.", { empty: "" })).toBe("Empty string: .");
+});
+```

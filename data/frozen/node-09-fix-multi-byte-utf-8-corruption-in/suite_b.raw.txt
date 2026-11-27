@@ -1,0 +1,42 @@
+- Correctly reconstructs multi-byte UTF-8 characters (such as 4-byte emoji) split across 1-byte buffer chunks without emitting replacement characters (\uFFFD).
+- Handles empty streams by resolving to "".
+- Rejects immediately if the readable stream emits an error event.
+
+```ts
+import { Readable } from "node:stream";
+import { readUtf8Stream } from "./readUtf8Stream"; // Adjust the import path as necessary
+
+test("correctly reconstructs multi-byte UTF-8 characters", async () => {
+  const stream = new Readable({
+    read() {},
+  });
+  const chunk1 = Buffer.from([0xF0, 0x9F, 0x98, 0x80]); // 😀
+  const chunk2 = Buffer.from([0xF0, 0x9F, 0x98, 0x81]); // 😁
+  stream.push(chunk1);
+  stream.push(chunk2);
+  stream.push(null);
+
+  const result = await readUtf8Stream(stream);
+  expect(result).toBe("😀😁");
+});
+
+test("handles empty streams by resolving to ''", async () => {
+  const stream = new Readable({
+    read() {},
+  });
+  stream.push(null);
+
+  const result = await readUtf8Stream(stream);
+  expect(result).toBe("");
+});
+
+test("rejects immediately if the readable stream emits an error event", async () => {
+  const stream = new Readable({
+    read() {},
+  });
+  const error = new Error("Test error");
+  stream.emit("error", error);
+
+  await expect(readUtf8Stream(stream)).rejects.toThrow("Test error");
+});
+```

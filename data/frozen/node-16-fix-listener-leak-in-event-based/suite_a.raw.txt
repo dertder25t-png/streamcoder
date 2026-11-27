@@ -1,0 +1,46 @@
+- Resolves with the emitted payload if eventName fires before timeoutMs, clearing the timer and removing all attached listeners.
+- Rejects with a timeout Error when timeoutMs elapses and removes both eventName and error listeners from the emitter.
+- Rejects immediately with the emitted error if the emitter emits "error" before eventName, leaving zero listeners behind.
+
+```ts
+import { waitForEventWithTimeout } from './waitForEventWithTimeout'; // Adjust the import path as necessary
+import { EventEmitter } from 'node:events';
+import { test, expect, vi } from 'vitest';
+
+test("resolves with the emitted payload if eventName fires before timeoutMs", async () => {
+  const emitter = new EventEmitter();
+  const eventName = 'data';
+  const payload = 'Hello, world!';
+  const timeoutMs = 1000;
+
+  emitter.emit(eventName, payload);
+
+  const result = await waitForEventWithTimeout(emitter, eventName, timeoutMs);
+  expect(result).toBe(payload);
+});
+
+test("rejects with a timeout Error when timeoutMs elapses and removes both eventName and error listeners from the emitter", async () => {
+  const emitter = new EventEmitter();
+  const eventName = 'data';
+  const timeoutMs = 100;
+
+  const promise = waitForEventWithTimeout(emitter, eventName, timeoutMs);
+
+  await vi.waitUntil(() => promise.isRejected);
+  expect(promise).rejects.toThrow('timeout');
+});
+
+test("rejects immediately with the emitted error if the emitter emits 'error' before eventName, leaving zero listeners behind", async () => {
+  const emitter = new EventEmitter();
+  const eventName = 'data';
+  const error = new Error('Something went wrong');
+  const timeoutMs = 1000;
+
+  emitter.emit('error', error);
+
+  const promise = waitForEventWithTimeout(emitter, eventName, timeoutMs);
+
+  await vi.waitUntil(() => promise.isRejected);
+  expect(promise).rejects.toThrow(error);
+});
+```

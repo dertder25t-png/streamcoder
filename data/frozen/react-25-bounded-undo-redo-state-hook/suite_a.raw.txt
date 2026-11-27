@@ -1,0 +1,72 @@
+- `set(next)` supports both direct values and functional updaters.
+- `set(next)` discards any redo branch after an undo.
+- `set(next)` skips pushing a history entry when `Object.is(prev, next)` is true.
+- Past history never exceeds `maxHistory` entries, dropping the oldest snapshot when full.
+- `undo`, `redo`, `set`, and `reset` maintain stable function identities across renders.
+
+```tsx
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import { useUndoableState } from './useUndoableState';
+
+test("set(next) supports both direct values and functional updaters", async () => {
+  const { set, state } = useUndoableState(0);
+
+  set(1);
+  expect(state).toBe(1);
+
+  set(prev => prev + 1);
+  expect(state).toBe(2);
+});
+
+test("set(next) discards any redo branch after an undo", async () => {
+  const { set, undo, state } = useUndoableState(0);
+
+  set(1);
+  set(2);
+  undo();
+  expect(state).toBe(1);
+
+  set(3);
+  expect(state).toBe(3);
+  expect(undo).not.toBeCalled();
+});
+
+test("set(next) skips pushing a history entry when Object.is(prev, next) is true", async () => {
+  const { set, state } = useUndoableState(0);
+
+  set(1);
+  set(1);
+  expect(state).toBe(1);
+  expect(set).toBeCalledTimes(2);
+});
+
+test("Past history never exceeds maxHistory entries, dropping the oldest snapshot when full", async () => {
+  const { set, state } = useUndoableState(0, 2);
+
+  set(1);
+  set(2);
+  set(3);
+  expect(state).toBe(3);
+  expect(set).toBeCalledTimes(3);
+  expect(set).nthCalledWith(1, 1);
+  expect(set).nthCalledWith(2, 2);
+  expect(set).nthCalledWith(3, 3);
+});
+
+test("undo, redo, set, and reset maintain stable function identities across renders", async () => {
+  const { set, undo, redo, reset, state } = useUndoableState(0);
+
+  const setRef = set;
+  const undoRef = undo;
+  const redoRef = redo;
+  const resetRef = reset;
+
+  render(<div />);
+  const { set: newSet, undo: newUndo, redo: newRedo, reset: newReset } = useUndoableState(0);
+
+  expect(setRef).toBe(newSet);
+  expect(undoRef).toBe(newUndo);
+  expect(redoRef).toBe(newRedo);
+  expect(resetRef).toBe(newReset);
+});
+```

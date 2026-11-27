@@ -1,0 +1,25 @@
+{
+ "id": "node-28-safe-unlink-helper",
+ "topic": "node",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/node-28-safe-unlink-helper/solution.ts(8,9): error TS18046: 'error' is of type 'un",
+  "type error: .runs/node-28-safe-unlink-helper/solution.ts(8,9): error TS18046: 'error' is of type 'un",
+  "type error: .runs/node-28-safe-unlink-helper/solution.ts(8,9): error TS18046: 'error' is of type 'un",
+  "type error: .runs/node-28-safe-unlink-helper/solution.ts(8,9): error TS18046: 'err' is of type 'unkn"
+ ],
+ "cand_tokens": [
+  75,
+  79,
+  75,
+  75
+ ],
+ "gen_seconds": 24.6,
+ "type_only": false,
+ "errors": []
+}

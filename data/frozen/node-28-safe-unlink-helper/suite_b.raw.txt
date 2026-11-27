@@ -1,0 +1,51 @@
+- Test that `removeFileSafe` returns `false` if the file does not exist.
+- Test that `removeFileSafe` deletes the file and returns `true` if the file exists.
+- Test that `removeFileSafe` handles empty file paths gracefully.
+- Test that `removeFileSafe` handles invalid file paths gracefully.
+- Test that `removeFileSafe` can be called multiple times without throwing errors.
+- Test that `removeFileSafe` cleans up resources after execution.
+
+```ts
+import { removeFileSafe } from './removeFileSafe'; // Adjust the import path as necessary
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
+
+test("returns false if the file does not exist", async () => {
+  const filePath = path.join(os.tmpdir(), "nonexistent.txt");
+  expect(await removeFileSafe(filePath)).toBe(false);
+});
+
+test("deletes the file and returns true if the file exists", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const filePath = path.join(dir, "test.txt");
+  await fs.promises.writeFile(filePath, "test content");
+  expect(await removeFileSafe(filePath)).toBe(true);
+  await expect(fs.promises.readFile(filePath)).rejects.toThrow("ENOENT");
+});
+
+test("handles empty file paths gracefully", async () => {
+  expect(await removeFileSafe("")).toBe(false);
+});
+
+test("handles invalid file paths gracefully", async () => {
+  expect(await removeFileSafe("/invalid/path")).toBe(false);
+});
+
+test("can be called multiple times without throwing errors", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const filePath = path.join(dir, "test.txt");
+  await fs.promises.writeFile(filePath, "test content");
+  expect(await removeFileSafe(filePath)).toBe(true);
+  expect(await removeFileSafe(filePath)).toBe(false);
+  await expect(fs.promises.readFile(filePath)).rejects.toThrow("ENOENT");
+});
+
+test("cleans up resources after execution", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const filePath = path.join(dir, "test.txt");
+  await fs.promises.writeFile(filePath, "test content");
+  await removeFileSafe(filePath);
+  await expect(fs.promises.readFile(filePath)).rejects.toThrow("ENOENT");
+});
+```

@@ -1,0 +1,67 @@
+```ts
+probe("basic deletion", async () => {
+  vi.useFakeTimers();
+  const { unmount } = render(<DeferredActionList items={[{ id: "1", label: "Alpha" }]} onCommitDelete={vi.fn()} />);
+  fireEvent.click(screen.getByRole("button", { name: "Delete Alpha" }));
+  expect(screen.getByText("Deleting...")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Undo" })).toBeInTheDocument();
+  vi.advanceTimersByTime(3000);
+  expect(screen.getByText("Alpha")).not.toBeInTheDocument();
+  unmount();
+  return snap();
+});
+
+probe("undo deletion", async () => {
+  vi.useFakeTimers();
+  const { unmount } = render(<DeferredActionList items={[{ id: "1", label: "Alpha" }]} onCommitDelete={vi.fn()} />);
+  fireEvent.click(screen.getByRole("button", { name: "Delete Alpha" }));
+  expect(screen.getByText("Deleting...")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Undo" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+  expect(screen.getByText("Alpha")).toBeInTheDocument();
+  unmount();
+  return snap();
+});
+
+probe("staggered deletions", async () => {
+  vi.useFakeTimers();
+  const { unmount } = render(<DeferredActionList items={[{ id: "1", label: "Alpha" }, { id: "2", label: "Beta" }]} onCommitDelete={vi.fn()} />);
+  fireEvent.click(screen.getByRole("button", { name: "Delete Alpha" }));
+  fireEvent.click(screen.getByRole("button", { name: "Delete Beta" }));
+  expect(screen.getByText("Deleting... Alpha")).toBeInTheDocument();
+  expect(screen.getByText("Deleting... Beta")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Undo Alpha" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Undo Beta" })).toBeInTheDocument();
+  vi.advanceTimersByTime(3000);
+  expect(screen.getByText("Alpha")).not.toBeInTheDocument();
+  expect(screen.getByText("Beta")).not.toBeInTheDocument();
+  unmount();
+  return snap();
+});
+
+probe("onCommitDelete identity change", async () => {
+  vi.useFakeTimers();
+  const onCommitDelete = vi.fn();
+  const { unmount } = render(<DeferredActionList items={[{ id: "1", label: "Alpha" }]} onCommitDelete={onCommitDelete} />);
+  fireEvent.click(screen.getByRole("button", { name: "Delete Alpha" }));
+  expect(screen.getByText("Deleting...")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Undo" })).toBeInTheDocument();
+  onCommitDelete.mockImplementation(() => {});
+  vi.advanceTimersByTime(3000);
+  expect(onCommitDelete).not.toHaveBeenCalled();
+  unmount();
+  return snap();
+});
+
+probe("external item removal", async () => {
+  vi.useFakeTimers();
+  const { unmount } = render(<DeferredActionList items={[{ id: "1", label: "Alpha" }]} onCommitDelete={vi.fn()} />);
+  fireEvent.click(screen.getByRole("button", { name: "Delete Alpha" }));
+  expect(screen.getByText("Deleting...")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Undo" })).toBeInTheDocument();
+  unmount();
+  vi.advanceTimersByTime(3000);
+  expect(screen.queryByText("Alpha")).not.toBeInTheDocument();
+  return snap();
+});
+```

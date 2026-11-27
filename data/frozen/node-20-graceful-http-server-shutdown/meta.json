@@ -1,0 +1,25 @@
+{
+ "id": "node-20-graceful-http-server-shutdown",
+ "topic": "node",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "test failed: force-closes stalled sockets after drainTimeoutMs; returns the same promise for concurr",
+  "type error: .runs/node-20-graceful-http-server-shutdown/solution.ts(51,7): error TS2322: Type 'null'",
+  "type error: .runs/node-20-graceful-http-server-shutdown/solution.ts(16,24): error TS2339: Property '",
+  "type error: .runs/node-20-graceful-http-server-shutdown/solution.ts(40,22): error TS2339: Property '"
+ ],
+ "cand_tokens": [
+  268,
+  311,
+  194,
+  344
+ ],
+ "gen_seconds": 41.6,
+ "type_only": false,
+ "errors": []
+}

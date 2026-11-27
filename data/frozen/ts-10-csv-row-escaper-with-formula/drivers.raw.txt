@@ -1,0 +1,37 @@
+```ts
+probe("empty row", async () => {
+  return formatCsvRow([]);
+});
+
+probe("single string", async () => {
+  return formatCsvRow(["Hello, World"]);
+});
+
+probe("string with special characters", async () => {
+  return formatCsvRow(['"Hello", "World"']);
+});
+
+probe("number", async () => {
+  return formatCsvRow([123]);
+});
+
+probe("boolean", async () => {
+  return formatCsvRow([true]);
+});
+
+probe("null", async () => {
+  return formatCsvRow([null]);
+});
+
+probe("undefined", async () => {
+  return formatCsvRow([undefined]);
+});
+
+probe("string starting with special character", async () => {
+  return formatCsvRow(["=Hello"]);
+});
+
+probe("negative number", async () => {
+  return formatCsvRow([-42]);
+});
+```

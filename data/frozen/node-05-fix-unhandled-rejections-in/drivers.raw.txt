@@ -1,0 +1,31 @@
+```ts
+probe("empty array", async () => {
+  return await readExistingFiles([]);
+});
+
+probe("non-existent file", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const filePath = path.join(dir, "non-existent.txt");
+  return await readExistingFiles([filePath]);
+});
+
+probe("existing file", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const filePath = path.join(dir, "existing.txt");
+  await fs.promises.writeFile(filePath, "Hello, world!");
+  return await readExistingFiles([filePath]);
+});
+
+probe("existing and non-existent files", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  const existingFilePath = path.join(dir, "existing.txt");
+  const nonExistentFilePath = path.join(dir, "non-existent.txt");
+  await fs.promises.writeFile(existingFilePath, "Hello, world!");
+  return await readExistingFiles([existingFilePath, nonExistentFilePath]);
+});
+
+probe("directory path", async () => {
+  const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "pr-"));
+  return await readExistingFiles([dir]);
+});
+```

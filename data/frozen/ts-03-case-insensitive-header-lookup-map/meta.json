@@ -1,0 +1,25 @@
+{
+ "id": "ts-03-case-insensitive-header-lookup-map",
+ "topic": "typescript",
+ "cand_hidden": [
+  false,
+  false,
+  true,
+  true
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/ts-03-case-insensitive-header-lookup-map/solution.ts(28,34): error TS1434: Unexpec",
+  "type error: .runs/ts-03-case-insensitive-header-lookup-map/solution.ts(29,34): error TS1434: Unexpec",
+  "",
+  ""
+ ],
+ "cand_tokens": [
+  375,
+  385,
+  397,
+  331
+ ],
+ "gen_seconds": 38.7,
+ "type_only": false,
+ "errors": []
+}

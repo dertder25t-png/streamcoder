@@ -1,0 +1,26 @@
+```ts
+import { Readable } from 'stream';
+
+export async function measureStream(readable: Readable): Promise<{ bytes: number; lines: number }> {
+  let bytes = 0;
+  let lines = 0;
+  let trailingNewline = false;
+
+  readable.on('data', (chunk) => {
+    bytes += chunk.length;
+    const data = chunk.toString('utf-8');
+    const lineBreaks = data.match(/\n/g);
+    lines += (lineBreaks ? lineBreaks.length : 0);
+    trailingNewline = data.endsWith('\n');
+  });
+
+  return new Promise((resolve) => {
+    readable.on('end', () => {
+      if (trailingNewline) {
+        lines++;
+      }
+      resolve({ bytes, lines });
+    });
+  });
+}
+```

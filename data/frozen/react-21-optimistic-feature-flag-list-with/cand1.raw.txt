@@ -1,0 +1,61 @@
+```tsx
+import React, { useState, useRef } from 'react';
+
+type FeatureFlag = {
+  id: string;
+  label: string;
+  enabled: boolean;
+};
+
+type OptimisticFeatureFlagsProps = {
+  flags: FeatureFlag[];
+  onToggle: (id: string, nextEnabled: boolean) => Promise<void>;
+};
+
+const OptimisticFeatureFlags: React.FC<OptimisticFeatureFlagsProps> = ({ flags, onToggle }) => {
+  const [flagStates, setFlagStates] = useState<Record<string, boolean>>(() =>
+    flags.reduce((acc, flag) => ({ ...acc, [flag.id]: flag.enabled }), {})
+  );
+  const [pendingToggles, setPendingToggles] = useState<Record<string, boolean>>({});
+
+  const toggleFlag = async (id: string) => {
+    if (pendingToggles[id]) return;
+    setPendingToggles((prev) => ({ ...prev, [id]: true }));
+    try {
+      const nextEnabled = !flagStates[id];
+      setFlagStates((prev) => ({ ...prev, [id]: nextEnabled }));
+      await onToggle(id, nextEnabled);
+    } catch (error) {
+      setFlagStates((prev) => ({ ...prev, [id]: !nextEnabled }));
+    } finally {
+      setPendingToggles((prev) => ({ ...prev, [id]: false }));
+    }
+  };
+
+  return (
+    <div>
+      {flags.map((flag) => (
+        <div key={flag.id}>
+          <label>
+            {flag.label}
+            <input
+              type="checkbox"
+              checked={flagStates[flag.id]}
+              onChange={() => toggleFlag(flag.id)}
+              disabled={pendingToggles[flag.id]}
+              role={flagStates[flag.id] ? 'switch' : 'checkbox'}
+              aria-checked={flagStates[flag.id]}
+            />
+          </label>
+          {pendingToggles[flag.id] && <span>Updating...</span>}
+          {flagStates[flag.id] !== flag.enabled && (
+            <span role="alert">Failed to update</span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export { OptimisticFeatureFlags };
+```

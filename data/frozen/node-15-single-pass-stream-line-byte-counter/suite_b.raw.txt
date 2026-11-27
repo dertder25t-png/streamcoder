@@ -1,0 +1,51 @@
+- An empty stream resolves to { bytes: 0, lines: 0 }.
+- Counts both trailing-newline files ("a\nb\n" → 2 lines) and files without a final newline ("a\nb" → 2 lines) accurately across arbitrary chunk splits.
+- Counts multi-byte UTF-8 characters by byte length rather than JavaScript string code unit length.
+
+```ts
+import { measureStream } from './measureStream'; // Adjust the import path as necessary
+import { Readable } from 'stream';
+import { promises as fs } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
+
+describe('measureStream', () => {
+  afterEach(async () => {
+    const dir = await fs.promises.mkdtemp(join(tmpdir(), "st-"));
+    await fs.promises.rm(dir, { recursive: true, force: true });
+  });
+
+  test('empty stream resolves to { bytes: 0, lines: 0 }', async () => {
+    const stream = new Readable();
+    const result = await measureStream(stream);
+    expect(result).toEqual({ bytes: 0, lines: 0 });
+  });
+
+  test('counts trailing-newline files accurately', async () => {
+    const dir = await fs.promises.mkdtemp(join(tmpdir(), "st-"));
+    const filePath = join(dir, 'file.txt');
+    await fs.promises.writeFile(filePath, 'a\nb\n');
+    const stream = fs.createReadStream(filePath);
+    const result = await measureStream(stream);
+    expect(result).toEqual({ bytes: 5, lines: 2 });
+  });
+
+  test('counts files without a final newline accurately', async () => {
+    const dir = await fs.promises.mkdtemp(join(tmpdir(), "st-"));
+    const filePath = join(dir, 'file.txt');
+    await fs.promises.writeFile(filePath, 'a\nb');
+    const stream = fs.createReadStream(filePath);
+    const result = await measureStream(stream);
+    expect(result).toEqual({ bytes: 4, lines: 2 });
+  });
+
+  test('counts multi-byte UTF-8 characters by byte length', async () => {
+    const dir = await fs.promises.mkdtemp(join(tmpdir(), "st-"));
+    const filePath = join(dir, 'file.txt');
+    await fs.promises.writeFile(filePath, '你好\n世界');
+    const stream = fs.createReadStream(filePath);
+    const result = await measureStream(stream);
+    expect(result).toEqual({ bytes: 12, lines: 2 });
+  });
+});
+```

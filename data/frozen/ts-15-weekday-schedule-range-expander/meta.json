@@ -1,0 +1,25 @@
+{
+ "id": "ts-15-weekday-schedule-range-expander",
+ "topic": "typescript",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/ts-15-weekday-schedule-range-expander/solution.ts(33,125): error TS2339: Property ",
+  "type error: .runs/ts-15-weekday-schedule-range-expander/solution.ts(46,55): error TS2362: The left-h",
+  "type error: .runs/ts-15-weekday-schedule-range-expander/solution.ts(1,25): error TS2307: Cannot find",
+  "type error: .runs/ts-15-weekday-schedule-range-expander/solution.ts(1,25): error TS2307: Cannot find"
+ ],
+ "cand_tokens": [
+  545,
+  329,
+  488,
+  336
+ ],
+ "gen_seconds": 34.2,
+ "type_only": false,
+ "errors": []
+}

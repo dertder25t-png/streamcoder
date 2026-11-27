@@ -1,0 +1,25 @@
+{
+ "id": "node-17-streaming-ndjson-batcher-with-error",
+ "topic": "node",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "test failed: batches parsed values and flushes the partial batch at the end; flushes a final line th",
+  "test failed: batches parsed values and flushes the partial batch at the end; flushes a final line th",
+  "test failed: batches parsed values and flushes the partial batch at the end; flushes a final line th",
+  "test failed: handles multi-byte UTF-8 split at every byte boundary, with \\n and \\r\\n endings"
+ ],
+ "cand_tokens": [
+  341,
+  333,
+  429,
+  371
+ ],
+ "gen_seconds": 40.6,
+ "type_only": false,
+ "errors": []
+}

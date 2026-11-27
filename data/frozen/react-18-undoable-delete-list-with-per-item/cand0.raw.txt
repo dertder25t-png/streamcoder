@@ -1,0 +1,83 @@
+```tsx
+import React, { useState, useEffect, useRef } from 'react';
+
+interface Item {
+  id: string;
+  label: string;
+}
+
+interface DeferredActionListProps {
+  items: Item[];
+  onCommitDelete: (id: string) => void;
+  graceMs?: number;
+}
+
+const DeferredActionList: React.FC<DeferredActionListProps> = ({ items, onCommitDelete, graceMs = 3000 }) => {
+  const [pendingDeletions, setPendingDeletions] = useState<{ [id: string]: NodeJS.Timeout | null }>({});
+  const onCommitDeleteRef = useRef(onCommitDelete);
+
+  useEffect(() => {
+    onCommitDeleteRef.current = onCommitDelete;
+  }, [onCommitDelete]);
+
+  useEffect(() => {
+    return () => {
+      for (const id in pendingDeletions) {
+        if (pendingDeletions[id]) {
+          clearTimeout(pendingDeletions[id]);
+        }
+      }
+    };
+  }, [pendingDeletions]);
+
+  const handleDeleteClick = (id: string) => {
+    const timer = setTimeout(() => {
+      onCommitDeleteRef.current(id);
+      setPendingDeletions((prev) => {
+        const newPendingDeletions = { ...prev };
+        delete newPendingDeletions[id];
+        return newPendingDeletions;
+      });
+    }, graceMs);
+
+    setPendingDeletions((prev) => ({
+      ...prev,
+      [id]: timer,
+    }));
+  };
+
+  const handleUndoClick = (id: string) => {
+    if (pendingDeletions[id]) {
+      clearTimeout(pendingDeletions[id]);
+      setPendingDeletions((prev) => {
+        const newPendingDeletions = { ...prev };
+        delete newPendingDeletions[id];
+        return newPendingDeletions;
+      });
+    }
+  };
+
+  return (
+    <ul>
+      {items.map((item) => (
+        <li key={item.id}>
+          {pendingDeletions[item.id] ? (
+            <span>
+              Deleting...
+              <button onClick={() => handleUndoClick(item.id)} aria-label={`Undo Delete ${item.label}`}>
+                Undo
+              </button>
+            </span>
+          ) : (
+            <button onClick={() => handleDeleteClick(item.id)} aria-label={`Delete ${item.label}`}>
+              Delete
+            </button>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+};
+
+export { DeferredActionList };
+```

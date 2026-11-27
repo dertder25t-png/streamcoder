@@ -1,0 +1,75 @@
+- Compresses srcPath into valid gzip output at destPath that decompresses byte-for-byte back to the original file.
+- On read error, write error, or AbortSignal cancellation, destroys all streams, rejects with the cause, and removes any partial file at destPath.
+- Never overwrites a pre-existing valid file at destPath if compression aborts partway through.
+
+```ts
+import { compressFileSafe } from "./compressFileSafe"; // Adjust the import path as necessary
+import { createReadStream, createWriteStream } from "node:fs";
+import { createGzip } from "node:zlib";
+import { mkdtemp, promises as fs } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { test, expect, vi } from "vitest";
+
+const dir = await mkdtemp(join(tmpdir(), "st-"));
+
+test("compresses srcPath into valid gzip output at destPath", async () => {
+  const srcPath = join(dir, "source.txt");
+  const destPath = join(dir, "source.txt.gz");
+  await fs.writeFile(srcPath, "Hello, world!");
+  await compressFileSafe(srcPath, destPath);
+  const decompressed = await fs.promises.readFile(destPath);
+  const gunzip = createGzip();
+  gunzip.write(decompressed);
+  gunzip.end();
+  const result = await new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    gunzip.on("data", (chunk) => chunks.push(chunk));
+    gunzip.on("end", () => resolve(Buffer.concat(chunks)));
+    gunzip.on("error", reject);
+  });
+  expect(result.toString()).toBe("Hello, world!");
+});
+
+test("destroys all streams and rejects on read error", async () => {
+  const srcPath = join(dir, "nonexistent.txt");
+  const destPath = join(dir, "output.txt.gz");
+  const error = await compressFileSafe(srcPath, destPath).catch((e) => e);
+  expect(error.message).toBe("ENOENT: no such file or directory, open '" + srcPath + "'");
+  expect(await fs.promises.access(destPath)).rejects.toThrow("ENOENT");
+});
+
+test("destroys all streams and rejects on write error", async () => {
+  const srcPath = join(dir, "source.txt");
+  const destPath = join(dir, "output.txt.gz");
+  await fs.writeFile(srcPath, "Hello, world!");
+  const writeStream = createWriteStream(destPath);
+  writeStream.destroy(new Error("write error"));
+  const error = await compressFileSafe(srcPath, destPath).catch((e) => e);
+  expect(error.message).toBe("write error");
+  expect(await fs.promises.access(destPath)).rejects.toThrow("ENOENT");
+});
+
+test("destroys all streams and rejects on AbortSignal cancellation", async () => {
+  const srcPath = join(dir, "source.txt");
+  const destPath = join(dir, "output.txt.gz");
+  await fs.writeFile(srcPath, "Hello, world!");
+  const controller = new AbortController();
+  const error = await compressFileSafe(srcPath, destPath, { signal: controller.signal }).catch((e) => e);
+  controller.abort();
+  expect(error.message).toBe("aborted");
+  expect(await fs.promises.access(destPath)).rejects.toThrow("ENOENT");
+});
+
+test("never overwrites a pre-existing valid file at destPath if compression aborts partway through", async () => {
+  const srcPath = join(dir, "source.txt");
+  const destPath = join(dir, "output.txt.gz");
+  await fs.writeFile(srcPath, "Hello, world!");
+  await fs.writeFile(destPath, "Existing content");
+  const controller = new AbortController();
+  await compressFileSafe(srcPath, destPath, { signal: controller.signal }).catch((e) => e);
+  controller.abort();
+  const content = await fs.promises.readFile(destPath);
+  expect(content.toString()).toBe("Existing content");
+});
+```

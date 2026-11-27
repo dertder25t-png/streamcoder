@@ -1,0 +1,19 @@
+```typescript
+function parseBooleanFlags(query: string): Record<string, boolean> {
+  const params = new URLSearchParams(query.replace(/^\?/, ''));
+  const result: Record<string, boolean> = {};
+
+  params.forEach((value, key) => {
+    const lowerValue = value.toLowerCase();
+    if (lowerValue === 'true' || lowerValue === '1' || lowerValue === 'yes' || lowerValue === '') {
+      result[key] = true;
+    } else if (lowerValue === 'false' || lowerValue === '0' || lowerValue === 'no') {
+      result[key] = false;
+    }
+  });
+
+  return result;
+}
+
+export { parseBooleanFlags };
+```

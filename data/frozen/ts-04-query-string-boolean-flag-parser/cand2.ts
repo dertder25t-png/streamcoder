@@ -1,0 +1,27 @@
+function parseBooleanFlags(query: string): Record<string, boolean> {
+  const booleanValues: Record<string, boolean> = {
+    true: true,
+    false: false,
+    1: true,
+    0: false,
+    yes: true,
+    no: false,
+  };
+
+  const params = new URLSearchParams(query);
+  const result: Record<string, boolean> = {};
+
+  params.forEach((value, key) => {
+    const normalizedKey = key.toLowerCase();
+    const normalizedValue = value.toLowerCase();
+    if (normalizedValue in booleanValues) {
+      result[normalizedKey] = booleanValues[normalizedValue];
+    } else if (normalizedValue === '') {
+      result[normalizedKey] = true;
+    }
+  });
+
+  return result;
+}
+
+export { parseBooleanFlags };

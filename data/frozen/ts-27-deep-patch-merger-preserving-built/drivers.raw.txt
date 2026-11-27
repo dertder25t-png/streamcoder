@@ -1,0 +1,67 @@
+```ts
+probe("merge nested objects", async () => {
+  const base = { a: { b: 1, c: { d: 2 } } };
+  const patch = { a: { b: 3, c: { d: 4, e: 5 } } };
+  return applyDeepPatch(base, patch);
+});
+
+probe("replace arrays", async () => {
+  const base = { a: [1, 2, 3] };
+  const patch = { a: [4, 5, 6] };
+  return applyDeepPatch(base, patch);
+});
+
+probe("replace Date", async () => {
+  const base = { a: new Date('2020-01-01') };
+  const patch = { a: new Date('2021-01-01') };
+  return applyDeepPatch(base, patch);
+});
+
+probe("replace RegExp", async () => {
+  const base = { a: /abc/ };
+  const patch = { a: /def/ };
+  return applyDeepPatch(base, patch);
+});
+
+probe("replace Map", async () => {
+  const base = { a: new Map([['key1', 'value1']]) };
+  const patch = { a: new Map([['key2', 'value2']]) };
+  return applyDeepPatch(base, patch);
+});
+
+probe("replace Set", async () => {
+  const base = { a: new Set(['value1']) };
+  const patch = { a: new Set(['value2']) };
+  return applyDeepPatch(base, patch);
+});
+
+probe("replace function", async () => {
+  const base = { a: () => 'old' };
+  const patch = { a: () => 'new' };
+  return applyDeepPatch(base, patch);
+});
+
+probe("merge with empty patch", async () => {
+  const base = { a: { b: 1, c: { d: 2 } } };
+  const patch = {};
+  return applyDeepPatch(base, patch);
+});
+
+probe("merge with empty base", async () => {
+  const base = {};
+  const patch = { a: { b: 1, c: { d: 2 } } };
+  return applyDeepPatch(base, patch);
+});
+
+probe("merge with null base", async () => {
+  const base = null;
+  const patch = { a: { b: 1, c: { d: 2 } } };
+  return applyDeepPatch(base, patch);
+});
+
+probe("merge with null patch", async () => {
+  const base = { a: { b: 1, c: { d: 2 } } };
+  const patch = null;
+  return applyDeepPatch(base, patch);
+});
+```

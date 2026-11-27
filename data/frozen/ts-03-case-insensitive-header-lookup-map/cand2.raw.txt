@@ -1,0 +1,61 @@
+```ts
+type HeaderMapEntry = [string, string];
+type HeaderMap = {
+  get(name: string): string | undefined;
+  set(name: string, value: string): void;
+  has(name: string): boolean;
+  delete(name: string): boolean;
+  toRecord(): Record<string, string>;
+};
+
+function createHeaderMap(entries?: Iterable<HeaderMapEntry>): HeaderMap {
+  const headerMap = new Map<string, { value: string; originalName: string }>();
+
+  const get = (name: string): string | undefined => {
+    const entry = headerMap.get(name.toLowerCase());
+    return entry ? entry.value : undefined;
+  };
+
+  const set = (name: string, value: string): void => {
+    const lowerName = name.toLowerCase();
+    if (headerMap.has(lowerName)) {
+      const entry = headerMap.get(lowerName)!;
+      entry.value = value;
+      entry.originalName = name;
+    } else {
+      headerMap.set(lowerName, { value, originalName: name });
+    }
+  };
+
+  const has = (name: string): boolean => {
+    return headerMap.has(name.toLowerCase());
+  };
+
+  const deleteHeader = (name: string): boolean => {
+    const lowerName = name.toLowerCase();
+    if (headerMap.has(lowerName)) {
+      headerMap.delete(lowerName);
+      return true;
+    }
+    return false;
+  };
+
+  const toRecord = (): Record<string, string> => {
+    const record: Record<string, string> = {};
+    headerMap.forEach(({ value, originalName }) => {
+      record[originalName] = value;
+    });
+    return record;
+  };
+
+  if (entries) {
+    for (const [name, value] of entries) {
+      set(name, value);
+    }
+  }
+
+  return { get, set, has, delete: deleteHeader, toRecord };
+}
+
+export { createHeaderMap };
+```

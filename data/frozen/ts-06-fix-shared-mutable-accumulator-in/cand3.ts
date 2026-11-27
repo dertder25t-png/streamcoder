@@ -1,0 +1,29 @@
+export interface Transaction {
+  id: string;
+  currency: string;
+  amountMinor: number; // integer minor units, e.g. cents
+}
+
+export interface Bucket {
+  count: number;
+  totalMinor: number;
+  ids: string[];
+}
+
+const DEFAULT_BUCKET: Bucket = { count: 0, totalMinor: 0, ids: [] };
+
+export function groupTransactionsByCurrency(items: Transaction[]): Record<string, Bucket> {
+  const result: Record<string, Bucket> = {};
+
+  for (const item of items) {
+    if (!result[item.currency]) {
+      result[item.currency] = { ...DEFAULT_BUCKET };
+    }
+    const bucket = result[item.currency];
+    bucket.count++;
+    bucket.totalMinor += item.amountMinor;
+    bucket.ids.push(item.id);
+  }
+
+  return result;
+}

@@ -1,0 +1,25 @@
+{
+ "id": "react-19-race-condition-safe-async-typeahead",
+ "topic": "react",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/react-19-race-condition-safe-async-typeahead/solution.tsx(25,13): error TS18047: '",
+  "type error: .runs/react-19-race-condition-safe-async-typeahead/solution.tsx(23,13): error TS18047: '",
+  "type error: .runs/react-19-race-condition-safe-async-typeahead/solution.tsx(35,15): error TS18046: '",
+  "type error: .runs/react-19-race-condition-safe-async-typeahead/solution.tsx(18,16): error TS2551: Pr"
+ ],
+ "cand_tokens": [
+  704,
+  711,
+  773,
+  739
+ ],
+ "gen_seconds": 82.4,
+ "type_only": false,
+ "errors": []
+}

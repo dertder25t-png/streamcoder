@@ -1,0 +1,11 @@
+export function formatCsvRow(cells: readonly (string | number | boolean | null | undefined)[]): string {
+  const quoted = (cell: string | number | boolean | null | undefined): string => {
+    if (cell === null || cell === undefined) return '';
+    if (typeof cell === 'number' || typeof cell === 'boolean') return String(cell);
+    if (cell.startsWith('=')) return `'${cell}`;
+    if (cell.includes(',') || cell.includes('"') || cell.includes('\n')) return `"${cell.replace(/"/g, '""')}"`;
+    return cell;
+  };
+
+  return cells.map(quoted).join(',');
+}

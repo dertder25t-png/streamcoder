@@ -1,0 +1,46 @@
+import React, { useState } from 'react';
+
+interface LimitedTextAreaProps {
+  maxLength: number;
+  warnAt: number;
+  onSubmit: (value: string) => void;
+}
+
+export const LimitedTextArea: React.FC<LimitedTextAreaProps> = ({ maxLength, warnAt, onSubmit }) => {
+  const [value, setValue] = useState<string>('');
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>): void => {
+    const newValue = event.target.value;
+    setValue(newValue);
+  };
+
+  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>): void => {
+    event.preventDefault();
+    if (value.trim() && value.length <= maxLength) {
+      onSubmit(value);
+    }
+  };
+
+  const remaining = maxLength - value.length;
+  const isWarning = remaining <= warnAt;
+  const isError = remaining < 0;
+
+  return (
+    <form onSubmit={handleFormSubmit}>
+      <textarea
+        value={value}
+        onChange={handleInputChange}
+        maxLength={maxLength}
+        required
+      />
+      <div>
+        {remaining} characters left
+        {isWarning && <span data-state="warning"> (warning)</span>}
+        {isError && <span data-state="error"> (error)</span>}
+      </div>
+      <button type="submit" disabled={!value.trim() || value.length > maxLength}>
+        Submit
+      </button>
+    </form>
+  );
+};

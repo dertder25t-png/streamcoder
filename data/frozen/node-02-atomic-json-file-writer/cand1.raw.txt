@@ -1,0 +1,19 @@
+```ts
+import { promises as fs, existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { v4 as uuidv4 } from 'uuid';
+
+export async function writeJsonAtomic(filePath: string, data: unknown): Promise<void> {
+    const tempFile = join(dirname(filePath), `.${basename(filePath)}.tmp.${uuidv4()}`);
+
+    try {
+        await fs.writeFile(tempFile, JSON.stringify(data, null, 2) + '\n', 'utf8');
+        await fs.rename(tempFile, filePath);
+    } catch (error) {
+        if (existsSync(tempFile)) {
+            await fs.unlink(tempFile);
+        }
+        throw error;
+    }
+}
+```

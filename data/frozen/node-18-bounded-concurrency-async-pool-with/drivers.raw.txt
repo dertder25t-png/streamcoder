@@ -1,0 +1,37 @@
+```ts
+probe("empty items", async () => {
+  const result = await runTaskPool([], 1, async (item) => item);
+  return result;
+});
+
+probe("single item", async () => {
+  const result = await runTaskPool(["a"], 1, async (item) => item);
+  return result;
+});
+
+probe("multiple items", async () => {
+  const result = await runTaskPool(["a", "b", "c"], 2, async (item) => item);
+  return result;
+});
+
+probe("concurrency limit", async () => {
+  const result = await runTaskPool(["a", "b", "c"], 1, async (item) => item);
+  return result;
+});
+
+probe("worker rejects", async () => {
+  const result = await runTaskPool(["a", "b", "c"], 2, async (item) => {
+    if (item === "b") throw new Error("rejected");
+    return item;
+  });
+  return result;
+});
+
+probe("signal abort", async () => {
+  const controller = new AbortController();
+  const signal = controller.signal;
+  controller.abort();
+  const result = await runTaskPool(["a", "b", "c"], 2, async (item) => item, { signal });
+  return result;
+});
+```

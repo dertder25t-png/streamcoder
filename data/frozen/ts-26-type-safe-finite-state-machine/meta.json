@@ -1,0 +1,25 @@
+{
+ "id": "ts-26-type-safe-finite-state-machine",
+ "topic": "typescript",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/ts-26-type-safe-finite-state-machine/solution.test.ts(76,5): error TS2741: Propert",
+  "type error: .runs/ts-26-type-safe-finite-state-machine/solution.test.ts(78,7): error TS2578: Unused ",
+  "type error: .runs/ts-26-type-safe-finite-state-machine/solution.test.ts(76,5): error TS2741: Propert",
+  "type error: .runs/ts-26-type-safe-finite-state-machine/solution.test.ts(76,5): error TS2741: Propert"
+ ],
+ "cand_tokens": [
+  246,
+  200,
+  224,
+  274
+ ],
+ "gen_seconds": 41.3,
+ "type_only": false,
+ "errors": []
+}

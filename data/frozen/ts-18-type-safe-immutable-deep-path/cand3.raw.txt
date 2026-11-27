@@ -1,0 +1,60 @@
+```ts
+type DotPath<T> = T extends object ? {
+    [K in keyof T]: K extends string
+        ? T[K] extends object ? `${K}.${DotPath<T[K]>}` : K
+        : never
+}[keyof T] : never;
+
+type PathValue<T, P extends DotPath<T>> = P extends `${infer K}.${infer R}`
+    ? K extends keyof T ? PathValue<T[K], R> : never
+    : P extends keyof T ? T[P] : never;
+
+function setByPath<T, P extends DotPath<T>>(obj: T, path: P, value: PathValue<T, P>): T {
+    if (typeof path !== 'string') {
+        throw new Error('Path must be a string');
+    }
+    if (path.includes('__proto__') || path.includes('constructor') || path.includes('prototype')) {
+        throw new Error('Invalid path');
+    }
+
+    const parts = path.split('.');
+    let current = { ...obj };
+
+    for (let i = 0; i < parts.length - 1; i++) {
+        const key = parts[i];
+        if (!(key in current)) {
+            current[key] = {} as any;
+        }
+        current = { ...current[key] };
+    }
+
+    const lastKey = parts[parts.length - 1];
+    if (!(lastKey in current)) {
+        current[lastKey] = value;
+    } else {
+        current[lastKey] = { ...current[lastKey], ...value };
+    }
+
+    return obj;
+}
+
+// Test cases
+const obj = { a: { b: { c: 1 } } };
+
+const newObj = setByPath(obj, 'a.b.c', 2);
+
+console.log(newObj); // { a: { b: { c: 2 } } }
+console.log(obj); // { a: { b: { c: 1 } } }
+
+// @ts-expect-error
+setByPath(obj, 'a.b.d', 2);
+
+// @ts-expect-error
+setByPath(obj, '__proto__', 2);
+
+// @ts-expect-error
+setByPath(obj, 'constructor', 2);
+
+// @ts-expect-error
+setByPath(obj, 'prototype', 2);
+```

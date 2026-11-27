@@ -1,0 +1,30 @@
+```typescript
+import { Middleware } from './types';
+
+export type Middleware<Ctx> = (ctx: Ctx, next: () => Promise<void>) => Promise<void> | void;
+
+export function composeMiddleware<Ctx>(
+  middlewares: readonly Middleware<Ctx>[],
+): (ctx: Ctx) => Promise<void> {
+  return async (ctx: Ctx): Promise<void> => {
+    let nextCalled = false;
+    const dispatch = async (i: number): Promise<void> => {
+      const fn = middlewares[i];
+      if (!fn) return;
+      try {
+        if (nextCalled) {
+          throw new Error('next() called multiple times');
+        }
+        nextCalled = true;
+        await fn(ctx, async () => {
+          await dispatch(i + 1);
+          nextCalled = false;
+        });
+      } catch (err) {
+        throw err;
+      }
+    };
+    await dispatch(0);
+  };
+}
+```

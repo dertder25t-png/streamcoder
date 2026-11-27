@@ -1,0 +1,26 @@
+function movingWindowMean(values: readonly number[], windowSize: number): number[] {
+  if (!Number.isInteger(windowSize) || windowSize <= 0) {
+    throw new RangeError("windowSize must be a positive integer");
+  }
+
+  if (values.length < windowSize) {
+    return [];
+  }
+
+  const result: number[] = [];
+  let windowSum = 0;
+
+  for (let i = 0; i < values.length; i++) {
+    windowSum += values[i];
+    if (i >= windowSize) {
+      windowSum -= values[i - windowSize];
+    }
+    if (i >= windowSize - 1) {
+      result.push(windowSum / windowSize);
+    }
+  }
+
+  return result;
+}
+
+export { movingWindowMean };

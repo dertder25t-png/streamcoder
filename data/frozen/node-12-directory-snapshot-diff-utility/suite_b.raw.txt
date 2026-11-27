@@ -1,0 +1,78 @@
+- Identifies files present only in dirB as added, only in dirA as removed, and present in both with differing byte content as modified.
+- Files with identical bytes but different modification timestamps are not reported as modified.
+- Returns sorted forward-slash relative paths across nested subdirectories.
+- Handles empty or invalid input.
+- Handles boundaries (single file, single directory).
+- Handles repeated calls.
+- Cleans up timers, listeners, files, or other resources.
+
+```ts
+import { compareDirectories } from './compareDirectories'; // Adjust the import path as necessary
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
+
+test("identifies files present only in dirB as added", async () => {
+  const dirA = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const dirB = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  await fs.promises.writeFile(path.join(dirB, 'file.txt'), 'content');
+
+  const result = await compareDirectories(dirA, dirB);
+  expect(result).toEqual({ added: ['file.txt'], removed: [], modified: [] });
+  await fs.promises.rm(dirA, { recursive: true });
+  await fs.promises.rm(dirB, { recursive: true });
+});
+
+test("identifies files present only in dirA as removed", async () => {
+  const dirA = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const dirB = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  await fs.promises.writeFile(path.join(dirA, 'file.txt'), 'content');
+
+  const result = await compareDirectories(dirA, dirB);
+  expect(result).toEqual({ added: [], removed: ['file.txt'], modified: [] });
+  await fs.promises.rm(dirA, { recursive: true });
+  await fs.promises.rm(dirB, { recursive: true });
+});
+
+test("identifies files present in both with differing byte content as modified", async () => {
+  const dirA = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const dirB = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  await fs.promises.writeFile(path.join(dirA, 'file.txt'), 'contentA');
+  await fs.promises.writeFile(path.join(dirB, 'file.txt'), 'contentB');
+
+  const result = await compareDirectories(dirA, dirB);
+  expect(result).toEqual({ added: [], removed: [], modified: ['file.txt'] });
+  await fs.promises.rm(dirA, { recursive: true });
+  await fs.promises.rm(dirB, { recursive: true });
+});
+
+test("handles empty or invalid input", async () => {
+  const dirA = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const dirB = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+
+  const result1 = await compareDirectories(dirA, 'nonexistent');
+  expect(result1).toEqual({ added: [], removed: [], modified: [] });
+
+  const result2 = await compareDirectories('nonexistent', dirB);
+  expect(result2).toEqual({ added: [], removed: [], modified: [] });
+
+  const result3 = await compareDirectories(dirA, dirB, 'extraArgument');
+  expect(result3).toEqual({ added: [], removed: [], modified: [] });
+
+  await fs.promises.rm(dirA, { recursive: true });
+  await fs.promises.rm(dirB, { recursive: true });
+});
+
+test("handles boundaries (single file, single directory)", async () => {
+  const dirA = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const dirB = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  await fs.promises.writeFile(path.join(dirA, 'file.txt'), 'content');
+  await fs.promises.mkdir(path.join(dirB, 'subdir'));
+  await fs.promises.writeFile(path.join(dirB, 'subdir', 'file.txt'), 'content');
+
+  const result = await compareDirectories(dirA, dirB);
+  expect(result).toEqual({ added: ['subdir/file.txt'], removed: [], modified: [] });
+  await fs.promises.rm(dirA, { recursive: true });
+  await fs.promises.rm(dirB, { recursive: true });
+});
+```

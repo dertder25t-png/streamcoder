@@ -1,0 +1,59 @@
+import type { EventEmitter } from "node:events";
+
+export function waitForEventWithTimeout(emitter: EventEmitter, eventName: string, timeoutMs: number): Promise<unknown> {
+  return new Promise<unknown>((resolve, reject) => {
+    let timeoutId: NodeJS.Timeout | null = null;
+    let eventListener: (payload: unknown) => void | null = null;
+    let errorListener: (error: Error) => void | null = null;
+
+    const handleEvent = (payload: unknown) => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      if (eventListener) {
+        emitter.removeListener(eventName, eventListener);
+        eventListener = null;
+      }
+      if (errorListener) {
+        emitter.removeListener("error", errorListener);
+        errorListener = null;
+      }
+      resolve(payload);
+    };
+
+    const handleError = (error: Error) => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      if (eventListener) {
+        emitter.removeListener(eventName, eventListener);
+        eventListener = null;
+      }
+      if (errorListener) {
+        emitter.removeListener("error", errorListener);
+        errorListener = null;
+      }
+      reject(error);
+    };
+
+    timeoutId = setTimeout(() => {
+      if (eventListener) {
+        emitter.removeListener(eventName, eventListener);
+        eventListener = null;
+      }
+      if (errorListener) {
+        emitter.removeListener("error", errorListener);
+        errorListener = null;
+      }
+      reject(new Error("timeout"));
+    }, timeoutMs);
+
+    eventListener = handleEvent;
+    errorListener = handleError;
+
+    emitter.once(eventName, eventListener);
+    emitter.once("error", errorListener);
+  });
+}

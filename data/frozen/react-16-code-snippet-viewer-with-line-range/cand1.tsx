@@ -1,0 +1,44 @@
+import React from 'react';
+
+interface HighlightedSnippetProps {
+  code: string;
+  highlightLines: string;
+}
+
+const HighlightedSnippet: React.FC<HighlightedSnippetProps> = ({ code, highlightLines }) => {
+  const lines = code.split(/\r?\n/);
+  const highlightRanges = highlightLines.split(',').map(range => {
+    const [start, end] = range.split('-').map(Number);
+    return { start, end };
+  });
+
+  const renderLine = (line: string, index: number) => {
+    const lineNumber = index + 1;
+    const isHighlighted = highlightRanges.some(({ start, end }) => lineNumber >= start && lineNumber <= end);
+
+    return (
+      <div
+        key={index}
+        data-highlighted={isHighlighted ? 'true' : 'false'}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          margin: '0 0 4px 0',
+          padding: '4px 8px',
+          backgroundColor: isHighlighted ? '#ffffd4' : 'transparent',
+        }}
+      >
+        <span style={{ color: '#999', marginRight: '8px' }}>{lineNumber}</span>
+        <span>{line}</span>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
+      {lines.map(renderLine)}
+    </div>
+  );
+};
+
+export { HighlightedSnippet };

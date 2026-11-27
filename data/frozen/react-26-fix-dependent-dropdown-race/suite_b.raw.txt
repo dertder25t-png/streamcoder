@@ -1,0 +1,65 @@
+- Switching regions clears the currently selected city immediately.
+- Out-of-order responses from earlier region fetches are ignored completely.
+- If fetchCities rejects, displays an error state with a Retry button that re-fetches only the currently selected region.
+
+```tsx
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import { RegionCityPicker } from './RegionCityPicker';
+import { vi } from 'vitest';
+
+describe('RegionCityPicker', () => {
+  afterEach(cleanup);
+
+  test('clears selected city when switching regions', async () => {
+    const regions = ['Region A', 'Region B'];
+    const fetchCities = vi.fn();
+    const onChange = vi.fn();
+
+    render(<RegionCityPicker regions={regions} fetchCities={fetchCities} onChange={onChange} />);
+
+    // Select Region A and a city
+    fireEvent.change(screen.getByRole('combobox', { name: 'Region' }), { target: { value: 'Region A' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'City' }), { target: { value: 'City A' } });
+
+    // Select Region B
+    fireEvent.change(screen.getByRole('combobox', { name: 'Region' }), { target: { value: 'Region B' } });
+
+    await waitFor(() => expect(screen.getByRole('combobox', { name: 'City' }).value).toBe(''));
+  });
+
+  test('ignores out-of-order responses', async () => {
+    const regions = ['Region A', 'Region B'];
+    const fetchCities = vi.fn().mockResolvedValue(['City A', 'City B']);
+    const onChange = vi.fn();
+
+    render(<RegionCityPicker regions={regions} fetchCities={fetchCities} onChange={onChange} />);
+
+    // Select Region A and a city
+    fireEvent.change(screen.getByRole('combobox', { name: 'Region' }), { target: { value: 'Region A' } });
+    fireEvent.change(screen.getByRole('combobox', { name: 'City' }), { target: { value: 'City A' } });
+
+    // Select Region B before Region A's response resolves
+    fireEvent.change(screen.getByRole('combobox', { name: 'Region' }), { target: { value: 'Region B' } });
+
+    await waitFor(() => expect(screen.getByRole('combobox', { name: 'City' }).value).toBe(''));
+  });
+
+  test('displays error state and retries on fetch failure', async () => {
+    const regions = ['Region A'];
+    const fetchCities = vi.fn().mockRejectedValue(new Error('Failed to fetch cities'));
+    const onChange = vi.fn();
+
+    render(<RegionCityPicker regions={regions} fetchCities={fetchCities} onChange={onChange} />);
+
+    // Select Region A
+    fireEvent.change(screen.getByRole('combobox', { name: 'Region' }), { target: { value: 'Region A' } });
+
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
+
+    // Click Retry button
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+  });
+});
+```

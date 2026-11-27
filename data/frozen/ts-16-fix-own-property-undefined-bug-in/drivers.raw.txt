@@ -1,0 +1,26 @@
+```ts
+probe("empty source", async () => {
+  const result = pickDefinedKeys({}, []);
+  return result;
+});
+
+probe("source with undefined values", async () => {
+  const result = pickDefinedKeys({ a: undefined, b: 0, c: "" }, ["a", "b", "c"]);
+  return result;
+});
+
+probe("source with falsy values", async () => {
+  const result = pickDefinedKeys({ a: 0, b: "", c: false, d: null }, ["a", "b", "c", "d"]);
+  return result;
+});
+
+probe("source with mixed values", async () => {
+  const result = pickDefinedKeys({ a: 1, b: "hello", c: false, d: null }, ["a", "b", "c", "d"]);
+  return result;
+});
+
+probe("source with inherited properties", async () => {
+  const result = pickDefinedKeys(Object.create({ toString: () => "inherited" }), ["toString"]);
+  return result;
+});
+```

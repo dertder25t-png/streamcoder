@@ -1,0 +1,38 @@
+import { createGzip } from "node:zlib";
+import { createReadStream, createWriteStream, unlink } from "node:fs";
+import { once } from "events";
+
+export function compressFileSafe(
+  srcPath: string,
+  destPath: string,
+  options: { signal?: AbortSignal } = {},
+): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const src = createReadStream(srcPath);
+    const gzip = createGzip();
+    const out = createWriteStream(destPath);
+
+    const removePartialFile = () => unlink(destPath, () => {});
+
+    const handleErrors = (error: Error) => {
+      removePartialFile();
+      reject(error);
+    };
+
+    const handleFinish = () => {
+      resolve();
+    };
+
+    const handleAbort = () => {
+      removePartialFile();
+      reject(new Error("aborted"));
+    };
+
+    src.on("error", handleErrors);
+    out.on("error", handleErrors);
+    out.on("finish", handleFinish);
+    options.signal?.addEventListener("abort", handleAbort);
+
+    src.pipe(gzip).pipe(out);
+  });
+}

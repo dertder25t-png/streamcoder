@@ -1,0 +1,51 @@
+- Resolves with the emitted payload if eventName fires before timeoutMs, clearing the timer and removing all attached listeners.
+- Rejects with a timeout Error when timeoutMs elapses and removes both eventName and error listeners from the emitter.
+- Rejects immediately with the emitted error if the emitter emits "error" before eventName, leaving zero listeners behind.
+
+```ts
+import { waitForEventWithTimeout } from './waitForEventWithTimeout'; // Adjust the import path as necessary
+import { EventEmitter } from 'node:events';
+import { test, expect, vi, afterEach, beforeEach, describe } from 'vitest';
+import fs from 'fs/promises';
+import path from 'path';
+import os from 'os';
+
+describe('waitForEventWithTimeout', () => {
+  let emitter: EventEmitter;
+  let dir: string;
+
+  beforeEach(async () => {
+    emitter = new EventEmitter();
+    dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  });
+
+  afterEach(async () => {
+    await fs.promises.rm(dir, { recursive: true, force: true });
+  });
+
+  test('resolves with the emitted payload if eventName fires before timeoutMs, clearing the timer and removing all attached listeners', async () => {
+    const payload = { message: 'Event fired' };
+    const promise = waitForEventWithTimeout(emitter, 'eventName', 1000);
+    emitter.emit('eventName', payload);
+    const result = await promise;
+    expect(result).toEqual(payload);
+    expect(emitter.listenerCount('eventName')).toBe(0);
+  });
+
+  test('rejects with a timeout Error when timeoutMs elapses and removes both eventName and error listeners from the emitter', async () => {
+    const promise = waitForEventWithTimeout(emitter, 'eventName', 100);
+    await expect(promise).rejects.toThrow('timeout');
+    expect(emitter.listenerCount('eventName')).toBe(0);
+    expect(emitter.listenerCount('error')).toBe(0);
+  });
+
+  test('rejects immediately with the emitted error if the emitter emits "error" before eventName, leaving zero listeners behind', async () => {
+    const error = new Error('Error event fired');
+    const promise = waitForEventWithTimeout(emitter, 'eventName', 1000);
+    emitter.emit('error', error);
+    await expect(promise).rejects.toThrow(error);
+    expect(emitter.listenerCount('eventName')).toBe(0);
+    expect(emitter.listenerCount('error')).toBe(0);
+  });
+});
+```

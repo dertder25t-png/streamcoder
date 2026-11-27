@@ -1,0 +1,57 @@
+```tsx
+probe("click outside triggers handler", async () => {
+  const ref = React.createRef<HTMLDivElement>();
+  const handler = vi.fn();
+  useClickOutside(ref, handler);
+
+  render(<div ref={ref}>Dropdown</div>);
+  fireEvent.mouseDown(document.body);
+  await waitFor(() => expect(handler).toHaveBeenCalled());
+  return snap();
+});
+
+probe("click inside does not trigger handler", async () => {
+  const ref = React.createRef<HTMLDivElement>();
+  const handler = vi.fn();
+  useClickOutside(ref, handler);
+
+  render(<div ref={ref}>Dropdown</div>);
+  fireEvent.mouseDown(ref.current!);
+  await waitFor(() => expect(handler).not.toHaveBeenCalled());
+  return snap();
+});
+
+probe("touch start outside triggers handler", async () => {
+  const ref = React.createRef<HTMLDivElement>();
+  const handler = vi.fn();
+  useClickOutside(ref, handler);
+
+  render(<div ref={ref}>Dropdown</div>);
+  fireEvent.touchStart(document.body);
+  await waitFor(() => expect(handler).toHaveBeenCalled());
+  return snap();
+});
+
+probe("touch start inside does not trigger handler", async () => {
+  const ref = React.createRef<HTMLDivElement>();
+  const handler = vi.fn();
+  useClickOutside(ref, handler);
+
+  render(<div ref={ref}>Dropdown</div>);
+  fireEvent.touchStart(ref.current!);
+  await waitFor(() => expect(handler).not.toHaveBeenCalled());
+  return snap();
+});
+
+probe("unmount cleans up event listeners", async () => {
+  const ref = React.createRef<HTMLDivElement>();
+  const handler = vi.fn();
+  useClickOutside(ref, handler);
+
+  render(<div ref={ref}>Dropdown</div>);
+  cleanup();
+  fireEvent.mouseDown(document.body);
+  await waitFor(() => expect(handler).not.toHaveBeenCalled());
+  return snap();
+});
+```

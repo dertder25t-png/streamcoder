@@ -1,0 +1,35 @@
+```ts
+probe("empty nodes array", async () => {
+  return buildCategoryPath([], "123");
+});
+
+probe("target not found", async () => {
+  return buildCategoryPath([{ id: "1", parentId: null, name: "Root" }], "456");
+});
+
+probe("single node", async () => {
+  return buildCategoryPath([{ id: "1", parentId: null, name: "Root" }], "1");
+});
+
+probe("circular parent chain", async () => {
+  return buildCategoryPath(
+    [
+      { id: "1", parentId: null, name: "Root" },
+      { id: "2", parentId: "1", name: "Child" },
+      { id: "1", parentId: "2", name: "Root" },
+    ],
+    "2"
+  );
+});
+
+probe("missing intermediate node", async () => {
+  return buildCategoryPath(
+    [
+      { id: "1", parentId: null, name: "Root" },
+      { id: "2", parentId: "1", name: "Child" },
+      { id: "3", parentId: "4", name: "Grandchild" },
+    ],
+    "2"
+  );
+});
+```

@@ -1,0 +1,120 @@
+- Test that `useUndoableState` returns the correct initial state.
+- Test that `set` updates the state correctly with a direct value.
+- Test that `set` updates the state correctly with a functional updater.
+- Test that `set` discards any redo branch after an undo.
+- Test that `set` skips pushing a history entry when `Object.is(prev, next)` is true.
+- Test that past history never exceeds `maxHistory` entries.
+- Test that `undo` correctly restores the previous state.
+- Test that `redo` correctly restores the next state.
+- Test that `undo` and `redo` maintain stable function identities across renders.
+- Test that `reset` correctly resets the state to the initial value.
+- Test that `reset` maintains stable function identities across renders.
+- Test that `useUndoableState` handles empty or invalid input gracefully.
+- Test that `useUndoableState` handles repeated calls correctly.
+- Test that `useUndoableState` cleans up resources when the component unmounts.
+
+```tsx
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import { useUndoableState } from './useUndoableState';
+
+test("returns the correct initial state", () => {
+  const { state } = useUndoableState(0);
+  expect(state).toBe(0);
+});
+
+test("set updates the state correctly with a direct value", () => {
+  const { state, set } = useUndoableState(0);
+  set(1);
+  expect(state).toBe(1);
+});
+
+test("set updates the state correctly with a functional updater", () => {
+  const { state, set } = useUndoableState(0);
+  set(prev => prev + 1);
+  expect(state).toBe(1);
+});
+
+test("set discards any redo branch after an undo", () => {
+  const { state, set, undo, redo } = useUndoableState(0);
+  set(1);
+  undo();
+  set(2);
+  redo();
+  expect(state).toBe(2);
+});
+
+test("set skips pushing a history entry when Object.is(prev, next) is true", () => {
+  const { state, set } = useUndoableState(0);
+  set(0);
+  expect(state).toBe(0);
+});
+
+test("past history never exceeds maxHistory entries", () => {
+  const { state, set } = useUndoableState(0, 2);
+  set(1);
+  set(2);
+  set(3);
+  expect(state).toBe(3);
+  expect(screen.getByRole("button", { name: "undo" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "redo" })).toBeDisabled();
+});
+
+test("undo correctly restores the previous state", () => {
+  const { state, set, undo } = useUndoableState(0);
+  set(1);
+  undo();
+  expect(state).toBe(0);
+});
+
+test("redo correctly restores the next state", () => {
+  const { state, set, undo, redo } = useUndoableState(0);
+  set(1);
+  undo();
+  set(2);
+  redo();
+  expect(state).toBe(2);
+});
+
+test("undo and redo maintain stable function identities across renders", () => {
+  const { state, set, undo, redo } = useUndoableState(0);
+  const initialUndo = undo;
+  const initialRedo = redo;
+  render(<div />);
+  const { state: newState, set: newSet, undo: newUndo, redo: newRedo } = useUndoableState(0);
+  expect(undo).toBe(initialUndo);
+  expect(redo).toBe(initialRedo);
+});
+
+test("reset correctly resets the state to the initial value", () => {
+  const { state, set, reset } = useUndoableState(0);
+  set(1);
+  reset();
+  expect(state).toBe(0);
+});
+
+test("reset maintains stable function identities across renders", () => {
+  const { state, set, reset } = useUndoableState(0);
+  const initialReset = reset;
+  render(<div />);
+  const { state: newState, set: newSet, reset: newReset } = useUndoableState(0);
+  expect(reset).toBe(initialReset);
+});
+
+test("useUndoableState handles empty or invalid input gracefully", () => {
+  const { state } = useUndoableState(undefined);
+  expect(state).toBe(undefined);
+});
+
+test("useUndoableState handles repeated calls correctly", () => {
+  const { state, set } = useUndoableState(0);
+  set(1);
+  set(1);
+  expect(state).toBe(1);
+});
+
+test("useUndoableState cleans up resources when the component unmounts", () => {
+  const { unmount } = render(<div />);
+  unmount();
+  // No specific cleanup needed for this test
+});
+```

@@ -1,0 +1,33 @@
+```typescript
+export function normalizeArchivePaths(rawPaths: readonly string[]): string[] {
+  const seen = new Set<string>();
+
+  return rawPaths
+    .map((p) => {
+      // Replace backslashes with forward slashes
+      let normalized = p.replace(/\\/g, '/');
+
+      // Remove leading './' or '/' and collapse duplicate slashes
+      normalized = normalized.replace(/^\.\//, '').replace(/\/\//g, '/');
+
+      // Reject parent traversal entries
+      if (normalized.includes('..')) {
+        throw new Error(`Invalid archive path: ${p}`);
+      }
+
+      // Reject Windows drive prefixes
+      if (/[A-Za-z]:/.test(normalized)) {
+        throw new Error(`Invalid archive path: ${p}`);
+      }
+
+      return normalized;
+    })
+    .filter((p, index) => {
+      if (seen.has(p)) {
+        return false;
+      }
+      seen.add(p);
+      return true;
+    });
+}
+```

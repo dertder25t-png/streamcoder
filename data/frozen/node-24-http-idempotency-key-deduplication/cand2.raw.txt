@@ -1,0 +1,67 @@
+```ts
+import { IncomingMessage, ServerResponse } from 'http';
+
+interface IdempotencyWrapperOptions {
+  ttlMs: number;
+  now: () => number;
+}
+
+interface CacheEntry {
+  timestamp: number;
+  status: number;
+  headers: { [key: string]: string };
+  body: string;
+}
+
+const createIdempotencyWrapper = ({ ttlMs, now }: IdempotencyWrapperOptions) => {
+  const cache = new Map<string, CacheEntry>();
+
+  return async (handler: (req: IncomingMessage, res: ServerResponse) => Promise<void>): Promise<void> => {
+    const req = handler.req as IncomingMessage & { body: string };
+    const res = handler.res as ServerResponse;
+
+    const idempotencyKey = req.headers['idempotency-key'] as string | undefined;
+    if (!idempotencyKey) {
+      await handler();
+      return;
+    }
+
+    const cacheEntry = cache.get(idempotencyKey);
+    if (cacheEntry && now() - cacheEntry.timestamp < ttlMs) {
+      res.writeHead(cacheEntry.status, cacheEntry.headers);
+      res.end(cacheEntry.body);
+      return;
+    }
+
+    const bodyChunks: Uint8Array[] = [];
+    req.on('data', (chunk) => bodyChunks.push(chunk));
+    await new Promise((resolve) => req.on('end', resolve));
+
+    const requestBody = Buffer.concat(bodyChunks).toString('utf-8');
+    if (cacheEntry && requestBody !== cacheEntry.body) {
+      res.writeHead(409, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Conflict' }));
+      return;
+    }
+
+    try {
+      await handler();
+    } catch (error) {
+      // Do not cache on error
+      throw error;
+    }
+
+    if (res.statusCode >= 400) {
+      const { statusCode, statusMessage, headers, body } = res;
+      cache.set(idempotencyKey, {
+        timestamp: now(),
+        status: statusCode,
+        headers: Object.fromEntries(res.getHeaders()),
+        body: body.toString('utf-8'),
+      });
+    }
+  };
+};
+
+export { createIdempotencyWrapper };
+```

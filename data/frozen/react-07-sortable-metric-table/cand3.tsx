@@ -1,0 +1,84 @@
+import React, { useState, useRef } from 'react';
+
+type Column = {
+  key: string;
+  label: string;
+  numeric?: boolean;
+};
+
+type Row = Record<string, string | number>;
+
+type SortState = 'ascending' | 'descending' | 'none';
+
+export const SortableTable = ({ rows, columns }: { rows: Row[]; columns: Column[] }) => {
+  const [sortKey, setSortKey] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortState>('ascending');
+  const prevSortKey = useRef<string | null>(null);
+
+  const handleSort = (key: string) => {
+    if (key === sortKey) {
+      setSortDirection((prev) => (prev === 'ascending' ? 'descending' : prev === 'descending' ? 'none' : 'ascending'));
+    } else {
+      setSortKey(key);
+      setSortDirection('ascending');
+      prevSortKey.current = sortKey;
+    }
+  };
+
+  const sortedRows = React.useMemo(() => {
+    if (!sortKey) return rows;
+
+    const sorted = [...rows].sort((a, b) => {
+      const aValue = a[sortKey];
+      const bValue = b[sortKey];
+      if (columns.find((c) => c.key === sortKey)?.numeric) {
+        return (aValue as number) - (bValue as number);
+      } else {
+        return aValue.toString().localeCompare(bValue.toString(), 'en', { numeric: true, sensitivity: 'base' });
+      }
+    });
+
+    if (sortDirection === 'descending') {
+      sorted.reverse();
+    }
+
+    return sorted;
+  }, [rows, sortKey, sortDirection, columns]);
+
+  return (
+    <table>
+      <thead>
+        <tr>
+          {columns.map((column) => (
+            <th
+              key={column.key}
+              onClick={() => handleSort(column.key)}
+              aria-sort={
+                column.key === sortKey
+                  ? sortDirection === 'ascending'
+                    ? 'ascending'
+                    : sortDirection === 'descending'
+                    ? 'descending'
+                    : 'none'
+                  : 'none'
+              }
+            >
+              {column.label}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {sortedRows.map((row, index) => (
+          <tr key={index}>
+            {columns.map((column) => (
+              <td key={column.key}>
+                {column.numeric ? row[column.key]?.toString() : row[column.key]}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+};

@@ -1,0 +1,60 @@
+interface ConfigSpec {
+  [key: string]: {
+    type: 'string' | 'int' | 'boolean';
+    required?: boolean;
+    default?: string | number | boolean;
+  };
+}
+
+interface Config {
+  [key: string]: string | number | boolean;
+}
+
+export function readEnvConfig(env: Record<string, string | undefined>, spec: ConfigSpec): Config {
+  const errors: string[] = [];
+  const result: Config = {};
+
+  for (const key in spec) {
+    const { type, required = false, default: defaultValue } = spec[key];
+    const value = env[key];
+
+    if (value === undefined || value === '') {
+      if (required) {
+        errors.push(key);
+      } else {
+        result[key] = defaultValue ?? value;
+      }
+    } else {
+      try {
+        switch (type) {
+          case 'string':
+            result[key] = value;
+            break;
+          case 'int':
+            const intValue = parseInt(value, 10);
+            if (isNaN(intValue) || (value.startsWith('-') && !/^-\d+$/.test(value))) {
+              throw new Error('Invalid integer value');
+            }
+            result[key] = intValue;
+            break;
+          case 'boolean':
+            if (value !== 'true' && value !== 'false') {
+              throw new Error('Invalid boolean value');
+            }
+            result[key] = value === 'true';
+            break;
+          default:
+            throw new Error('Unknown type');
+        }
+      } catch (err) {
+        errors.push(key);
+      }
+    }
+  }
+
+  if (errors.length > 0) {
+    throw new Error(`Missing or invalid keys: ${errors.join(', ')}`);
+  }
+
+  return result;
+}

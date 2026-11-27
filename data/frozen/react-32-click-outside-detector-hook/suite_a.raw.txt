@@ -1,0 +1,51 @@
+- Fires `handler` when a `mousedown` or `touchstart` event occurs outside the referenced DOM element.
+- Does not fire when clicking inside the referenced element.
+- Cleans up event listeners on unmount.
+
+```tsx
+import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
+import { useClickOutside } from './useClickOutside'; // Adjust the import path as necessary
+
+test('fires handler when clicking outside the referenced element', () => {
+  const handler = vi.fn();
+  const ref = React.createRef<HTMLDivElement>();
+
+  const TestComponent = () => {
+    useClickOutside(ref, handler);
+    return <div ref={ref}>Dropdown</div>;
+  };
+
+  render(<TestComponent />);
+  fireEvent.mouseDown(document.body);
+  expect(handler).toHaveBeenCalled();
+});
+
+test('does not fire handler when clicking inside the referenced element', () => {
+  const handler = vi.fn();
+  const ref = React.createRef<HTMLDivElement>();
+
+  const TestComponent = () => {
+    useClickOutside(ref, handler);
+    return <div ref={ref}>Dropdown</div>;
+  };
+
+  render(<TestComponent />);
+  fireEvent.mouseDown(ref.current!);
+  expect(handler).not.toHaveBeenCalled();
+});
+
+test('cleans up event listeners on unmount', () => {
+  const handler = vi.fn();
+  const ref = React.createRef<HTMLDivElement>();
+
+  const TestComponent = () => {
+    useClickOutside(ref, handler);
+    return <div ref={ref}>Dropdown</div>;
+  };
+
+  render(<TestComponent />);
+  cleanup();
+  fireEvent.mouseDown(document.body);
+  expect(handler).not.toHaveBeenCalled();
+});
+```

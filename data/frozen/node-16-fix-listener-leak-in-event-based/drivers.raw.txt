@@ -1,0 +1,44 @@
+```ts
+probe("timeout before event", async () => {
+  const { EventEmitter } = require("node:events");
+  const emitter = new EventEmitter();
+  const result = await waitForEventWithTimeout(emitter, "data", 1000);
+  return result;
+});
+
+probe("event before timeout", async () => {
+  const { EventEmitter } = require("node:events");
+  const emitter = new EventEmitter();
+  setTimeout(() => emitter.emit("data", "hello"), 500);
+  const result = await waitForEventWithTimeout(emitter, "data", 1000);
+  return result;
+});
+
+probe("error before event", async () => {
+  const { EventEmitter } = require("node:events");
+  const emitter = new EventEmitter();
+  setTimeout(() => emitter.emit("error", new Error("oops")), 500);
+  try {
+    await waitForEventWithTimeout(emitter, "data", 1000);
+  } catch (error) {
+    return error.message;
+  }
+});
+
+probe("timeout with error listener", async () => {
+  const { EventEmitter } = require("node:events");
+  const emitter = new EventEmitter();
+  emitter.on("error", () => {});
+  const result = await waitForEventWithTimeout(emitter, "data", 1000);
+  return result;
+});
+
+probe("event with error listener", async () => {
+  const { EventEmitter } = require("node:events");
+  const emitter = new EventEmitter();
+  emitter.on("error", () => {});
+  setTimeout(() => emitter.emit("data", "hello"), 500);
+  const result = await waitForEventWithTimeout(emitter, "data", 1000);
+  return result;
+});
+```

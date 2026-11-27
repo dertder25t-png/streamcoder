@@ -1,0 +1,21 @@
+import { promises as fs } from 'node:fs';
+import { dirname, join } from 'node:path';
+
+async function writeJsonAtomic(filePath: string, data: unknown): Promise<void> {
+  const tempDir = dirname(filePath);
+  const tempFile = join(tempDir, `.temp.${Date.now()}-${Math.random().toString(36).slice(2)}`);
+
+  try {
+    const jsonData = JSON.stringify(data, null, 2);
+    await fs.writeFile(tempFile, jsonData + '\n', 'utf-8');
+    await fs.rename(tempFile, filePath);
+  } catch {
+    // If any error occurs, no temporary file is left behind.
+    if (await fs.exists(tempFile)) {
+      await fs.unlink(tempFile);
+    }
+    throw new Error('Failed to write JSON atomically');
+  }
+}
+
+export { writeJsonAtomic };

@@ -1,0 +1,80 @@
+- Only the active tab has tabIndex={0} while inactive tabs have tabIndex={-1}.
+- ArrowRight and ArrowLeft move focus and selection across enabled tabs (wrapping at ends and skipping disabled tabs); Home and End jump to the first and last enabled tabs.
+- Each Tab and matching TabPanel share linked id, aria-controls, and aria-labelledby attributes.
+
+```tsx
+import React from 'react';
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import { TabList, TabPanel } from './Tabs';
+
+afterEach(cleanup);
+
+test("Active tab has tabIndex={0} while inactive tabs have tabIndex={-1}", async () => {
+  render(
+    <TabList aria-label="demo">
+      <Tab value="one">One</Tab>
+      <Tab value="two" disabled>Two</Tab>
+      <Tab value="three">Three</Tab>
+    </TabList>
+  );
+
+  const tabs = screen.getAllByRole('tab');
+  expect(tabs[0]).toHaveAttribute('tabIndex', '0');
+  expect(tabs[1]).toHaveAttribute('tabIndex', '-1');
+  expect(tabs[2]).toHaveAttribute('tabIndex', '-1');
+});
+
+test("ArrowRight and ArrowLeft move focus and selection across enabled tabs", async () => {
+  render(
+    <TabList aria-label="demo">
+      <Tab value="one">One</Tab>
+      <Tab value="two" disabled>Two</Tab>
+      <Tab value="three">Three</Tab>
+    </TabList>
+  );
+
+  const tabs = screen.getAllByRole('tab');
+  fireEvent.keyDown(tabs[0], { key: 'ArrowRight' });
+  expect(tabs[2]).toHaveFocus();
+
+  fireEvent.keyDown(tabs[2], { key: 'ArrowLeft' });
+  expect(tabs[0]).toHaveFocus();
+});
+
+test("Home and End jump to the first and last enabled tabs", async () => {
+  render(
+    <TabList aria-label="demo">
+      <Tab value="one">One</Tab>
+      <Tab value="two" disabled>Two</Tab>
+      <Tab value="three">Three</Tab>
+    </TabList>
+  );
+
+  const tabs = screen.getAllByRole('tab');
+  fireEvent.keyDown(tabs[0], { key: 'Home' });
+  expect(tabs[0]).toHaveFocus();
+
+  fireEvent.keyDown(tabs[2], { key: 'End' });
+  expect(tabs[2]).toHaveFocus();
+});
+
+test("Each Tab and matching TabPanel share linked id, aria-controls, and aria-labelledby attributes", async () => {
+  render(
+    <TabList aria-label="demo">
+      <Tab value="one">One</Tab>
+      <Tab value="two">Two</Tab>
+    </TabList>
+    <TabPanel value="one">Panel One</TabPanel>
+    <TabPanel value="two">Panel Two</TabPanel>
+  );
+
+  const tabs = screen.getAllByRole('tab');
+  const panels = screen.getAllByRole('tabpanel');
+
+  expect(tabs[0]).toHaveAttribute('aria-controls', panels[0].id);
+  expect(panels[0]).toHaveAttribute('aria-labelledby', tabs[0].id);
+
+  expect(tabs[1]).toHaveAttribute('aria-controls', panels[1].id);
+  expect(panels[1]).toHaveAttribute('aria-labelledby', tabs[1].id);
+});
+```

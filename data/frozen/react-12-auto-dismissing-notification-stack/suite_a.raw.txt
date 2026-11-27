@@ -1,0 +1,39 @@
+- Each toast triggers onDismiss(id) once its duration elapses or when its close button is clicked.
+- Hovering over a toast (mouseEnter) pauses its countdown, and leaving (mouseLeave) resumes it without firing early.
+- Toasts with durationMs: 0 persist until dismissed manually.
+
+```tsx
+import React from 'react';
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import { ToastList } from './ToastList'; // Adjust the import path as necessary
+
+afterEach(cleanup);
+
+test("each toast triggers onDismiss(id) once its duration elapses", async () => {
+  const onDismiss = vi.fn();
+  render(<ToastList toasts={[{ id: '1', message: 'Toast 1', durationMs: 1000 }]} onDismiss={onDismiss} />);
+  await waitFor(() => expect(onDismiss).toHaveBeenCalledWith('1'));
+});
+
+test("hovering over a toast pauses its countdown", async () => {
+  vi.useFakeTimers();
+  const onDismiss = vi.fn();
+  render(<ToastList toasts={[{ id: '1', message: 'Toast 1', durationMs: 1000 }]} onDismiss={onDismiss} />);
+  const toast = screen.getByRole('button', { name: 'Toast 1' });
+  fireEvent.mouseEnter(toast);
+  vi.advanceTimersByTime(500);
+  expect(onDismiss).not.toHaveBeenCalled();
+  fireEvent.mouseLeave(toast);
+  vi.advanceTimersByTime(500);
+  expect(onDismiss).toHaveBeenCalledWith('1');
+  vi.useRealTimers();
+});
+
+test("toasts with durationMs: 0 persist until dismissed manually", async () => {
+  const onDismiss = vi.fn();
+  render(<ToastList toasts={[{ id: '1', message: 'Toast 1', durationMs: 0 }]} onDismiss={onDismiss} />);
+  const toast = screen.getByRole('button', { name: 'Toast 1' });
+  fireEvent.click(toast);
+  expect(onDismiss).toHaveBeenCalledWith('1');
+});
+```

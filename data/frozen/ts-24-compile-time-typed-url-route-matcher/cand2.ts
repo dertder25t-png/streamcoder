@@ -1,0 +1,37 @@
+import { decodeURIComponent } from 'node:util';
+
+type StaticParams<P extends string> = P extends `${infer L}/${infer R}`
+  ? StaticParams<L> & StaticParams<R>
+  : P extends `${infer L}:${infer R}`
+  ? StaticParams<L> & { [K in R]: string }
+  : P extends `:${infer R}`
+  ? { [K in R]: string }
+  : Record<never, never>;
+
+type RouteMatcher<P extends string> = (path: string) => StaticParams<P> | null;
+
+export function createRouteMatcher<P extends string>(pattern: P): RouteMatcher<P> {
+  const segments = pattern.split('/').filter(s => s !== '');
+  return (path) => {
+    const pathSegments = path.split('/').filter(s => s !== '');
+    if (segments.length !== pathSegments.length) return null;
+
+    const params: Partial<StaticParams<P>> = {};
+    for (let i = 0; i < segments.length; i++) {
+      const segment = segments[i];
+      const pathSegment = pathSegments[i];
+      if (segment.startsWith(':')) {
+        const paramName = segment.slice(1);
+        try {
+          params[paramName] = decodeURIComponent(pathSegment);
+        } catch {
+          return null;
+        }
+      } else {
+        if (segment !== pathSegment) return null;
+      }
+    }
+
+    return params as StaticParams<P>;
+  };
+}

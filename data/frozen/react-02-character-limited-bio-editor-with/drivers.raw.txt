@@ -1,0 +1,45 @@
+```ts
+probe("renders textarea and counter", async () => {
+  render(<LimitedTextArea maxLength={10} warnAt={5} onSubmit={() => {}} />);
+  await waitFor(() => screen.getByRole("textbox"));
+  await waitFor(() => screen.getByText("10 characters left"));
+  return snap();
+});
+
+probe("updates counter as text is typed", async () => {
+  render(<LimitedTextArea maxLength={10} warnAt={5} onSubmit={() => {}} />);
+  fireEvent.input(screen.getByRole("textbox"), { target: { value: "Hello" } });
+  await waitFor(() => screen.getByText("5 characters left"));
+  return snap();
+});
+
+probe("marks counter with warning state", async () => {
+  render(<LimitedTextArea maxLength={10} warnAt={5} onSubmit={() => {}} />);
+  fireEvent.input(screen.getByRole("textbox"), { target: { value: "Hello World" } });
+  await waitFor(() => screen.getByText("0 characters left").closest("[data-state='warning']"));
+  return snap();
+});
+
+probe("disables submit button on empty input", async () => {
+  render(<LimitedTextArea maxLength={10} warnAt={5} onSubmit={() => {}} />);
+  fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled());
+  return snap();
+});
+
+probe("disables submit button on over-limit input", async () => {
+  render(<LimitedTextArea maxLength={10} warnAt={5} onSubmit={() => {}} />);
+  fireEvent.input(screen.getByRole("textbox"), { target: { value: "Hello World!" } });
+  fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled());
+  return snap();
+});
+
+probe("enables submit button on valid input", async () => {
+  render(<LimitedTextArea maxLength={10} warnAt={5} onSubmit={() => {}} />);
+  fireEvent.input(screen.getByRole("textbox"), { target: { value: "Hello" } });
+  fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+  await waitFor(() => expect(screen.getByRole("button", { name: "Submit" })).toBeEnabled());
+  return snap();
+});
+```

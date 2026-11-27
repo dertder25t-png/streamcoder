@@ -1,0 +1,50 @@
+```ts
+import { parseInt } from 'node:util';
+
+interface ConfigSpec {
+  type: 'string' | 'int' | 'boolean';
+  required?: boolean;
+  default?: string | number | boolean;
+}
+
+interface Config {
+  [key: string]: string | number | boolean;
+}
+
+export function readEnvConfig(
+  env: Record<string, string | undefined>,
+  spec: Record<string, ConfigSpec>
+): Config {
+  const missingKeys: string[] = [];
+  const result: Config = {};
+
+  for (const [key, value] of Object.entries(spec)) {
+    if (value.required && (value.type === 'string' && !value.default && (value.default === undefined || value.default === '')) && (!value.default && (value.default === undefined || value.default === '') && (value.default === undefined || value.default === ''))) {
+      missingKeys.push(key);
+      continue;
+    }
+
+    if (value.type === 'string') {
+      result[key] = value.default !== undefined ? value.default : (value.required ? env[key] : undefined);
+    } else if (value.type === 'int') {
+      if (value.required && (env[key] === undefined || env[key] === '')) {
+        missingKeys.push(key);
+      } else {
+        result[key] = value.default !== undefined ? parseInt(value.default.toString()) : (env[key] ? parseInt(env[key]!) : undefined);
+      }
+    } else if (value.type === 'boolean') {
+      if (value.required && (env[key] === undefined || env[key] === '')) {
+        missingKeys.push(key);
+      } else {
+        result[key] = value.default !== undefined ? value.default : (env[key] ? env[key]!.toLowerCase() === 'true' : undefined);
+      }
+    }
+  }
+
+  if (missingKeys.length > 0) {
+    throw new Error(`Missing required keys: ${missingKeys.join(', ')}`);
+  }
+
+  return result;
+}
+```

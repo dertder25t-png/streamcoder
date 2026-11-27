@@ -1,0 +1,73 @@
+import { Queue, Worker, Job } from 'bull';
+
+interface JobQueueOptions {
+  concurrency: number;
+  maxRetries: number;
+  processor: (job: Job) => Promise<void>;
+  onDeadLetter: (job: Job, error: Error) => void;
+}
+
+export function createJobQueue(options: JobQueueOptions) {
+  const { concurrency, maxRetries, processor, onDeadLetter } = options;
+  const queue = new Queue('jobQueue', {
+    concurrency,
+    defaultJobOptions: {
+      attempts: maxRetries,
+      backoff: {
+        type: 'exponential',
+        delay: 1000,
+      },
+    },
+  });
+
+  queue.process(async (job) => {
+    try {
+      await processor(job);
+      job.remove();
+    } catch (error) {
+      job.retry();
+    }
+  });
+
+  queue.on('failed', (job, error) => {
+    onDeadLetter(job, error);
+  });
+
+  queue.on('completed', () => {
+    queue.getJobs(['completed'], (err, jobs) => {
+      if (err) throw err;
+      console.log(`Completed jobs: ${jobs.length}`);
+    });
+  });
+
+  queue.on('drained', () => {
+    console.log('Queue drained');
+  });
+
+  return {
+    enqueue: (payload: any) => {
+      queue.add(payload);
+    },
+    drain: () => {
+      return new Promise((resolve) => {
+        queue.drain(() => {
+          resolve();
+        });
+      });
+    },
+    stats: () => {
+      return new Promise((resolve) => {
+        queue.getJobs(['waiting', 'active', 'completed', 'failed'], (err, jobs) => {
+          if (err) throw err;
+          const stats = {
+            queued: jobs.filter((job) => job.type === 'waiting').length,
+            active: jobs.filter((job) => job.type === 'active').length,
+            completed: jobs.filter((job) => job.type === 'completed').length,
+            deadLettered: jobs.filter((job) => job.type === 'failed').length,
+          };
+          resolve(stats);
+        });
+      });
+    },
+  };
+}

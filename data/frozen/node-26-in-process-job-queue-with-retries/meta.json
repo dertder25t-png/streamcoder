@@ -1,0 +1,25 @@
+{
+ "id": "node-26-in-process-job-queue-with-retries",
+ "topic": "node",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/node-26-in-process-job-queue-with-retries/solution.ts(65,37): error TS7006: Parame",
+  "type error: .runs/node-26-in-process-job-queue-with-retries/solution.test.ts(2,10): error TS2305: Mo",
+  "type error: .runs/node-26-in-process-job-queue-with-retries/solution.ts(1,31): error TS2307: Cannot ",
+  "type error: .runs/node-26-in-process-job-queue-with-retries/solution.test.ts(2,10): error TS2305: Mo"
+ ],
+ "cand_tokens": [
+  459,
+  556,
+  354,
+  489
+ ],
+ "gen_seconds": 44.7,
+ "type_only": false,
+ "errors": []
+}

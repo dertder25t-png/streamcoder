@@ -1,0 +1,76 @@
+- `rebuildTree(flattenTree(forest)) deeply equals forest for multi-root, arbitrarily nested trees without mutating inputs.`
+- `rebuildTree works even when child records appear earlier in the flat array than their parent records.`
+- `Duplicate node IDs or orphan references to nonexistent parent IDs throw an Error.`
+
+```ts
+import { flattenTree, rebuildTree, TreeNode, FlatNode } from './treeUtils';
+
+test("rebuildTree(flattenTree(forest)) deeply equals forest for multi-root, arbitrarily nested trees without mutating inputs.", () => {
+  const forest: TreeNode<number>[] = [
+    { id: '1', value: 1, children: [
+      { id: '2', value: 2, children: [
+        { id: '3', value: 3, children: [] },
+        { id: '4', value: 4, children: [] }
+      ]},
+      { id: '5', value: 5, children: [] }
+    ]}
+  ];
+
+  const flat = flattenTree(forest);
+  const rebuilt = rebuildTree(flat);
+
+  expect(rebuilt).toEqual(forest);
+  expect(flat).toEqual([
+    { id: '1', parentId: null, value: 1 },
+    { id: '2', parentId: '1', value: 2 },
+    { id: '3', parentId: '2', value: 3 },
+    { id: '4', parentId: '2', value: 4 },
+    { id: '5', parentId: '1', value: 5 }
+  ]);
+});
+
+test("rebuildTree works even when child records appear earlier in the flat array than their parent records.", () => {
+  const flat: FlatNode<number>[] = [
+    { id: '2', parentId: '1', value: 2 },
+    { id: '3', parentId: '2', value: 3 },
+    { id: '4', parentId: '2', value: 4 },
+    { id: '1', parentId: null, value: 1 },
+    { id: '5', parentId: '1', value: 5 }
+  ];
+
+  const rebuilt = rebuildTree(flat);
+
+  expect(rebuilt).toEqual([
+    { id: '1', value: 1, children: [
+      { id: '2', value: 2, children: [
+        { id: '3', value: 3, children: [] },
+        { id: '4', value: 4, children: [] }
+      ]},
+      { id: '5', value: 5, children: [] }
+    ]}
+  ]);
+});
+
+test("Duplicate node IDs or orphan references to nonexistent parent IDs throw an Error.", () => {
+  const flat: FlatNode<number>[] = [
+    { id: '1', parentId: null, value: 1 },
+    { id: '2', parentId: '1', value: 2 },
+    { id: '3', parentId: '2', value: 3 },
+    { id: '4', parentId: '2', value: 4 },
+    { id: '5', parentId: '1', value: 5 },
+    { id: '2', parentId: '1', value: 2 } // Duplicate node ID
+  ];
+
+  expect(() => rebuildTree(flat)).toThrowError('Duplicate node ID: 2');
+
+  const flatWithOrphan: FlatNode<number>[] = [
+    { id: '2', parentId: '1', value: 2 },
+    { id: '3', parentId: '2', value: 3 },
+    { id: '4', parentId: '2', value: 4 },
+    { id: '5', parentId: '1', value: 5 },
+    { id: '6', parentId: '7', value: 6 } // Orphan reference
+  ];
+
+  expect(() => rebuildTree(flatWithOrphan)).toThrowError('Orphan reference to nonexistent parent ID: 7');
+});
+```

@@ -1,0 +1,25 @@
+{
+ "id": "node-14-bounded-retry-helper-with",
+ "topic": "node",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/node-14-bounded-retry-helper-with/solution.ts(1,10): error TS2305: Module '\"node:e",
+  "test failed: re-throws the last error once maxAttempts is exhausted; makes a single attempt when max",
+  "type error: .runs/node-14-bounded-retry-helper-with/solution.test.ts(112,41): error TS2353: Object l",
+  "type error: .runs/node-14-bounded-retry-helper-with/solution.ts(1,10): error TS2305: Module '\"node:e"
+ ],
+ "cand_tokens": [
+  290,
+  203,
+  228,
+  278
+ ],
+ "gen_seconds": 43.1,
+ "type_only": false,
+ "errors": []
+}

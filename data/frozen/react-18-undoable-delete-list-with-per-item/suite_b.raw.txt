@@ -1,0 +1,83 @@
+- Test that clicking "Delete" starts a grace period and shows "Deleting..." with an "Undo" button.
+- Test that clicking "Undo" before the grace period cancels the timer and prevents `onCommitDelete` from being called.
+- Test that clicking "Undo" after the grace period has started does not cancel the timer.
+- Test that clicking "Delete" on multiple items starts independent timers.
+- Test that undoing one item does not alter another item's deadline.
+- Test that `onCommitDelete` is called with the correct item's id after the grace period.
+- Test that `onCommitDelete` is called with the latest callback reference if it changes identity before the timer fires.
+- Test that external removal of an item from `items` cancels the pending timer.
+- Test that component unmount cancels the pending timer.
+
+```tsx
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import { DeferredActionList } from './DeferredActionList'; // Adjust the import path as necessary
+
+afterEach(cleanup);
+
+test("Clicking 'Delete' starts a grace period and shows 'Deleting...' with an 'Undo' button", async () => {
+  const onCommitDelete = vi.fn();
+  render(<DeferredActionList items={[{ id: '1', label: 'Alpha' }]} onCommitDelete={onCommitDelete} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Delete Alpha' }));
+  expect(screen.getByText('Deleting...')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Undo' })).toBeInTheDocument();
+});
+
+test("Clicking 'Undo' before the grace period cancels the timer and prevents 'onCommitDelete' from being called", async () => {
+  const onCommitDelete = vi.fn();
+  render(<DeferredActionList items={[{ id: '1', label: 'Alpha' }]} onCommitDelete={onCommitDelete} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Delete Alpha' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+  await waitFor(() => expect(onCommitDelete).not.toHaveBeenCalled());
+});
+
+test("Clicking 'Delete' on multiple items starts independent timers", async () => {
+  const onCommitDelete = vi.fn();
+  render(<DeferredActionList items={[{ id: '1', label: 'Alpha' }, { id: '2', label: 'Beta' }]} onCommitDelete={onCommitDelete} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Delete Alpha' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Delete Beta' }));
+  expect(screen.getByText('Deleting... Alpha')).toBeInTheDocument();
+  expect(screen.getByText('Deleting... Beta')).toBeInTheDocument();
+});
+
+test("Undoing one item does not alter another item's deadline", async () => {
+  const onCommitDelete = vi.fn();
+  render(<DeferredActionList items={[{ id: '1', label: 'Alpha' }, { id: '2', label: 'Beta' }]} onCommitDelete={onCommitDelete} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Delete Alpha' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Delete Beta' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+  await waitFor(() => expect(onCommitDelete).not.toHaveBeenCalledWith('1'));
+  expect(screen.getByText('Deleting... Beta')).toBeInTheDocument();
+});
+
+test("onCommitDelete is called with the correct item's id after the grace period", async () => {
+  const onCommitDelete = vi.fn();
+  render(<DeferredActionList items={[{ id: '1', label: 'Alpha' }]} onCommitDelete={onCommitDelete} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Delete Alpha' }));
+  await waitFor(() => expect(onCommitDelete).toHaveBeenCalledWith('1'));
+});
+
+test("onCommitDelete is called with the latest callback reference if it changes identity before the timer fires", async () => {
+  const onCommitDelete = vi.fn();
+  const onCommitDelete2 = vi.fn();
+  render(<DeferredActionList items={[{ id: '1', label: 'Alpha' }]} onCommitDelete={onCommitDelete} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Delete Alpha' }));
+  render(<DeferredActionList items={[{ id: '1', label: 'Alpha' }]} onCommitDelete={onCommitDelete2} />);
+  await waitFor(() => expect(onCommitDelete2).toHaveBeenCalledWith('1'));
+});
+
+test("External removal of an item from 'items' cancels the pending timer", async () => {
+  const onCommitDelete = vi.fn();
+  const { rerender } = render(<DeferredActionList items={[{ id: '1', label: 'Alpha' }]} onCommitDelete={onCommitDelete} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Delete Alpha' }));
+  rerender(<DeferredActionList items={[]} onCommitDelete={onCommitDelete} />);
+  await waitFor(() => expect(onCommitDelete).not.toHaveBeenCalled());
+});
+
+test("Component unmount cancels the pending timer", async () => {
+  const onCommitDelete = vi.fn();
+  const { unmount } = render(<DeferredActionList items={[{ id: '1', label: 'Alpha' }]} onCommitDelete={onCommitDelete} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Delete Alpha' }));
+  unmount();
+  await waitFor(() => expect(onCommitDelete).not.toHaveBeenCalled());
+});
+```

@@ -1,0 +1,92 @@
+- GET /live always returns HTTP 200 with Content-Type: application/json and {"status":"ok"}.
+- GET /ready returns 200 when checkReady() resolves true, and 503 when it resolves false or rejects.
+- Non-GET methods on /live or /ready return 405 with an Allow: GET header.
+- Unknown paths return 404 JSON.
+- Empty or invalid input to createHealthServer should throw an error.
+- Repeated calls to createHealthServer should not cause resource leaks.
+- Timers, listeners, files, or other resources should be cleaned up after tests.
+
+```ts
+import { createHealthServer } from './createHealthServer'; // Adjust the import path as necessary
+import { test, expect, vi, afterEach, beforeEach, describe } from 'vitest';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
+
+describe('createHealthServer', () => {
+  let server: any;
+  let dir: string;
+
+  beforeEach(async () => {
+    dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), "st-"));
+  });
+
+  afterEach(async () => {
+    if (server) {
+      server.close();
+    }
+    await fs.promises.rm(dir, { recursive: true });
+  });
+
+  test('GET /live returns 200 with {"status":"ok"}', async () => {
+    server = createHealthServer(() => Promise.resolve(true));
+    const response = await fetch(`http://localhost:3000/live`);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Content-Type')).toBe('application/json');
+    const body = await response.json();
+    expect(body).toEqual({ status: 'ok' });
+  });
+
+  test('GET /ready returns 200 when checkReady() resolves true', async () => {
+    server = createHealthServer(() => Promise.resolve(true));
+    const response = await fetch(`http://localhost:3000/ready`);
+    expect(response.status).toBe(200);
+  });
+
+  test('GET /ready returns 503 when checkReady() resolves false', async () => {
+    server = createHealthServer(() => Promise.resolve(false));
+    const response = await fetch(`http://localhost:3000/ready`);
+    expect(response.status).toBe(503);
+  });
+
+  test('GET /ready returns 503 when checkReady() rejects', async () => {
+    server = createHealthServer(() => Promise.reject(new Error('Test error')));
+    const response = await fetch(`http://localhost:3000/ready`);
+    expect(response.status).toBe(503);
+  });
+
+  test('Non-GET methods on /live return 405 with Allow: GET', async () => {
+    server = createHealthServer(() => Promise.resolve(true));
+    const response = await fetch(`http://localhost:3000/live`, { method: 'POST' });
+    expect(response.status).toBe(405);
+    expect(response.headers.get('Allow')).toBe('GET');
+  });
+
+  test('Non-GET methods on /ready return 405 with Allow: GET', async () => {
+    server = createHealthServer(() => Promise.resolve(true));
+    const response = await fetch(`http://localhost:3000/ready`, { method: 'POST' });
+    expect(response.status).toBe(405);
+    expect(response.headers.get('Allow')).toBe('GET');
+  });
+
+  test('Unknown paths return 404 JSON', async () => {
+    server = createHealthServer(() => Promise.resolve(true));
+    const response = await fetch(`http://localhost:3000/unknown`);
+    expect(response.status).toBe(404);
+    const body = await response.json();
+    expect(body).toEqual({ error: 'Not Found' });
+  });
+
+  test('Empty or invalid input to createHealthServer should throw an error', async () => {
+    expect(() => createHealthServer()).toThrowError('Invalid input');
+    expect(() => createHealthServer(null as any)).toThrowError('Invalid input');
+  });
+
+  test('Repeated calls to createHealthServer should not cause resource leaks', async () => {
+    const checkReady = vi.fn(() => Promise.resolve(true));
+    createHealthServer(checkReady);
+    createHealthServer(checkReady);
+    expect(checkReady).toBeCalledTimes(0);
+  });
+});
+```

@@ -1,0 +1,43 @@
+```ts
+probe("empty array", async () => {
+  return partitionResults([]);
+});
+
+probe("all values", async () => {
+  return partitionResults([
+    { ok: true, value: 1 },
+    { ok: true, value: 2 },
+    { ok: true, value: 3 },
+  ]);
+});
+
+probe("all errors", async () => {
+  return partitionResults([
+    { ok: false, error: "error1" },
+    { ok: false, error: "error2" },
+    { ok: false, error: "error3" },
+  ]);
+});
+
+probe("mixed values and errors", async () => {
+  return partitionResults([
+    { ok: true, value: 1 },
+    { ok: false, error: "error1" },
+    { ok: true, value: 2 },
+    { ok: false, error: "error2" },
+    { ok: true, value: 3 },
+  ]);
+});
+
+probe("mixed with falsy values", async () => {
+  return partitionResults([
+    { ok: true, value: 0 },
+    { ok: true, value: "" },
+    { ok: true, value: false },
+    { ok: true, value: null },
+    { ok: false, error: "error1" },
+    { ok: false, error: "error2" },
+    { ok: false, error: "error3" },
+  ]);
+});
+```

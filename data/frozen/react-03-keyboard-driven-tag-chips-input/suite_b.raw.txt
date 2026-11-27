@@ -1,0 +1,36 @@
+- Pressing Enter commits the trimmed text, clears the input, and ignores empty or duplicate (case-insensitive) tags.
+- Pressing Backspace when the text input is empty removes the last tag via onChange.
+- Each chip includes an accessible remove button that removes only that tag.
+
+```tsx
+import React from 'react';
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom/extend-expect';
+import TagChipsInput from './TagChipsInput';
+
+afterEach(cleanup);
+
+test("Pressing Enter commits the trimmed text, clears the input, and ignores empty or duplicate (case-insensitive) tags", async () => {
+  const handleChange = vi.fn();
+  render(<TagChipsInput value={[]} onChange={handleChange} />);
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: ' tag1, tag2, tag1 ' } });
+  fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' });
+  await waitFor(() => expect(handleChange).toHaveBeenCalledWith(['tag1', 'tag2']));
+  expect(screen.getByRole('textbox')).toHaveValue('');
+});
+
+test("Pressing Backspace when the text input is empty removes the last tag via onChange", async () => {
+  const handleChange = vi.fn();
+  render(<TagChipsInput value={['tag1', 'tag2']} onChange={handleChange} />);
+  fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Backspace' });
+  await waitFor(() => expect(handleChange).toHaveBeenCalledWith(['tag1']));
+});
+
+test("Each chip includes an accessible remove button that removes only that tag", async () => {
+  const handleChange = vi.fn();
+  render(<TagChipsInput value={['tag1', 'tag2']} onChange={handleChange} />);
+  const chip1 = screen.getByText('tag1');
+  fireEvent.click(within(chip1).getByRole('button', { name: 'Remove tag1' }));
+  await waitFor(() => expect(handleChange).toHaveBeenCalledWith(['tag2']));
+});
+```

@@ -1,0 +1,19 @@
+```typescript
+export function formatCsvRow(cells: readonly (string | number | boolean | null | undefined)[]): string {
+    return cells.map(cell => {
+        if (cell === null || cell === undefined) {
+            return '';
+        }
+        if (typeof cell === 'number' || typeof cell === 'boolean') {
+            return String(cell);
+        }
+        if (typeof cell === 'string') {
+            if (/^[=+-@]/.test(cell)) {
+                cell = `'${cell}`;
+            }
+            return cell.includes('"') || cell.includes(',') || cell.includes('\n') ? `"${cell.replace(/"/g, '""')}"` : cell;
+        }
+        throw new Error('Unsupported cell type');
+    }).join(',');
+}
+```

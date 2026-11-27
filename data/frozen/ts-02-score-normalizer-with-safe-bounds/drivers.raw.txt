@@ -1,0 +1,25 @@
+```ts
+probe("empty array", async () => {
+  return normalizeScores([]);
+});
+
+probe("array with single value", async () => {
+  return normalizeScores([5]);
+});
+
+probe("array with multiple values", async () => {
+  return normalizeScores([1, 2, 3, 4, 5]);
+});
+
+probe("array with NaN", async () => {
+  return normalizeScores([1, NaN, 3]);
+});
+
+probe("array with Infinity", async () => {
+  return normalizeScores([1, Infinity, 3]);
+});
+
+probe("targetMin greater than targetMax", async () => {
+  return normalizeScores([1, 2, 3], 2, 1);
+});
+```

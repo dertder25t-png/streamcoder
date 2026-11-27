@@ -1,0 +1,38 @@
+export interface MemoizeOptions {
+  ttlMs: number;
+  maxEntries: number;
+  now?: () => number;
+}
+
+export function memoizeAsync<V>(
+  fn: (key: string) => Promise<V>,
+  options: MemoizeOptions,
+): (key: string) => Promise<V> {
+  const { ttlMs, maxEntries, now = Date.now } = options;
+  const cache = new Map<string, { promise: Promise<V>; at: number }>();
+
+  return async (key) => {
+    const hit = cache.get(key);
+    if (hit) {
+      if (now() - hit.at < ttlMs) {
+        return hit.promise;
+      } else {
+        cache.delete(key);
+      }
+    }
+
+    let promise = fn(key);
+    const store = () => {
+      cache.set(key, { promise, at: now() });
+      while (cache.size > maxEntries) {
+        const oldestKey = cache.keys().next().value;
+        const { promise: oldestPromise } = cache.get(oldestKey)!;
+        oldestPromise.catch(() => {}); // Ensure rejected promises are not cached
+        cache.delete(oldestKey);
+      }
+    };
+
+    promise = promise.finally(store);
+    return promise;
+  };
+}

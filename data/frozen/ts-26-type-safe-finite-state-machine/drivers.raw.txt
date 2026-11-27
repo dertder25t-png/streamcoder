@@ -1,0 +1,73 @@
+```ts
+probe("initial state", async () => {
+  const machine = createStateMachine({
+    initial: "start",
+    transitions: {
+      start: {
+        next: { target: "end" }
+      }
+    }
+  });
+  return machine.getState();
+});
+
+probe("can transition", async () => {
+  const machine = createStateMachine({
+    initial: "start",
+    transitions: {
+      start: {
+        next: { target: "end" }
+      }
+    }
+  });
+  return machine.can("next");
+});
+
+probe("send transition", async () => {
+  const machine = createStateMachine({
+    initial: "start",
+    transitions: {
+      start: {
+        next: { target: "end" }
+      }
+    }
+  });
+  return machine.send("next");
+});
+
+probe("cannot transition with guard", async () => {
+  const machine = createStateMachine({
+    initial: "start",
+    transitions: {
+      start: {
+        next: { target: "end", guard: () => false }
+      }
+    }
+  });
+  return machine.can("next");
+});
+
+probe("send cannot transition with guard", async () => {
+  const machine = createStateMachine({
+    initial: "start",
+    transitions: {
+      start: {
+        next: { target: "end", guard: () => false }
+      }
+    }
+  });
+  return machine.send("next");
+});
+
+probe("invalid event", async () => {
+  const machine = createStateMachine({
+    initial: "start",
+    transitions: {
+      start: {
+        next: { target: "end" }
+      }
+    }
+  });
+  return machine.can("invalid");
+});
+```

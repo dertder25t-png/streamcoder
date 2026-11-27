@@ -1,0 +1,25 @@
+{
+ "id": "react-15-self-updating-relative-timestamp",
+ "topic": "react",
+ "cand_hidden": [
+  true,
+  false,
+  true,
+  true
+ ],
+ "cand_hidden_err": [
+  "",
+  "type error: .runs/react-15-self-updating-relative-timestamp/solution.tsx(24,64): error TS2304: Canno",
+  "",
+  ""
+ ],
+ "cand_tokens": [
+  278,
+  275,
+  267,
+  236
+ ],
+ "gen_seconds": 26.2,
+ "type_only": false,
+ "errors": []
+}

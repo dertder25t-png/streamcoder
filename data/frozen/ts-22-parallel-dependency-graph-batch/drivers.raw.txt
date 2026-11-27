@@ -1,0 +1,29 @@
+```ts
+probe("empty input", async () => {
+  return planExecutionBatches([]);
+});
+
+probe("single task", async () => {
+  return planExecutionBatches([{ id: "a", dependsOn: [] }]);
+});
+
+probe("two tasks with no dependencies", async () => {
+  return planExecutionBatches([{ id: "a", dependsOn: [] }, { id: "b", dependsOn: [] }]);
+});
+
+probe("two tasks with one dependency", async () => {
+  return planExecutionBatches([{ id: "a", dependsOn: [] }, { id: "b", dependsOn: ["a"] }]);
+});
+
+probe("two tasks with cyclic dependency", async () => {
+  return planExecutionBatches([{ id: "a", dependsOn: ["b"] }, { id: "b", dependsOn: ["a"] }]);
+});
+
+probe("duplicate task ID", async () => {
+  return planExecutionBatches([{ id: "a", dependsOn: [] }, { id: "a", dependsOn: [] }]);
+});
+
+probe("missing dependency ID", async () => {
+  return planExecutionBatches([{ id: "a", dependsOn: ["b"] }]);
+});
+```

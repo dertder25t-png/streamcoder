@@ -1,0 +1,56 @@
+- Concurrent reads for an uncached file coalesce into a single disk read while returning fresh copies or immutable buffers.
+- Automatically reloads from disk when a cached file's mtimeMs or byte size changes.
+- Evicts least-recently-used entries so total cached byte weight never exceeds maxBytes (files larger than maxBytes bypass caching instead of evicting everything endlessly).
+
+```ts
+import { promises as fsp } from "node:fs";
+import { createFileCache } from "./createFileCache"; // Adjust the import path as necessary
+
+test("Concurrent reads for an uncached file coalesce into a single disk read", async () => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const filePath = path.join(dir, "test.txt");
+  await fsp.writeFile(filePath, "initial content");
+
+  const cache = createFileCache({ maxBytes: 1024 });
+  const read1 = cache.read(filePath);
+  const read2 = cache.read(filePath);
+
+  const [content1, content2] = await Promise.all([read1, read2]);
+  expect(content1).toEqual(Buffer.from("initial content"));
+  expect(content2).toEqual(Buffer.from("initial content"));
+  expect(content1 === content2).toBe(true); // Ensure the same buffer is returned
+});
+
+test("Automatically reloads from disk when a cached file's mtimeMs or byte size changes", async () => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const filePath = path.join(dir, "test.txt");
+  await fsp.writeFile(filePath, "initial content");
+
+  const cache = createFileCache({ maxBytes: 1024 });
+  const content1 = await cache.read(filePath);
+  expect(content1).toEqual(Buffer.from("initial content"));
+
+  await fsp.writeFile(filePath, "updated content");
+  const content2 = await cache.read(filePath);
+  expect(content2).toEqual(Buffer.from("updated content"));
+  expect(content1 !== content2).toBe(true); // Ensure a new buffer is returned
+});
+
+test("Evicts least-recently-used entries so total cached byte weight never exceeds maxBytes", async () => {
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "st-"));
+  const filePath1 = path.join(dir, "test1.txt");
+  const filePath2 = path.join(dir, "test2.txt");
+  await fsp.writeFile(filePath1, "small content");
+  await fsp.writeFile(filePath2, "large content".repeat(100));
+
+  const cache = createFileCache({ maxBytes: 1024 });
+  await cache.read(filePath1);
+  await cache.read(filePath2);
+
+  const content1 = await cache.read(filePath1);
+  expect(content1).toEqual(Buffer.from("small content"));
+  const content2 = await cache.read(filePath2);
+  expect(content2).toEqual(Buffer.from("large content".repeat(100)));
+  expect(cache.cache.size).toBe(1); // Only the larger file should be cached
+});
+```

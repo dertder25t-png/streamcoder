@@ -1,0 +1,42 @@
+```ts
+probe("freeze primitive", async () => {
+  return deepFreezeSafe(42);
+});
+
+probe("freeze null", async () => {
+  return deepFreezeSafe(null);
+});
+
+probe("freeze empty object", async () => {
+  return deepFreezeSafe({});
+});
+
+probe("freeze nested object", async () => {
+  const obj = { a: { b: 1 } };
+  return deepFreezeSafe(obj);
+});
+
+probe("freeze array", async () => {
+  return deepFreezeSafe([1, 2, 3]);
+});
+
+probe("freeze symbol-keyed object", async () => {
+  const sym = Symbol("key");
+  const obj = { [sym]: 42 };
+  return deepFreezeSafe(obj);
+});
+
+probe("freeze self-referential object", async () => {
+  const obj: { a?: typeof obj } = {};
+  obj.a = obj;
+  return deepFreezeSafe(obj);
+});
+
+probe("freeze mutually cyclic graph", async () => {
+  const obj1: { a?: typeof obj2 } = {};
+  const obj2: { b?: typeof obj1 } = {};
+  obj1.a = obj2;
+  obj2.b = obj1;
+  return deepFreezeSafe(obj1);
+});
+```

@@ -1,0 +1,80 @@
+- Test that calling next() more than once within the same middleware rejects with an Error.
+- Test that errors thrown synchronously or asynchronously in downstream middlewares propagate to upstream try/catch blocks.
+- Test that middlewares execute in onion order (before next() top-down, after next() bottom-up).
+- Test that the function handles empty or invalid input gracefully.
+- Test that the function cleans up resources properly.
+
+```ts
+import { composeMiddleware } from './composeMiddleware';
+
+test("Calling next() more than once within the same middleware rejects with an Error", async () => {
+  const middleware: Middleware<any> = async (ctx, next) => {
+    await next();
+    await next(); // This should reject
+  };
+
+  const composed = composeMiddleware([middleware]);
+  await expect(composed({})).rejects.toThrow("next() called multiple times");
+});
+
+test("Errors thrown synchronously or asynchronously in downstream middlewares propagate to upstream try/catch blocks", async () => {
+  const middleware1: Middleware<any> = async (ctx, next) => {
+    await next();
+  };
+
+  const middleware2: Middleware<any> = async (ctx, next) => {
+    throw new Error("Downstream error");
+  };
+
+  const composed = composeMiddleware([middleware1, middleware2]);
+  await expect(composed({})).rejects.toThrow("Downstream error");
+});
+
+test("Middlewares execute in onion order (before next() top-down, after next() bottom-up)", async () => {
+  const middleware1: Middleware<any> = async (ctx, next) => {
+    console.log("Middleware 1 before");
+    await next();
+    console.log("Middleware 1 after");
+  };
+
+  const middleware2: Middleware<any> = async (ctx, next) => {
+    console.log("Middleware 2 before");
+    await next();
+    console.log("Middleware 2 after");
+  };
+
+  const composed = composeMiddleware([middleware1, middleware2]);
+  const consoleSpy = vi.spyOn(console, 'log');
+  await composed({});
+  expect(consoleSpy.mock.calls).toEqual([
+    ["Middleware 1 before"],
+    ["Middleware 2 before"],
+    ["Middleware 2 after"],
+    ["Middleware 1 after"],
+  ]);
+});
+
+test("The function handles empty or invalid input gracefully", async () => {
+  const composed = composeMiddleware([]);
+  await expect(composed({})).resolves.not.toThrow();
+
+  const invalidMiddleware: Middleware<any> = undefined as any;
+  const composedInvalid = composeMiddleware([invalidMiddleware]);
+  await expect(composedInvalid({})).rejects.toThrow("Middleware is not a function");
+});
+
+test("The function cleans up resources properly", async () => {
+  const middleware: Middleware<any> = async (ctx, next) => {
+    const cleanup = () => {
+      console.log("Cleanup");
+    };
+    process.on('exit', cleanup);
+    await next();
+    process.removeListener('exit', cleanup);
+  };
+
+  const composed = composeMiddleware([middleware]);
+  await composed({});
+  expect(console.log).toHaveBeenCalledWith("Cleanup");
+});
+```

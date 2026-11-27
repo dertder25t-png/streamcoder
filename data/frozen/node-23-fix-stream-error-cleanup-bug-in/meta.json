@@ -1,0 +1,25 @@
+{
+ "id": "node-23-fix-stream-error-cleanup-bug-in",
+ "topic": "node",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/node-23-fix-stream-error-cleanup-bug-in/solution.ts(21,7): error TS2304: Cannot fi",
+  "type error: .runs/node-23-fix-stream-error-cleanup-bug-in/solution.ts(21,9): error TS18046: 'error' ",
+  "test failed: does not clobber an existing destPath when the source is missing; rejects on an already",
+  "test failed: does not clobber an existing destPath when the source is missing; rejects on an already"
+ ],
+ "cand_tokens": [
+  232,
+  340,
+  240,
+  283
+ ],
+ "gen_seconds": 52.4,
+ "type_only": false,
+ "errors": []
+}

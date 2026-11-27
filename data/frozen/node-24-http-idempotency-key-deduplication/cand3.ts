@@ -1,0 +1,92 @@
+import { IncomingMessage, ServerResponse } from 'http';
+import crypto from 'crypto';
+
+interface IdempotencyWrapperOptions {
+  ttlMs: number;
+  now: () => number;
+}
+
+interface CacheEntry {
+  status: number;
+  headers: { [key: string]: string };
+  body: string;
+  expires: number;
+}
+
+const createIdempotencyWrapper = ({ ttlMs, now }: IdempotencyWrapperOptions) => {
+  const cache = new Map<string, CacheEntry>();
+
+  return async (handler: (req: IncomingMessage, res: ServerResponse) => Promise<void>) => {
+    return async (req: IncomingMessage, res: ServerResponse) => {
+      const idempotencyKey = req.headers['idempotency-key'] as string | undefined;
+      if (!idempotencyKey) {
+        res.statusCode = 400;
+        res.end('Idempotency-Key header is required');
+        return;
+      }
+
+      let requestBody = '';
+      req.on('data', (chunk) => {
+        requestBody += chunk.toString();
+      });
+
+      await new Promise((resolve, reject) => {
+        req.on('end', resolve);
+        req.on('error', reject);
+      });
+
+      const bodyHash = crypto.createHash('sha256').update(requestBody).digest('hex');
+
+      const cacheEntry = cache.get(idempotencyKey);
+      if (cacheEntry && cacheEntry.expires > now() && cacheEntry.bodyHash === bodyHash) {
+        res.writeHead(cacheEntry.status, cacheEntry.headers);
+        res.end(cacheEntry.body);
+        return;
+      }
+
+      try {
+        const originalWriteHead = res.writeHead.bind(res);
+        const originalWrite = res.write.bind(res);
+        const originalEnd = res.end.bind(res);
+
+        const responseChunks: string[] = [];
+        res.writeHead = (status, headers) => {
+          responseChunks.push(`HTTP/1.1 ${status}\n`);
+          Object.entries(headers).forEach(([key, value]) => {
+            responseChunks.push(`${key}: ${value}\n`);
+          });
+          responseChunks.push('\n');
+        };
+
+        res.write = (chunk) => {
+          responseChunks.push(chunk.toString());
+        };
+
+        res.end = (chunk) => {
+          if (chunk) {
+            responseChunks.push(chunk.toString());
+          }
+          const response = responseChunks.join('');
+          const { statusCode, statusMessage, ...headers } = res;
+          cache.set(idempotencyKey, {
+            status: statusCode || 200,
+            headers,
+            body: response,
+            expires: now() + ttlMs,
+            bodyHash
+          });
+          originalWriteHead(statusCode || 200, headers);
+          originalWrite(response);
+          originalEnd();
+        };
+
+        await handler(req, res);
+      } catch (error) {
+        res.statusCode = 500;
+        res.end('Internal Server Error');
+      }
+    };
+  };
+};
+
+export { createIdempotencyWrapper };

@@ -1,0 +1,25 @@
+{
+ "id": "node-02-atomic-json-file-writer",
+ "topic": "node",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/node-02-atomic-json-file-writer/solution.ts(16,22): error TS2339: Property 'exists",
+  "type error: .runs/node-02-atomic-json-file-writer/solution.ts(6,27): error TS2552: Cannot find name ",
+  "test failed: writes pretty-printed JSON with trailing newline and leaves no temp files; replaces the",
+  "type error: .runs/node-02-atomic-json-file-writer/solution.ts(14,18): error TS2339: Property 'exists"
+ ],
+ "cand_tokens": [
+  178,
+  149,
+  215,
+  182
+ ],
+ "gen_seconds": 38.6,
+ "type_only": false,
+ "errors": []
+}

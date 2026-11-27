@@ -1,0 +1,39 @@
+```tsx
+probe("initial step is 0", async () => {
+  const { step } = renderHook(() => useWizard(3));
+  return step;
+});
+
+probe("next step increments", async () => {
+  const { step, next } = renderHook(() => useWizard(3));
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  return step;
+});
+
+probe("prev step decrements", async () => {
+  const { step, prev } = renderHook(() => useWizard(3));
+  fireEvent.click(screen.getByRole("button", { name: "Previous" }));
+  return step;
+});
+
+probe("goTo sets step to index", async () => {
+  const { step, goTo } = renderHook(() => useWizard(3));
+  fireEvent.click(screen.getByRole("button", { name: "Go to 2" }));
+  return step;
+});
+
+probe("step clamps to 0", async () => {
+  const { step, prev } = renderHook(() => useWizard(3));
+  fireEvent.click(screen.getByRole("button", { name: "Previous" }));
+  fireEvent.click(screen.getByRole("button", { name: "Previous" }));
+  return step;
+});
+
+probe("step clamps to totalSteps - 1", async () => {
+  const { step, next } = renderHook(() => useWizard(3));
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  return step;
+});
+```

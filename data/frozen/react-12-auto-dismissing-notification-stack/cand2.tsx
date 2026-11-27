@@ -1,0 +1,68 @@
+import React, { useState, useEffect, useRef } from 'react';
+
+interface Toast {
+  id: string;
+  message: string;
+  durationMs?: number;
+}
+
+interface ToastListProps {
+  toasts: Toast[];
+  onDismiss: (id: string) => void;
+  defaultDurationMs?: number;
+}
+
+const ToastList: React.FC<ToastListProps> = ({ toasts, onDismiss, defaultDurationMs = 4000 }) => {
+  const [toastState, setToastState] = useState<{ id: string; timeoutId: NodeJS.Timeout | null; durationMs: number }[]>([]);
+
+  useEffect(() => {
+    toasts.forEach(toast => {
+      if (!toastState.some(state => state.id === toast.id)) {
+        const timeoutId = toast.durationMs === 0 ? null : setTimeout(() => onDismiss(toast.id), toast.durationMs || defaultDurationMs);
+        setToastState(prev => [...prev, { ...toast, timeoutId }]);
+      }
+    });
+    return () => {
+      toastState.forEach(({ timeoutId }) => clearTimeout(timeoutId));
+    };
+  }, [toasts, onDismiss, defaultDurationMs, toastState]);
+
+  const handleMouseEnter = (id: string) => {
+    setToastState(prev =>
+      prev.map(state =>
+        state.id === id ? { ...state, timeoutId: state.timeoutId ? null : state.timeoutId } : state
+      )
+    );
+  };
+
+  const handleMouseLeave = (id: string) => {
+    setToastState(prev =>
+      prev.map(state =>
+        state.id === id ? { ...state, timeoutId: state.timeoutId ? state.timeoutId : null } : state
+      )
+    );
+  };
+
+  const handleCloseClick = (id: string) => {
+    onDismiss(id);
+    setToastState(prev => prev.filter(state => state.id !== id));
+  };
+
+  return (
+    <div>
+      {toastState.map(({ id, message, durationMs, timeoutId }) => (
+        <div
+          key={id}
+          onMouseEnter={() => handleMouseEnter(id)}
+          onMouseLeave={() => handleMouseLeave(id)}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px', border: '1px solid #ccc', margin: '4px' }}
+        >
+          <span>{message}</span>
+          <button onClick={() => handleCloseClick(id)}>Close</button>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export { ToastList };

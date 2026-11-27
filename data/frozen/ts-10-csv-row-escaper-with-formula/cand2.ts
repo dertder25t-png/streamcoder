@@ -1,0 +1,18 @@
+export function formatCsvRow(cells: readonly (string | number | boolean | null | undefined)[]): string {
+    return cells.map(cell => {
+        if (cell === null || cell === undefined) {
+            return '';
+        }
+        if (typeof cell === 'number' || typeof cell === 'boolean') {
+            return String(cell);
+        }
+        if (cell.startsWith('=') || cell.startsWith('+') || cell.startsWith('-') || cell.startsWith('@')) {
+            cell = `'${cell}`;
+        }
+        if (/["\n,]/.test(cell)) {
+            cell = cell.replace(/"/g, '""');
+            return `"${cell}"`;
+        }
+        return cell;
+    }).join(',');
+}

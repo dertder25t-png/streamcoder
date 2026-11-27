@@ -1,0 +1,67 @@
+- Middlewares execute in onion order (before next() top-down, after next() bottom-up).
+- Calling next() more than once within the same middleware rejects with an Error (e.g., "next() called multiple times").
+- Errors thrown synchronously or asynchronously in downstream middlewares propagate to upstream try/catch blocks.
+
+```ts
+import { composeMiddleware } from './composeMiddleware';
+
+test("Middlewares execute in onion order", async () => {
+  const middleware1 = vi.fn((ctx, next) => {
+    expect(ctx).toEqual({});
+    return next();
+  });
+  const middleware2 = vi.fn((ctx, next) => {
+    expect(ctx).toEqual({});
+    return next();
+  });
+  const middleware3 = vi.fn((ctx, next) => {
+    expect(ctx).toEqual({});
+    return next();
+  });
+
+  const composed = composeMiddleware([middleware1, middleware2, middleware3]);
+  await composed({});
+
+  expect(middleware1).toHaveBeenCalledWith({}, expect.any(Function));
+  expect(middleware2).toHaveBeenCalledWith({}, expect.any(Function));
+  expect(middleware3).toHaveBeenCalledWith({}, expect.any(Function));
+  expect(middleware1).toHaveBeenCalledBefore(middleware2);
+  expect(middleware2).toHaveBeenCalledBefore(middleware3);
+  expect(middleware3).toHaveBeenCalledAfter(middleware2);
+  expect(middleware2).toHaveBeenCalledAfter(middleware1);
+});
+
+test("Calling next() more than once within the same middleware rejects with an Error", async () => {
+  const middleware = vi.fn((ctx, next) => {
+    next();
+    return next();
+  });
+
+  const composed = composeMiddleware([middleware]);
+  await expect(composed({})).rejects.toThrow("next() called multiple times");
+});
+
+test("Errors thrown synchronously in downstream middlewares propagate to upstream try/catch blocks", async () => {
+  const middleware1 = vi.fn((ctx, next) => {
+    return next();
+  });
+  const middleware2 = vi.fn((ctx, next) => {
+    throw new Error("Error from middleware2");
+  });
+
+  const composed = composeMiddleware([middleware1, middleware2]);
+  await expect(composed({})).rejects.toThrow("Error from middleware2");
+});
+
+test("Errors thrown asynchronously in downstream middlewares propagate to upstream try/catch blocks", async () => {
+  const middleware1 = vi.fn((ctx, next) => {
+    return next();
+  });
+  const middleware2 = vi.fn((ctx, next) => {
+    return Promise.reject(new Error("Error from middleware2"));
+  });
+
+  const composed = composeMiddleware([middleware1, middleware2]);
+  await expect(composed({})).rejects.toThrow("Error from middleware2");
+});
+```

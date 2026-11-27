@@ -1,0 +1,37 @@
+- Returns true only when payload is a non-null plain object with type === "payment.settled", a non-empty string id, and a non-negative integer amountCents.
+- Returns false for null, primitives, arrays, fractional amounts, or negative amounts without throwing.
+- Narrowing inside an if (isPaymentWebhook(x)) block exposes typed fields without additional casts under strict: true.
+
+```ts
+import { isPaymentWebhook } from './path-to-module';
+
+test("returns true for valid PaymentWebhook", () => {
+  expect(isPaymentWebhook({ type: "payment.settled", id: "123", amountCents: 100 })).toBe(true);
+});
+
+test("returns false for null", () => {
+  expect(isPaymentWebhook(null)).toBe(false);
+});
+
+test("returns false for primitive", () => {
+  expect(isPaymentWebhook("not an object")).toBe(false);
+  expect(isPaymentWebhook(123)).toBe(false);
+  expect(isPaymentWebhook(true)).toBe(false);
+});
+
+test("returns false for array", () => {
+  expect(isPaymentWebhook(["not", "an", "object"])).toBe(false);
+});
+
+test("returns false for missing amountCents", () => {
+  expect(isPaymentWebhook({ type: "payment.settled", id: "123" })).toBe(false);
+});
+
+test("returns false for non-integer amountCents", () => {
+  expect(isPaymentWebhook({ type: "payment.settled", id: "123", amountCents: 100.5 })).toBe(false);
+});
+
+test("returns false for negative amountCents", () => {
+  expect(isPaymentWebhook({ type: "payment.settled", id: "123", amountCents: -100 })).toBe(false);
+});
+```

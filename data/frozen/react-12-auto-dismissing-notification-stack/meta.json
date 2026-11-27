@@ -1,0 +1,25 @@
+{
+ "id": "react-12-auto-dismissing-notification-stack",
+ "topic": "react",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "test failed:  \u276f ChildProcess.onUnexpectedExit node_modules/tinypool/dist/index.js:118:30 |  \u276f ChildP",
+  "test failed: auto-dismisses after the default duration, or the toast's own duration; hovering pauses",
+  "type error:       Type 'null' is not assignable to type 'number | undefined'. | .runs/react-12-auto-",
+  "type error: .runs/react-12-auto-dismissing-notification-stack/solution.test.tsx(4,10): error TS2614:"
+ ],
+ "cand_tokens": [
+  788,
+  520,
+  533,
+  663
+ ],
+ "gen_seconds": 41.6,
+ "type_only": false,
+ "errors": []
+}

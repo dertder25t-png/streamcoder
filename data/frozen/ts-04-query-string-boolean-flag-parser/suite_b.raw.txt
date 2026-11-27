@@ -1,0 +1,43 @@
+- Leading ? characters are optional and comparison is case-insensitive.
+- Repeated keys use the last valid occurrence in the query string.
+- Keys with unrecognized values (such as ?mode=fast) are omitted rather than coerced to false.
+- Empty or invalid input should return an empty object.
+- Repeated calls should not accumulate state.
+
+```ts
+import { parseBooleanFlags } from './parseBooleanFlags';
+
+afterEach(() => {
+  // Cleanup code if needed
+});
+
+test("Leading ? characters are optional and comparison is case-insensitive", () => {
+  expect(parseBooleanFlags("debug=true")).toEqual({ debug: true });
+  expect(parseBooleanFlags("?debug=true")).toEqual({ debug: true });
+  expect(parseBooleanFlags("DEBUG=true")).toEqual({ debug: true });
+  expect(parseBooleanFlags("debug=TRUE")).toEqual({ debug: true });
+});
+
+test("Repeated keys use the last valid occurrence in the query string", () => {
+  expect(parseBooleanFlags("debug=true&debug=false")).toEqual({ debug: false });
+  expect(parseBooleanFlags("debug=false&debug=true")).toEqual({ debug: true });
+});
+
+test("Keys with unrecognized values are omitted rather than coerced to false", () => {
+  expect(parseBooleanFlags("mode=fast")).toEqual({});
+  expect(parseBooleanFlags("mode=fast&debug=true")).toEqual({ debug: true });
+});
+
+test("Empty or invalid input should return an empty object", () => {
+  expect(parseBooleanFlags("")).toEqual({});
+  expect(parseBooleanFlags(" ")).toEqual({});
+  expect(parseBooleanFlags("invalid= ")).toEqual({});
+  expect(parseBooleanFlags("invalid=")).toEqual({});
+  expect(parseBooleanFlags("invalid=123")).toEqual({});
+});
+
+test("Repeated calls should not accumulate state", () => {
+  expect(parseBooleanFlags("debug=true")).toEqual({ debug: true });
+  expect(parseBooleanFlags("debug=false")).toEqual({ debug: false });
+});
+```

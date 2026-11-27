@@ -1,0 +1,23 @@
+- Returns [] when values.length < windowSize.
+- Throws a RangeError when windowSize is not a positive integer.
+- Computes exact rolling averages in O(n) time without accumulating floating-point drift on large arrays of identical numbers.
+
+```ts
+test("returns [] when values.length < windowSize", () => {
+  expect(movingWindowMean([1, 2], 3)).toEqual([]);
+});
+
+test("throws a RangeError when windowSize is not a positive integer", () => {
+  expect(() => movingWindowMean([1, 2, 3], 0)).toThrow(RangeError);
+  expect(() => movingWindowMean([1, 2, 3], -1)).toThrow(RangeError);
+  expect(() => movingWindowMean([1, 2, 3], 1.5)).toThrow(RangeError);
+});
+
+test("computes exact rolling averages in O(n) time", () => {
+  const values = Array(100000).fill(1);
+  const windowSize = 1000;
+  const result = movingWindowMean(values, windowSize);
+  expect(result.length).toBe(values.length - windowSize + 1);
+  expect(result.every((value, index) => value === 1)).toBe(true);
+});
+```

@@ -1,0 +1,90 @@
+- In-flight HTTP requests started before shutdown() complete normally with their full response before the server closes.
+- Idle keep-alive connections are closed promptly so shutdown() does not hang waiting for socket timeouts.
+- Calling shutdown() multiple times concurrently returns the same promise and force-destroys lingering sockets once drainTimeoutMs expires.
+
+```ts
+import { test, expect, vi } from 'vitest';
+import { attachGracefulShutdown } from './attachGracefulShutdown'; // Adjust the import path as necessary
+
+test('In-flight HTTP requests complete normally before shutdown', async () => {
+  const http = require('http');
+  const server = http.createServer((req, res) => {
+    setTimeout(() => {
+      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      res.end('Hello, world!');
+    }, 1000);
+  });
+
+  const shutdown = attachGracefulShutdown(server, { drainTimeoutMs: 2000 });
+
+  const response = await new Promise((resolve) => {
+    http.get('http://localhost:8080', (res) => {
+      let data = '';
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      res.on('end', () => {
+        resolve(data);
+      });
+    });
+  });
+
+  expect(response).toBe('Hello, world!');
+  await shutdown();
+});
+
+test('Idle keep-alive connections are closed promptly', async () => {
+  const http = require('http');
+  const server = http.createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('Hello, world!');
+  });
+
+  const shutdown = attachGracefulShutdown(server, { drainTimeoutMs: 1000 });
+
+  const response = await new Promise((resolve) => {
+    http.get('http://localhost:8080', (res) => {
+      let data = '';
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      res.on('end', () => {
+        resolve(data);
+      });
+    });
+  });
+
+  expect(response).toBe('Hello, world!');
+  await shutdown();
+});
+
+test('Calling shutdown() multiple times concurrently returns the same promise', async () => {
+  const http = require('http');
+  const server = http.createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('Hello, world!');
+  });
+
+  const shutdown = attachGracefulShutdown(server, { drainTimeoutMs: 1000 });
+
+  const promise1 = shutdown();
+  const promise2 = shutdown();
+
+  expect(promise1).toBe(promise2);
+
+  const response = await new Promise((resolve) => {
+    http.get('http://localhost:8080', (res) => {
+      let data = '';
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      res.on('end', () => {
+        resolve(data);
+      });
+    });
+  });
+
+  expect(response).toBe('Hello, world!');
+  await promise1;
+});
+```

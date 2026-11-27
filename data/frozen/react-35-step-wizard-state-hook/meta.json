@@ -1,0 +1,25 @@
+{
+ "id": "react-35-step-wizard-state-hook",
+ "topic": "react",
+ "cand_hidden": [
+  true,
+  true,
+  true,
+  true
+ ],
+ "cand_hidden_err": [
+  "",
+  "",
+  "",
+  ""
+ ],
+ "cand_tokens": [
+  170,
+  170,
+  166,
+  171
+ ],
+ "gen_seconds": 36.9,
+ "type_only": false,
+ "errors": []
+}

@@ -1,0 +1,35 @@
+- The function `chunkArray` should throw a `RangeError` if `size` is less than 1.
+- The function `chunkArray` should return an array of arrays where each inner array contains up to `size` items of type `T`.
+- The function `chunkArray` should preserve the exact item type `T` in the return signature with zero `any` casts.
+- The function `chunkArray` should handle empty input arrays correctly.
+- The function `chunkArray` should handle arrays with fewer items than the chunk size.
+
+```ts
+import { chunkArray } from './chunkArray';
+
+test("throws RangeError if size is less than 1", () => {
+  expect(() => chunkArray([1, 2, 3], 0)).toThrow(RangeError);
+  expect(() => chunkArray([1, 2, 3], -1)).toThrow(RangeError);
+});
+
+test("returns an array of arrays with up to size items", () => {
+  expect(chunkArray([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]]);
+  expect(chunkArray([1, 2, 3, 4, 5], 3)).toEqual([[1, 2, 3], [4, 5]]);
+});
+
+test("preserves the exact item type T in the return signature", () => {
+  const numbers = chunkArray([1, 2, 3, 4, 5], 2);
+  expect(numbers).toBeInstanceOf(Array);
+  expect(numbers[0]).toBeInstanceOf(Array);
+  expect(numbers[0][0]).toBe(1);
+});
+
+test("handles empty input arrays correctly", () => {
+  expect(chunkArray([], 2)).toEqual([]);
+  expect(chunkArray([], 1)).toEqual([]);
+});
+
+test("handles arrays with fewer items than the chunk size", () => {
+  expect(chunkArray([1, 2], 3)).toEqual([[1, 2]]);
+});
+```

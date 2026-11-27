@@ -1,0 +1,25 @@
+{
+ "id": "node-05-fix-unhandled-rejections-in",
+ "topic": "node",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "type error: .runs/node-05-fix-unhandled-rejections-in/solution.ts(10,13): error TS18046: 'err' is of",
+  "type error: .runs/node-05-fix-unhandled-rejections-in/solution.ts(11,41): error TS2339: Property 'co",
+  "type error: .runs/node-05-fix-unhandled-rejections-in/solution.ts(11,13): error TS18046: 'err' is of",
+  "type error: .runs/node-05-fix-unhandled-rejections-in/solution.ts(10,45): error TS2339: Property 'co"
+ ],
+ "cand_tokens": [
+  123,
+  135,
+  135,
+  181
+ ],
+ "gen_seconds": 25.2,
+ "type_only": false,
+ "errors": []
+}

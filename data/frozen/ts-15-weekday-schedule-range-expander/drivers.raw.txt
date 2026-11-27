@@ -1,0 +1,25 @@
+```ts
+probe("empty string", async () => {
+  return expandWeekdaySpec("");
+});
+
+probe("single weekday", async () => {
+  return expandWeekdaySpec("Mon");
+});
+
+probe("normal range", async () => {
+  return expandWeekdaySpec("Tue-Thu");
+});
+
+probe("wrap-around range", async () => {
+  return expandWeekdaySpec("Sat-Mon");
+});
+
+probe("mixed case", async () => {
+  return expandWeekdaySpec("Sun,Thu,Fri");
+});
+
+probe("unknown token", async () => {
+  return expandWeekdaySpec("Sun,Thu,Invalid");
+});
+```

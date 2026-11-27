@@ -1,0 +1,65 @@
+```tsx
+import React, { useState, useEffect } from 'react';
+
+interface RevealableTokenProps {
+  token: string;
+}
+
+const RevealableToken: React.FC<RevealableTokenProps> = ({ token }) => {
+  const [isRevealed, setIsRevealed] = useState(false);
+  const [copyMessage, setCopyMessage] = useState<string | null>(null);
+  const [copyTimer, setCopyTimer] = useState<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimer) {
+        clearTimeout(copyTimer);
+      }
+    };
+  }, [copyTimer]);
+
+  useEffect(() => {
+    if (isRevealed) {
+      document.title = token;
+    } else {
+      document.title = '';
+    }
+  }, [isRevealed, token]);
+
+  useEffect(() => {
+    if (copyMessage) {
+      setCopyTimer(setTimeout(() => setCopyMessage(null), 2000));
+    }
+  }, [copyMessage]);
+
+  const handleCopy = async () => {
+    if (navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(token);
+        setCopyMessage('Copied');
+      } catch (err) {
+        console.error('Failed to copy text: ', err);
+      }
+    }
+  };
+
+  if (!token) {
+    return <div>No token provided</div>;
+  }
+
+  return (
+    <div>
+      <div>
+        {isRevealed ? token : Array(token.length).fill('•').join('')}
+        <button onClick={() => setIsRevealed(!isRevealed)}>
+          {isRevealed ? 'Hide' : 'Show'}
+        </button>
+        <button onClick={handleCopy}>Copy</button>
+      </div>
+      {copyMessage && <div>{copyMessage}</div>}
+    </div>
+  );
+};
+
+export { RevealableToken };
+```

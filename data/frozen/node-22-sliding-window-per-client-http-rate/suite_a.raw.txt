@@ -1,0 +1,59 @@
+- Allows up to maxRequests within any rolling windowMs interval per client key, returning HTTP 429 with an accurate integer Retry-After header (in seconds) once exceeded.
+- Sets X-RateLimit-Limit and X-RateLimit-Remaining headers accurately on both allowed and blocked responses.
+- Evicts expired client buckets automatically so memory does not grow unbounded under rotating client keys.
+
+```ts
+test("allows up to maxRequests within any rolling windowMs interval per client key", async () => {
+  const { wrap, size } = createRateLimiter({ windowMs: 1000, maxRequests: 2, keyFn: () => "client1", now: () => Date.now() });
+  const handler = vi.fn();
+  const wrappedHandler = wrap(handler);
+
+  wrappedHandler({} as any, { setHeader: vi.fn() } as any);
+  wrappedHandler({} as any, { setHeader: vi.fn() } as any);
+
+  expect(handler).toHaveBeenCalledTimes(2);
+  expect(size()).toBe(1);
+});
+
+test("returns HTTP 429 with an accurate integer Retry-After header once exceeded", async () => {
+  const { wrap, size } = createRateLimiter({ windowMs: 1000, maxRequests: 1, keyFn: () => "client1", now: () => Date.now() });
+  const handler = vi.fn();
+  const wrappedHandler = wrap(handler);
+
+  wrappedHandler({} as any, { setHeader: vi.fn() } as any);
+  wrappedHandler({} as any, { setHeader: vi.fn() } as any);
+
+  expect(handler).toHaveBeenCalledTimes(1);
+  expect((handler.mock.calls[0][1] as any).setHeader).toHaveBeenCalledWith("Retry-After", "1");
+  expect(size()).toBe(1);
+});
+
+test("sets X-RateLimit-Limit and X-RateLimit-Remaining headers accurately on both allowed and blocked responses", async () => {
+  const { wrap, size } = createRateLimiter({ windowMs: 1000, maxRequests: 2, keyFn: () => "client1", now: () => Date.now() });
+  const handler = vi.fn();
+  const wrappedHandler = wrap(handler);
+
+  wrappedHandler({} as any, { setHeader: vi.fn() } as any);
+  wrappedHandler({} as any, { setHeader: vi.fn() } as any);
+
+  expect(handler).toHaveBeenCalledTimes(2);
+  expect((handler.mock.calls[0][1] as any).setHeader).toHaveBeenCalledWith("X-RateLimit-Limit", "2");
+  expect((handler.mock.calls[0][1] as any).setHeader).toHaveBeenCalledWith("X-RateLimit-Remaining", "0");
+  expect((handler.mock.calls[1][1] as any).setHeader).toHaveBeenCalledWith("X-RateLimit-Limit", "2");
+  expect((handler.mock.calls[1][1] as any).setHeader).toHaveBeenCalledWith("X-RateLimit-Remaining", "1");
+  expect(size()).toBe(1);
+});
+
+test("evicts expired client buckets automatically so memory does not grow unbounded under rotating client keys", async () => {
+  const { wrap, size } = createRateLimiter({ windowMs: 1000, maxRequests: 1, keyFn: () => "client1", now: () => Date.now() });
+  const handler = vi.fn();
+  const wrappedHandler = wrap(handler);
+
+  wrappedHandler({} as any, { setHeader: vi.fn() } as any);
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  wrappedHandler({} as any, { setHeader: vi.fn() } as any);
+
+  expect(handler).toHaveBeenCalledTimes(2);
+  expect(size()).toBe(1);
+});
+```

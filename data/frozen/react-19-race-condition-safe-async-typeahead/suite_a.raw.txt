@@ -1,0 +1,123 @@
+- When an earlier slow request resolves after a newer fast request, the stale results are discarded rather than overwriting newer suggestions.
+- Passes an AbortSignal to fetchSuggestions(query, signal) and aborts the previous request when the query changes or the component unmounts.
+- Arrow keys move the active option (wrapping cleanly), Enter selects it via onSelect, and Escape closes the listbox.
+
+```tsx
+import React from 'react';
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom/extend-expect';
+import vi from 'vitest';
+import AsyncAutocomplete from './AsyncAutocomplete';
+
+vi.useFakeTimers();
+
+afterEach(() => {
+  cleanup();
+  vi.clearAllTimers();
+});
+
+test("discards stale results when a newer request resolves", async () => {
+  const fetchSuggestions = vi.fn().mockImplementation((query, signal) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(query === 'fast' ? ['fast suggestion'] : ['slow suggestion']);
+      }, query === 'fast' ? 500 : 1500);
+    });
+  });
+
+  const onSelect = vi.fn();
+
+  render(<AsyncAutocomplete fetchSuggestions={fetchSuggestions} onSelect={onSelect} />);
+
+  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'fast' } });
+  vi.advanceTimersByTime(500);
+  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'slow' } });
+  vi.advanceTimersByTime(1500);
+
+  await waitFor(() => expect(fetchSuggestions).toHaveBeenCalledWith('slow', expect.any(AbortSignal)));
+  expect(onSelect).not.toHaveBeenCalled();
+});
+
+test("aborts previous request when query changes", async () => {
+  const fetchSuggestions = vi.fn().mockImplementation((query, signal) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve([query]);
+      }, 1000);
+    });
+  });
+
+  const onSelect = vi.fn();
+
+  render(<AsyncAutocomplete fetchSuggestions={fetchSuggestions} onSelect={onSelect} />);
+
+  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'first' } });
+  vi.advanceTimersByTime(500);
+  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'second' } });
+  vi.advanceTimersByTime(500);
+
+  await waitFor(() => expect(fetchSuggestions).toHaveBeenCalledWith('second', expect.any(AbortSignal)));
+  expect(onSelect).not.toHaveBeenCalled();
+});
+
+test("moves active option with arrow keys and wraps", async () => {
+  const fetchSuggestions = vi.fn().mockResolvedValue(['suggestion1', 'suggestion2', 'suggestion3']);
+
+  const onSelect = vi.fn();
+
+  render(<AsyncAutocomplete fetchSuggestions={fetchSuggestions} onSelect={onSelect} />);
+
+  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'query' } });
+
+  await waitFor(() => expect(screen.getByRole('listbox')).toBeInTheDocument());
+
+  fireEvent.keyDown(screen.getByRole('combobox'), { key: 'ArrowDown' });
+  expect(screen.getByRole('option', { name: 'suggestion1' })).toHaveAttribute('aria-selected', 'true');
+
+  fireEvent.keyDown(screen.getByRole('combobox'), { key: 'ArrowDown' });
+  expect(screen.getByRole('option', { name: 'suggestion2' })).toHaveAttribute('aria-selected', 'true');
+
+  fireEvent.keyDown(screen.getByRole('combobox'), { key: 'ArrowDown' });
+  expect(screen.getByRole('option', { name: 'suggestion3' })).toHaveAttribute('aria-selected', 'true');
+
+  fireEvent.keyDown(screen.getByRole('combobox'), { key: 'ArrowDown' });
+  expect(screen.getByRole('option', { name: 'suggestion1' })).toHaveAttribute('aria-selected', 'true');
+
+  fireEvent.keyDown(screen.getByRole('combobox'), { key: 'ArrowUp' });
+  expect(screen.getByRole('option', { name: 'suggestion3' })).toHaveAttribute('aria-selected', 'true');
+});
+
+test("selects option with Enter and closes listbox", async () => {
+  const fetchSuggestions = vi.fn().mockResolvedValue(['suggestion1']);
+
+  const onSelect = vi.fn();
+
+  render(<AsyncAutocomplete fetchSuggestions={fetchSuggestions} onSelect={onSelect} />);
+
+  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'query' } });
+
+  await waitFor(() => expect(screen.getByRole('listbox')).toBeInTheDocument());
+
+  fireEvent.keyDown(screen.getByRole('combobox'), { key: 'ArrowDown' });
+  fireEvent.keyDown(screen.getByRole('combobox'), { key: 'Enter' });
+
+  expect(onSelect).toHaveBeenCalledWith('suggestion1');
+  expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+});
+
+test("closes listbox with Escape", async () => {
+  const fetchSuggestions = vi.fn().mockResolvedValue(['suggestion1']);
+
+  const onSelect = vi.fn();
+
+  render(<AsyncAutocomplete fetchSuggestions={fetchSuggestions} onSelect={onSelect} />);
+
+  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'query' } });
+
+  await waitFor(() => expect(screen.getByRole('listbox')).toBeInTheDocument());
+
+  fireEvent.keyDown(screen.getByRole('combobox'), { key: 'Escape' });
+
+  expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+});
+```

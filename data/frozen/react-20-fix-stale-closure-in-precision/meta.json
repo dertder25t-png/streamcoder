@@ -1,0 +1,25 @@
+{
+ "id": "react-20-fix-stale-closure-in-precision",
+ "topic": "react",
+ "cand_hidden": [
+  false,
+  false,
+  false,
+  false
+ ],
+ "cand_hidden_err": [
+  "test failed: computes elapsed time from now() deltas, not tick counts; preserves total time across p",
+  "test failed: preserves total time across pause/resume cycles; Lap records total elapsed and the spli",
+  "test failed: preserves total time across pause/resume cycles; laps keep correct splits across a paus",
+  "test failed: computes elapsed time from now() deltas, not tick counts; preserves total time across p"
+ ],
+ "cand_tokens": [
+  534,
+  579,
+  550,
+  528
+ ],
+ "gen_seconds": 43.7,
+ "type_only": false,
+ "errors": []
+}

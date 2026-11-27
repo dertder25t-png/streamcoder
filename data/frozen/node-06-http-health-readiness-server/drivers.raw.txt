@@ -1,0 +1,61 @@
+```ts
+probe("GET /live returns 200", async () => {
+  const server = createHealthServer(() => Promise.resolve(true));
+  const response = await vi.fn(() => ({ status: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "ok" }) }));
+  server.on("request", response);
+  server.listen(0, () => {
+    const port = (server.address() as { port: number }).port;
+    return fetch(`http://localhost:${port}/live`).then(res => res.json());
+  });
+});
+
+probe("GET /ready returns 200 when checkReady resolves true", async () => {
+  const server = createHealthServer(() => Promise.resolve(true));
+  const response = await vi.fn(() => ({ status: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "ok" }) }));
+  server.on("request", response);
+  server.listen(0, () => {
+    const port = (server.address() as { port: number }).port;
+    return fetch(`http://localhost:${port}/ready`).then(res => res.json());
+  });
+});
+
+probe("GET /ready returns 503 when checkReady resolves false", async () => {
+  const server = createHealthServer(() => Promise.resolve(false));
+  const response = await vi.fn(() => ({ status: 503, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "not ready" }) }));
+  server.on("request", response);
+  server.listen(0, () => {
+    const port = (server.address() as { port: number }).port;
+    return fetch(`http://localhost:${port}/ready`).then(res => res.json());
+  });
+});
+
+probe("GET /ready returns 503 when checkReady rejects", async () => {
+  const server = createHealthServer(() => Promise.reject(new Error("Service unavailable")));
+  const response = await vi.fn(() => ({ status: 503, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "not ready" }) }));
+  server.on("request", response);
+  server.listen(0, () => {
+    const port = (server.address() as { port: number }).port;
+    return fetch(`http://localhost:${port}/ready`).then(res => res.json());
+  });
+});
+
+probe("Non-GET methods on /live return 405", async () => {
+  const server = createHealthServer(() => Promise.resolve(true));
+  const response = await vi.fn(() => ({ status: 405, headers: { "Allow": "GET" }, body: JSON.stringify({ error: "Method Not Allowed" }) }));
+  server.on("request", response);
+  server.listen(0, () => {
+    const port = (server.address() as { port: number }).port;
+    return fetch(`http://localhost:${port}/live`, { method: "POST" }).then(res => res.json());
+  });
+});
+
+probe("Unknown paths return 404", async () => {
+  const server = createHealthServer(() => Promise.resolve(true));
+  const response = await vi.fn(() => ({ status: 404, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ error: "Not Found" }) }));
+  server.on("request", response);
+  server.listen(0, () => {
+    const port = (server.address() as { port: number }).port;
+    return fetch(`http://localhost:${port}/unknown`, { method: "GET" }).then(res => res.json());
+  });
+});
+```

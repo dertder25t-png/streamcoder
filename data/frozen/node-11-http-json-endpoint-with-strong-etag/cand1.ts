@@ -1,0 +1,41 @@
+import { createHash } from 'crypto';
+import { IncomingMessage, ServerResponse } from 'http';
+
+type ConfigHandler = (req: IncomingMessage, res: ServerResponse) => void;
+
+export function createConfigHandler(getConfig: () => unknown): ConfigHandler {
+    let currentConfig: unknown = null;
+    let currentETag: string | null = null;
+
+    return (req, res) => {
+        const ifNoneMatch = req.headers['if-none-match'];
+
+        if (currentConfig === null) {
+            currentConfig = getConfig();
+            currentETag = createHash('sha256').update(JSON.stringify(currentConfig)).digest('hex');
+        }
+
+        if (ifNoneMatch) {
+            const match = ifNoneMatch.split(',').some(etag => etag.trim() === currentETag || etag.trim() === '*');
+            if (match) {
+                res.writeHead(304, { 'ETag': currentETag });
+                res.end();
+                return;
+            }
+        }
+
+        const configJson = JSON.stringify(currentConfig);
+        const newETag = createHash('sha256').update(configJson).digest('hex');
+
+        if (newETag !== currentETag) {
+            currentConfig = getConfig();
+            currentETag = newETag;
+        }
+
+        res.writeHead(200, {
+            'Content-Type': 'application/json',
+            'ETag': currentETag
+        });
+        res.end(configJson);
+    };
+}
