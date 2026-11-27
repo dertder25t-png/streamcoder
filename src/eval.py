@@ -252,8 +252,10 @@ def _git_commit():
 def _mode(a):
     if a.tdd:
         k, flt = getattr(a, "tdd_k", 4), getattr(a, "tdd_filter", False)
-        if k != 4 or flt:
-            return f"tdd k{k}" + ("+filter" if flt else "") + ("+repair" if a.tdd_repair else "")
+        fast = getattr(a, "tdd_fast", False)
+        if k != 4 or flt or fast:
+            return (f"tdd k{k}" + ("+filter" if flt else "") + ("+fast" if fast else "")
+                    + ("+repair" if a.tdd_repair else ""))
         return "tdd+repair" if a.tdd_repair else "tdd"
     return "stream" if a.stream else "plain"
 
@@ -299,6 +301,7 @@ def main(argv=None):
     ap.add_argument("--tdd", action="store_true", help="blind TDD: 4 candidates + self-tests, pick the best")
     ap.add_argument("--tdd-repair", action="store_true", help="--tdd plus one repair turn on the pick")
     ap.add_argument("--tdd-k", type=int, default=4, help="--tdd: candidates per task (cand0 temp 0, rest temp 0.7 + seeds)")
+    ap.add_argument("--tdd-fast", action="store_true", help="--tdd: candidates use fence prefill + stop + 1536-token cap + 'No JSDoc comments.'")
     ap.add_argument("--tdd-filter", action="store_true", help="--tdd: drop tsc-error/missing-export/bad-import candidates first")
     a = ap.parse_args(argv)
     a.tdd = a.tdd or a.tdd_repair
@@ -379,6 +382,10 @@ def main(argv=None):
         print("  failures: " + ", ".join(f"{k} {v}" for k, v in sorted(cats.items())))
     if not a.reference:
         print(f"  avg time: {sum(r['seconds'] for r in results) / n:.1f}s")
+        if a.tdd:
+            avg = lambda key: sum(r.get(key) or 0 for r in results) / n  # noqa: E731
+            print("  tdd time/task: " + " ".join(f"{k[2:]} {avg(k):.1f}s" for k in ("t_llm", "t_tsc", "t_vitest", "t_other"))
+                  + f"; candidates capped {sum(r.get('n_capped') or 0 for r in results)}")
         out_dir = path("results")
         out_dir.mkdir(exist_ok=True)
         name = f"{time.strftime('%Y%m%d-%H%M')}_{a.model}{'_stream' if a.stream else ''}{'_tdd' if a.tdd else ''}.jsonl"

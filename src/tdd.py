@@ -412,7 +412,7 @@ def _tsc_count(t, code: str, k: int) -> int:
     try:
         (run / f"solution{ext(t)}").write_text(code)
         _write_tsconfig(t, run)
-        out = _run([str(KIT / "node_modules" / ".bin" / "tsc"), "-p", str(run / "tsconfig.json")], tdd._timeout())
+        out = _run([str(KIT / "node_modules" / ".bin" / "tsc"), "-p", str(run / "tsconfig.json")], _timeout())
         return len(re.findall(r"error TS\d+", out.stdout))
     except Exception:
         return 0
@@ -421,7 +421,7 @@ def _tsc_count(t, code: str, k: int) -> int:
 
 
 def _smoke(t, code: str, k: int) -> dict:
-    run = tdd._run_dir(t, f"pk{k}smoke")
+    run = _run_dir(t, f"pk{k}smoke")
     try:
         (run / f"solution{ext(t)}").write_text(code)
         out = run / "smoke.json"
@@ -429,7 +429,7 @@ def _smoke(t, code: str, k: int) -> dict:
         (run / f"smoke.test{ext(t)}").write_text(src)
         _write_tsconfig(t, run)
         _run([str(KIT / "node_modules" / ".bin" / "vitest"), "run", f".runs/{run.name}", "--reporter=json",
-              f"--outputFile={run / 'result.json'}"], tdd._timeout())
+              f"--outputFile={run / 'result.json'}"], _timeout())
         d = json.loads(out.read_text())
         return {"ok": bool(d.get("import_ok")), "error": d.get("import_error", ""),
                 "render_errors": d.get("render_errors", [])}
@@ -644,43 +644,213 @@ def build_repair(t, base: list, answer: str, failing: list, suites: dict) -> lis
 
 # ---------------------------------------------------------------- main entry
 
-def _chat(model, msgs, max_tokens, temperature, seed=None) -> dict:
+CAND_CAP = 1536   # --tdd-fast: max tokens per candidate
+
+
+def cand_messages(t, fast: bool = False) -> list:
+    """Candidate request messages. fast=False is byte-identical to the plain prompt (SYSTEM + build_prompt)."""
+    user = build_prompt(t) + ("\n\nNo JSDoc comments." if fast else "")
+    return [{"role": "system", "content": SYSTEM}, {"role": "user", "content": user}]
+
+
+def gen_candidate(model, t, base: list, temp, seed, fast: bool = False) -> dict:
+    """One candidate request. fast: prefill the opening code fence, stop at the closing fence, cap tokens.
+    The returned text always has both fences again, so extract_code works as before.
+    out['capped'] is True when the reply hit the token cap (finish_reason == 'length')."""
+    if not fast:
+        o = _chat(model, base, 2048, temp, seed)
+    else:
+        fence = f"```{'tsx' if t['topic'] == 'react' else 'ts'}\n"
+        o = _chat(model, base, CAND_CAP, temp, seed, stop=["\n```"], prefill=fence)
+        if "error" not in o:
+            # this llama-server build returns the prefill as part of the content; add it only if it is missing
+            o["text"] = (o["text"] if o["text"].startswith(fence) else fence + o["text"]) + "\n```"
+    o["capped"] = o.get("finish_reason") == "length"
+    return o
+
+# ---------------------------------------------------------------- batched scoring (one tsc + one vitest for all candidates)
+
+def _write_cand(t, d, code: str, suites: dict, type_only: bool, smoke: bool) -> dict:
+    d.mkdir(parents=True)
+    (d / f"solution{ext(t)}").write_text(code)
+    meta = {}
+    for s, body in suites.items():
+        if type_only:
+            head = typecheck_header(t)
+            (d / f"selftest_{s}.typecheck.ts").write_text(head + body)
+            meta[s] = head.count("\n")
+        else:
+            (d / f"selftest_{s}.test{ext(t)}").write_text(test_header(t, str(d / f"counts_{s}.json"), body) + body)
+    if smoke:
+        (d / f"smoke.test{ext(t)}").write_text(_smoke_file(t).replace("OUTPATH", json.dumps(str(d / "smoke.json"))))
+    return meta
+
+
+def parse_vitest_batch(data: dict) -> dict:
+    """{cand index: parse_vitest_json-style dict} from one vitest run over candK/ folders."""
+    per = {}
+    for f in data.get("testResults", []):
+        m = re.search(r"/cand(\d+)/selftest_", f.get("name", ""))
+        if m:
+            per.setdefault(int(m.group(1)), []).append(f)
+    return {k: parse_vitest_json({"testResults": fs}) for k, fs in per.items()}
+
+
+def tsc_by_cand(out: str, n: int) -> tuple:
+    """(solution error counts, solution output line counts, {(k, suite): [(line, code)]} selftest errors)."""
+    cnt, lines, st = [0] * n, [0] * n, {}
+    cur = None
+    for l in out.splitlines():
+        if not l.strip():
+            continue
+        m = re.search(r"cand(\d+)/(solution\.tsx?|selftest_(\w)\.typecheck\.ts)\((\d+),\d+\): error (TS\d+)", l)
+        if m and int(m.group(1)) < n:
+            k = int(m.group(1))
+            if m.group(3):
+                st.setdefault((k, m.group(3)), []).append((int(m.group(4)), m.group(5)))
+                cur = None
+            else:
+                cnt[k] += 1
+                lines[k] += 1
+                cur = k
+        elif re.match(r"\S.*\(\d+,\d+\): error", l):
+            cur = None                       # an error in some other file ends the previous one
+        elif l[0] in " \t" and cur is not None:
+            lines[cur] += 1                  # continuation line of a multi-line error
+    return cnt, lines, st
+
+
+def batch_score(t, codes: list, suites: dict, type_only: bool, smoke: bool = False):
+    """Score all candidates with ONE tsc call and (unless type-only without smoke) ONE vitest run.
+    Returns dict(res, counts, tsc_n, tsc_lines, smoke, t_tsc, t_vitest) or None if a tool timed out / crashed
+    (the caller then falls back to the per-candidate path, so one hanging candidate cannot lose the others)."""
+    if type_only:   # one syntax error anywhere stops tsc's semantic pass for the whole program: score these one by one
+        return None
+    n = len(codes)
+    run = _run_dir(t, "batch")
+    bin_ = KIT / "node_modules" / ".bin"
     try:
-        return llm.chat(model, msgs, max_tokens=max_tokens, temperature=temperature, seed=seed)
+        metas = [_write_cand(t, run / f"cand{k}", c, suites, type_only, smoke) for k, c in enumerate(codes)]
+        _write_tsconfig(t, run)                      # react: node-shim.d.ts + base config
+        base = json.loads((run / "tsconfig.json").read_text())
+        # moduleDetection=force: candidates that forgot `export` are scripts whose globals would clash across folders
+        base["compilerOptions"] = dict(base.get("compilerOptions", {}), moduleDetection="force")
+        cfg_tsc = dict(base, include=["./node-shim.d.ts", "./cand*/solution.ts", "./cand*/solution.tsx"]
+                       + (["./cand*/*.typecheck.ts"] if type_only else []))
+        (run / "tsconfig.tsc.json").write_text(json.dumps(cfg_tsc))
+        base["include"] = ["./*.ts", "./cand*/*.ts", "./cand*/*.tsx"]   # vitest/esbuild: jsx settings reach every folder
+        (run / "tsconfig.json").write_text(json.dumps(base))
+        t1 = time.time()
+        tsc = _run([str(bin_ / "tsc"), "-p", str(run / "tsconfig.tsc.json")], _timeout())
+        tsc_n, tsc_lines, st = tsc_by_cand(tsc.stdout, n)
+        # a syntax error (TS1xxx) in one file stops tsc's semantic pass for the whole program: rerun without those
+        bad = sorted({int(m.group(1)) for m in re.finditer(r"cand(\d+)/solution\.tsx?\(\d+,\d+\): error TS1\d{3}\b", tsc.stdout)})
+        if bad:
+            good = [k for k in range(n) if k not in bad]
+            if good:
+                cfg2 = dict(cfg_tsc, include=["./node-shim.d.ts"] + [f"./cand{k}/solution{ext(t)}" for k in good])
+                (run / "tsconfig.tsc2.json").write_text(json.dumps(cfg2))
+                tsc2 = _run([str(bin_ / "tsc"), "-p", str(run / "tsconfig.tsc2.json")], _timeout())
+                n2, l2, _ = tsc_by_cand(tsc2.stdout, n)
+                for k in good:
+                    tsc_n[k], tsc_lines[k] = n2[k], l2[k]
+        t_tsc = time.time() - t1
+        t1 = time.time()
+        res = [{} for _ in range(n)]
+        if type_only:
+            for k in range(n):
+                for s, hlen in metas[k].items():
+                    text = (run / f"cand{k}" / f"selftest_{s}.typecheck.ts").read_text()
+                    for name, ok in grade_typecheck(text, hlen, st.get((k, s), [])).items():
+                        res[k][f"{s}::{name}"] = (ok, "" if ok else "type check failed")
+        if not type_only or smoke:
+            out = run / "result.json"
+            _run([str(bin_ / "vitest"), "run", f".runs/{run.name}", "--reporter=json", f"--outputFile={out}"], _timeout())
+            per = parse_vitest_batch(json.loads(out.read_text()))
+            if not type_only:
+                res = [per.get(k, {}) for k in range(n)]
+        t_vitest = time.time() - t1
+        sm = []
+        for k in range(n):
+            if not smoke:
+                sm.append(None)
+                continue
+            try:
+                d = json.loads((run / f"cand{k}" / "smoke.json").read_text())
+                sm.append({"ok": bool(d.get("import_ok")), "error": d.get("import_error", ""),
+                           "render_errors": d.get("render_errors", [])})
+            except (OSError, ValueError):
+                sm.append({"ok": False, "error": "no result: smoke wrote nothing", "render_errors": []})
+        counts = [read_counts(run / f"cand{k}") for k in range(n)]
+        return dict(res=res, counts=counts, tsc_n=tsc_n, tsc_lines=tsc_lines, smoke=sm, t_tsc=t_tsc, t_vitest=t_vitest)
+    except (subprocess.TimeoutExpired, OSError, ValueError):
+        return None
+    finally:
+        shutil.rmtree(run, ignore_errors=True)
+
+
+def _chat(model, msgs, max_tokens, temperature, seed=None, stop=None, prefill=None) -> dict:
+    try:
+        return llm.chat(model, msgs, max_tokens=max_tokens, temperature=temperature, seed=seed,
+                        stop=stop, prefill=prefill)
     except Exception as e:  # one failed request must not kill the whole run
         return {"text": "", "seconds": 0, "completion_tokens": 0, "error": str(e)[:100]}
 
 
-def solve(t, a):
-    """Returns (final code, info dict). info['seconds'] covers generation + filter + self-tests + repair
-    (not the diagnostic hidden grading of every candidate)."""
-    t0 = time.time()
-    k_n = max(1, int(getattr(a, "tdd_k", N_CAND)))
-    use_filter = bool(getattr(a, "tdd_filter", False))
-    temps, seeds = cand_plan(k_n)
-    type_only, hook = is_type_only(t), is_hook_task(t)
-    base = [{"role": "system", "content": SYSTEM}, {"role": "user", "content": build_prompt(t)}]
-    with ThreadPoolExecutor(k_n + len(SUITES)) as ex:
-        sf = {s: ex.submit(_chat, a.model, suite_messages(t, s, type_only), 1536, 0) for s in SUITES}
-        cf = [ex.submit(_chat, a.model, base, 2048, temps[k], seeds[k]) for k in range(k_n)]
-        parsed = {s: parse_suite_n(f.result()["text"], type_only, hook) for s, f in sf.items()}
-        suites = {s: p[0] for s, p in parsed.items()}
-        outs = [f.result() for f in cf]
-    gen_secs = time.time() - t0
-    codes = [extract_code(o["text"]) for o in outs]
-
+def _score_old(t, codes, suites, type_only, use_filter):
+    """Per-candidate fallback (and reference path): run_selftests + compile_alone + filter features."""
+    k_n = len(codes)
     runs = [write_run(t, f"cand{k}", c, suites, type_only) for k, c in enumerate(codes)]
     try:
         with ThreadPoolExecutor(k_n) as ex:
             res = list(ex.map(lambda r: run_selftests(t, r[0], r[1], type_only), runs))
             feats = list(ex.map(lambda kc: filter_features(t, *kc), enumerate(codes))) if use_filter else None
         counts = [read_counts(r[0]) for r in runs]
+    finally:
+        for r in runs:
+            shutil.rmtree(r[0], ignore_errors=True)
+    lines = [len(compile_alone(t, c, 999).splitlines()) for c in codes]
+    return res, counts, lines, feats
+
+
+def solve(t, a):
+    """Returns (final code, info dict). info['seconds'] covers generation + filter + self-tests + repair
+    (not the diagnostic hidden grading of every candidate). seconds = t_llm + t_tsc + t_vitest + t_other."""
+    t0 = time.time()
+    k_n = max(1, int(getattr(a, "tdd_k", N_CAND)))
+    use_filter = bool(getattr(a, "tdd_filter", False))
+    fast = bool(getattr(a, "tdd_fast", False))
+    temps, seeds = cand_plan(k_n)
+    type_only, hook = is_type_only(t), is_hook_task(t)
+    base = cand_messages(t, fast)
+    t_llm = t_tsc = t_vitest = 0.0
+    with ThreadPoolExecutor(k_n + len(SUITES)) as ex:
+        sf = {s: ex.submit(_chat, a.model, suite_messages(t, s, type_only), 1536, 0) for s in SUITES}
+        cf = [ex.submit(gen_candidate, a.model, t, base, temps[k], seeds[k], fast) for k in range(k_n)]
+        parsed = {s: parse_suite_n(f.result()["text"], type_only, hook) for s, f in sf.items()}
+        suites = {s: p[0] for s, p in parsed.items()}
+        outs = [f.result() for f in cf]
+    gen_secs = t_llm = time.time() - t0
+    codes = [extract_code(o["text"]) for o in outs]
+
+    runs = []
+    try:
+        bs = batch_score(t, codes, suites, type_only, smoke=use_filter)
+        if bs is not None:
+            res, counts, lines = bs["res"], bs["counts"], bs["tsc_lines"]
+            t_tsc, t_vitest = bs["t_tsc"], bs["t_vitest"]
+            feats = ([{"tsc": bs["tsc_n"][k], "missing": missing_exports(t, c), "smoke": bs["smoke"][k]}
+                      for k, c in enumerate(codes)] if use_filter else None)
+        else:   # a tool timed out: redo candidate by candidate so one hanging candidate costs only itself
+            t1 = time.time()
+            res, counts, lines, feats = _score_old(t, codes, suites, type_only, use_filter)
+            t_vitest = time.time() - t1
         keep = filter_survivors(feats) if use_filter else list(range(k_n))
         sc = score_tests([{k: v[0] for k, v in res[i].items()} for i in keep])
 
         def tiebreak(j):  # j indexes `keep`: fewer tsc errors, fewer console problems, fewer unhandled, lowest index
             i, c = keep[j], counts[keep[j]]
-            return (len(compile_alone(t, codes[i], 999).splitlines()), c["err"] + c["warn"], c["unhandled"], i)
+            return (lines[i], c["err"] + c["warn"], c["unhandled"], i)
         pj, top_tie = pick(sc["scores"], tiebreak)
         picked = keep[pj]
         cand_scores = [None] * k_n
@@ -696,10 +866,15 @@ def solve(t, a):
             if failing:
                 info["repair_called"] = True
                 msgs = build_repair(t, base, outs[picked]["text"], failing, suites)
+                t1 = time.time()
                 out2 = _chat(a.model, msgs, 2048, 0)
+                t_llm += time.time() - t1
                 code2 = extract_code(out2["text"])
+                t1 = time.time()
                 run2 = write_run(t, "repair", code2, suites, type_only)
+                runs.append(run2)
                 res2 = run_selftests(t, run2[0], run2[1], type_only)
+                t_vitest += time.time() - t1
                 if sum(bool(res2.get(k, (False,))[0]) for k in sc["keys"]) > sc["scores"][pj]:
                     final, info["repair_kept"] = code2, True
         seconds = round(time.time() - t0, 2)
@@ -707,13 +882,17 @@ def solve(t, a):
         for r in runs:
             shutil.rmtree(r[0], ignore_errors=True)
         shutil.rmtree(KIT / ".runs" / f"tdd--{t['id']}--repair", ignore_errors=True)
+        shutil.rmtree(KIT / ".runs" / f"tdd--{t['id']}--batch", ignore_errors=True)
 
     # diagnostics (hidden tests; excluded from `seconds`)
     cand_hidden = [run_tests_cat(t, c)[0] for c in codes]
     if info["repair_kept"]:
         info["repaired_passed"] = run_tests_cat(t, final)[0]
     toks = sum(o.get("completion_tokens") or 0 for o in outs)
-    info.update(seconds=seconds, tokens_per_sec=round(toks / gen_secs, 1) if gen_secs and toks else None,
+    t_other = round(seconds - t_llm - t_tsc - t_vitest, 2)
+    info.update(seconds=seconds, t_llm=round(t_llm, 2), t_tsc=round(t_tsc, 2), t_vitest=round(t_vitest, 2),
+                t_other=t_other, fast=fast, n_capped=sum(bool(o.get("capped")) for o in outs),
+                tokens_per_sec=round(toks / gen_secs, 1) if gen_secs and toks else None,
                 vram_mb=vram_used_mb(), type_only=type_only, suites_ok=[bool(suites[s]) for s in SUITES],
                 k=k_n, temps=temps, seeds=seeds, filter=use_filter,
                 filtered_out=[i for i in range(k_n) if i not in keep],

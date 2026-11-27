@@ -162,3 +162,22 @@ def test_mode_string():
     from src.eval import _mode
     assert _mode(N(tdd=True, tdd_repair=False, tdd_k=8, tdd_filter=True, stream=False)) == "tdd k8+filter"
     assert _mode(N(tdd=True, tdd_repair=False, tdd_k=4, tdd_filter=False, stream=False)) == "tdd"
+
+
+def _frozen_task(prefix):
+    import pathlib
+    from src.eval import load_tasks
+    d = pathlib.Path(__file__).resolve().parent.parent / "data" / "frozen"
+    tid = next(p.name for p in sorted(d.iterdir()) if p.name.startswith(prefix))
+    t = next(t for t in load_tasks() if t["id"] == tid)
+    return t, d / tid
+
+
+def test_filter_features_cold_on_frozen_candidate():
+    """Regression: _smoke/_tsc_count used a stale `tdd.` prefix inside tdd.py (NameError). Reads frozen data only."""
+    from src import tdd
+    from src.eval import ext
+    t, d = _frozen_task("node-01")
+    f = tdd.filter_features(t, 0, (d / f"cand0{ext(t)}").read_text())
+    assert set(f) == {"tsc", "missing", "smoke"} and isinstance(f["tsc"], int)
+    assert f["smoke"]["ok"] in (True, False) and "no result: NameError" not in f["smoke"]["error"]

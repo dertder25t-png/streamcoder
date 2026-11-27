@@ -23,17 +23,40 @@ def test_selftest_ignores_zero_tests_and_tiebreaks_on_tsc():
     assert P.pick_selftest(cs) == (0, True)
 
 
-def test_codet_prefers_big_agreeing_cluster():
+def test_cluster_is_tiebreak_only_never_multiplier():
     same = {"a": True, "b": True, "c": False}
-    cs = [cand({"a": True, "b": True, "c": True}),   # alone: 1 * 3
-          cand(same), cand(same), cand(same)]       # cluster of 3 passing 2: 6
-    assert P.codet_scores(cs) == [3, 6, 6, 6]
-    assert P.pick_codet(cs) == (1, True)
+    cs = [cand({"a": True, "b": True, "c": True}),   # alone, 3 passes: wins on score
+          cand(same), cand(same), cand(same)]       # cluster of 3 but only 2 passes
+    for o in "ABCD":
+        assert P.pick_selftest(cs, o) == (0, False)
 
 
-def test_codet_all_fail_falls_to_tiebreak():
-    cs = [cand({"a": False}, tsc=1), cand({"a": False}, tsc=0)]
-    assert P.pick_codet(cs) == (1, True)
+def test_tiebreak_orders():
+    big = {"a": True, "b": False}
+    other = {"a": False, "b": True}
+    cs = [cand(other, tsc=0), cand(big, tsc=1), cand(big, tsc=1), cand(big, tsc=2)]
+    assert P.pick_selftest(cs, "A") == (0, True)         # cand0 first
+    assert P.pick_selftest(cs, "B") == (1, True)         # cluster of 3 beats cand0, lowest index
+    assert P.pick_selftest(cs, "C") == (0, True)         # fewest tsc
+    cs[0]["tsc"] = 5
+    assert P.pick_selftest(cs, "C") == (1, True)
+    assert P.pick_selftest(cs, "D") == (1, True)
+
+
+def test_loss_analysis_labels():
+    good, bad = {"a": True, "b": False}, {"a": True, "b": True}
+    f = lambda cands, hidden: {"id": "x", "topic": "node", "hidden": hidden, "cands": cands}  # noqa: E731
+    P.METHODS["filter+selftest_C"]  # exists
+    outscored = f([cand(bad), cand(good)], [False, True])
+    tie = f([cand(good, tsc=0), cand({"a": True}, tsc=0)], [False, True])
+    tie["cands"][1]["tests"] = {"a": True}
+    filt = f([cand(good, tsc=1), cand(good, tsc=2), cand(good, smoke=False)], [False, False, False])
+    filt2 = f([cand(good), cand(good, tsc=1)], [False, True])   # survivor 0 fails, 1 filtered
+    r = P.loss_analysis([outscored, tie, filt, filt2])
+    labels = {x["label"] for x in r}
+    assert "outscored" in labels and "filtered" in labels
+    o = [x for x in r if x["label"] == "outscored"][0]
+    assert o["picked_passed_good_failed"] == ["b"]
 
 
 def test_mbr_agreement_beats_crashing_and_lone_answers():

@@ -42,6 +42,11 @@ LIVE_ORACLE = 0.38
 _smoke_file, _tsc_count, _smoke = tdd._smoke_file, tdd._tsc_count, tdd._smoke  # shared with src/tdd.py
 
 
+def _hook_count(v) -> int:
+    """meta.json stores {suite: n} (frozen8) or nothing (old freeze)."""
+    return sum(v.values()) if isinstance(v, dict) else int(v or 0)
+
+
 def _candidate(t, k: int, code: str, suites: dict, type_only: bool, drivers: str) -> dict:
     run, meta = tdd.write_run(t, f"pk{k}", code, suites, type_only)
     try:
@@ -69,6 +74,12 @@ def features(t, refresh=False, k=None, frozen=FROZEN) -> dict:
     cdir = CACHE / frozen.name / t["id"]
     cdir.mkdir(parents=True, exist_ok=True)
     cands, todo = {}, []
+    legacy = CACHE / f"{t['id']}.json"          # old per-task cache (4-cand data): migrate into per-candidate files
+    if frozen.name == "frozen" and legacy.exists() and not refresh:
+        old = json.loads(legacy.read_text())["cands"]
+        for i, c in enumerate(old):
+            if not (cdir / f"cand{i}.json").exists():
+                (cdir / f"cand{i}.json").write_text(json.dumps(c))
     for i in range(k):
         f = cdir / f"cand{i}.json"
         if f.exists() and not refresh:
@@ -84,7 +95,8 @@ def features(t, refresh=False, k=None, frozen=FROZEN) -> dict:
         with ThreadPoolExecutor(min(len(todo), 4)) as ex:
             cands.update(dict(ex.map(one, todo)))
     return {"id": t["id"], "topic": t["topic"], "type_only": type_only, "hidden": meta["cand_hidden"][:k],
-            "suites_ok": [bool(suites[s]) for s in tdd.SUITES], "cands": [cands[i] for i in range(k)]}
+            "suites_ok": [bool(suites[s]) for s in tdd.SUITES],
+            "hook_dropped": _hook_count(meta.get("hook_tests_dropped")), "cands": [cands[i] for i in range(k)]}
 
 
 # ------------------------------------------------------------------ step B: pickers (pure)
@@ -103,21 +115,34 @@ def _best(scores: list, cands: list) -> tuple:
     return min(tied, key=lambda i: tiebreak_key(cands[i], i)), len(tied) > 1
 
 
-def pick_selftest(cands: list) -> tuple:
-    """(a) most passes on tests that at least one candidate passes (non-0/N), as tdd.py does."""
-    sc = tdd.score_tests([c["tests"] for c in cands])
-    return _best(sc["scores"], cands)
+ORDERS = {"A": "cand0-first", "B": "largest cluster, then lowest index",
+          "C": "fewest tsc, console, unhandled, then index", "D": "largest cluster, then C"}
 
 
-def codet_scores(cands: list) -> list:
-    """(b) cluster by identical pass-vector on the non-0/N tests; score = cluster size x tests passed."""
+def _order_key(order: str, c: dict, i: int, cl: int) -> tuple:
+    if order == "A":
+        return (i,)
+    if order == "B":
+        return (-cl, i)
+    if order == "C":
+        return tiebreak_key(c, i)
+    return (-cl,) + tiebreak_key(c, i)
+
+
+def selftest_scores(cands: list) -> dict:
+    """score = passes on tests that at least one of these candidates passes (non-0/N). cluster = how many of these
+    candidates share this candidate's pass-vector (tie-breaker ONLY, never a multiplier)."""
     sc = tdd.score_tests([c["tests"] for c in cands])
     vec = [tuple(bool(c["tests"].get(k)) for k in sc["keys"]) for c in cands]
-    return [vec.count(v) * sum(v) for v in vec]
+    return {"scores": sc["scores"], "keys": sc["keys"], "cluster": [vec.count(v) for v in vec]}
 
 
-def pick_codet(cands: list) -> tuple:
-    return _best(codet_scores(cands), cands)
+def pick_selftest(cands: list, order: str = "C") -> tuple:
+    """Most self-test passes wins; ties by `order` (A/B/C/D, see ORDERS). Returns (index, top_tie)."""
+    s = selftest_scores(cands)
+    top = max(s["scores"])
+    tied = [i for i, x in enumerate(s["scores"]) if x == top]
+    return min(tied, key=lambda i: _order_key(order, cands[i], i, s["cluster"][i])), len(tied) > 1
 
 
 def _fp(p: dict) -> tuple:
@@ -164,54 +189,133 @@ def with_filter(picker):
 
 METHODS = {
     "cand0": lambda cands: (0, False),
-    "selftest": pick_selftest,
-    "codet": pick_codet,
-    "mbr": pick_mbr,
     "filter": pick_filter,
-    "filter+selftest": with_filter(pick_selftest),
-    "filter+codet": with_filter(pick_codet),
+    "mbr (nofilter)": pick_mbr,
     "filter+mbr": with_filter(pick_mbr),
+    "nofilter+selftest_C": lambda cands: pick_selftest(cands, "C"),   # reference only
+    **{f"filter+selftest_{o}": with_filter(lambda cs, o=o: pick_selftest(cs, o)) for o in ORDERS},
 }
+LOSS_METHOD = "filter+selftest_C"
 
 # ------------------------------------------------------------------ step C: report
 
 
+TOPICS = ["all", "typescript", "react", "node"]
+
+
+def _sel(feats, tp):
+    return [f for f in feats if tp == "all" or f["topic"] == tp]
+
+
 def report(feats: list) -> dict:
-    topics = ["all", "typescript", "react", "node"]
     rows = {}
     for name in list(METHODS) + ["oracle"]:
         row = {}
-        for tp in topics:
-            fs = [f for f in feats if tp == "all" or f["topic"] == tp]
+        for tp in TOPICS:
+            fs = _sel(feats, tp)
             orc = [f for f in fs if any(f["hidden"])]
-            passes = ties = 0
+            passes = ties = cap = 0
             for f in fs:
                 if name == "oracle":
                     passes += any(f["hidden"])
                     continue
                 i, tie = METHODS[name](f["cands"])
                 passes += bool(f["hidden"][i])
+                cap += bool(f["hidden"][i]) and any(f["hidden"])
                 ties += bool(tie)
             n = len(fs)
             row[tp] = {"n": n, "pass": passes, "pass_rate": passes / n if n else 0,
-                       "oracle_tasks": len(orc),
-                       "acc_vs_frozen_oracle": passes / len(orc) if orc else 0,
+                       "oracle_tasks": len(orc), "capture": passes / len(orc) if orc else 0,
                        "pass_rate_over_0.38": (passes / n) / LIVE_ORACLE if n else 0,
                        "top_tie_rate": ties / n if n else 0}
         rows[name] = row
     return rows
 
 
-def markdown(rows: dict) -> str:
-    topics = ["all", "typescript", "react", "node"]
-    ln = ["| method | pass (all) | acc vs frozen oracle | rate/0.38 | tie rate | ts | react | node |",
-          "|---|---|---|---|---|---|---|---|"]
+def test_stats(feats: list) -> dict:
+    """Zero = test fails on ALL K candidates (before the filter); N/N = passes on all K. Share by topic, plus hook drops."""
+    out = {}
+    for tp in TOPICS:
+        tot = zero = nn = 0
+        for f in _sel(feats, tp):
+            oks = [c["tests"] for c in f["cands"]]
+            keys = set().union(*[set(o) for o in oks]) if oks else set()
+            for k in keys:
+                p = sum(bool(o.get(k)) for o in oks)
+                tot += 1
+                zero += p == 0
+                nn += p == len(oks)
+        out[tp] = {"tests": tot, "zero": zero, "all_pass": nn,
+                   "hook_tests_dropped": sum(f.get("hook_dropped", 0) for f in _sel(feats, tp))}
+    for tp in TOPICS:
+        o = out[tp]
+        o["zero_rate"] = o["zero"] / o["tests"] if o["tests"] else 0
+        o["nn_rate"] = o["all_pass"] / o["tests"] if o["tests"] else 0
+        o["share_of_all_zero"] = o["zero"] / out["all"]["zero"] if out["all"]["zero"] else 0
+        o["share_of_all_nn"] = o["all_pass"] / out["all"]["all_pass"] if out["all"]["all_pass"] else 0
+    return out
+
+
+def loss_analysis(feats: list, method: str = LOSS_METHOD) -> list:
+    """Tasks where some candidate passes hidden but `method` picks a failing one, labelled
+    tie-break / outscored / filtered (self-test scores computed among the filter survivors)."""
+    out = []
+    for f in feats:
+        if not any(f["hidden"]):
+            continue
+        i, _ = METHODS[method](f["cands"])
+        if f["hidden"][i]:
+            continue
+        cs = f["cands"]
+        surv = filter_survivors(cs) if method.startswith("filter") else list(range(len(cs)))
+        good = [j for j in surv if f["hidden"][j]]
+        rec = {"id": f["id"], "topic": f["topic"], "picked": i,
+               "good": [j for j, h in enumerate(f["hidden"]) if h]}
+        if not good:
+            rec["label"] = "filtered"
+        else:
+            s = selftest_scores([cs[j] for j in surv])
+            sc = dict(zip(surv, s["scores"]))
+            gbest = max(good, key=lambda j: sc[j])
+            rec.update(picked_score=sc[i], good_score=sc[gbest])
+            if sc[gbest] == sc[i]:
+                rec["label"] = "tie-break"
+            else:
+                rec["label"] = "outscored"
+                rec["picked_passed_good_failed"] = [k for k in s["keys"] if cs[i]["tests"].get(k)
+                                                    and not cs[gbest]["tests"].get(k)]
+                rec["good_passed_picked_failed"] = [k for k in s["keys"] if cs[gbest]["tests"].get(k)
+                                                    and not cs[i]["tests"].get(k)]
+        out.append(rec)
+    return out
+
+
+def markdown(rows: dict, ts: dict, loss: list, k: int) -> str:
+    ln = [f"### K={k}: pick pass / capture (picked passes / oracle tasks), per topic",
+          "| method | all | capture | tie | typescript | react | node |", "|---|---|---|---|---|---|---|"]
     for name, r in rows.items():
         a = r["all"]
-        by = " | ".join(f"{r[tp]['pass']}/{r[tp]['n']} ({r[tp]['acc_vs_frozen_oracle']:.0%})" for tp in topics[1:])
-        ln.append(f"| {name} | {a['pass']}/{a['n']} = {a['pass_rate']:.0%} | {a['acc_vs_frozen_oracle']:.0%} "
-                  f"({a['pass']}/{a['oracle_tasks']}) | {a['pass_rate_over_0.38']:.2f} | "
-                  f"{a['top_tie_rate']:.0%} | {by} |")
+        by = " | ".join(f"{r[tp]['pass']}/{r[tp]['n']} ({r[tp]['pass_rate']:.0%}; cap {r[tp]['capture']:.0%} of {r[tp]['oracle_tasks']})"
+                        for tp in TOPICS[1:])
+        ln.append(f"| {name} | {a['pass']}/{a['n']} = {a['pass_rate']:.0%} | {a['pass']}/{a['oracle_tasks']} = {a['capture']:.0%} "
+                  f"| {a['top_tie_rate']:.0%} | {by} |")
+    ln += ["", "### Self-test zero / N-of-N / hook drops", "| topic | tests | zero (0/K) | zero share | zero rate | N/N | N/N share | N/N rate | hook dropped |",
+           "|---|---|---|---|---|---|---|---|---|"]
+    for tp in TOPICS:
+        o = ts[tp]
+        ln.append(f"| {tp} | {o['tests']} | {o['zero']} | {o['share_of_all_zero']:.0%} | {o['zero_rate']:.0%} | {o['all_pass']} "
+                  f"| {o['share_of_all_nn']:.0%} | {o['nn_rate']:.0%} | {o['hook_tests_dropped']} |")
+    ln += ["", f"### Loss analysis ({LOSS_METHOD}): oracle true, pick fails"]
+    for tp in TOPICS[1:]:
+        ls = [x for x in loss if x["topic"] == tp]
+        ln.append(f"- {tp}: {len(ls)} lost " + ", ".join(f"{x['label']}" for x in ls))
+        for x in ls:
+            d = f"  - {x['id']} [{x['label']}] picked cand{x['picked']}, hidden-passing {x['good']}"
+            if x["label"] == "outscored":
+                d += f", scores {x['picked_score']} vs {x['good_score']}"
+                if tp == "node":
+                    d += f"; picked passed/good failed: {x['picked_passed_good_failed']}; good passed/picked failed: {x['good_passed_picked_failed']}"
+            ln.append(d)
     return "\n".join(ln)
 
 
@@ -255,11 +359,14 @@ def main():
         return f
     with ThreadPoolExecutor(a.workers) as ex:
         feats = list(ex.map(one, tasks))
-    rows = report(feats)
-    odd = oddities(feats)
+    k = min(len(f["cands"]) for f in feats) if feats else 0
+    rows, ts, loss, odd = report(feats), test_stats(feats), loss_analysis(feats), oddities(feats)
+    if a.report == str(SCRATCH / "picker_report.json"):
+        a.report = str(SCRATCH / f"picker_report_{frozen.name}_k{k}.json")
     Path(a.report).parent.mkdir(parents=True, exist_ok=True)
-    Path(a.report).write_text(json.dumps({"n_tasks": len(feats), "methods": rows, "oddities": odd}, indent=1))
-    print(markdown(rows))
+    Path(a.report).write_text(json.dumps({"n_tasks": len(feats), "k": k, "methods": rows, "test_stats": ts,
+                                          "loss_method": LOSS_METHOD, "losses": loss, "oddities": odd}, indent=1))
+    print(markdown(rows, ts, loss, k))
     print("\n".join(odd))
 
 

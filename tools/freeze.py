@@ -33,15 +33,15 @@ def _chat(model, msgs, max_tokens, temperature, seed=None) -> dict:
         return {"text": "", "seconds": 0, "completion_tokens": 0, "error": str(e)[:100]}
 
 
-def freeze(t, model: str, n_cand: int = 4, out: Path = OUT) -> dict:
+def freeze(t, model: str, n_cand: int = 4, out: Path = OUT, fast_gen: bool = False) -> dict:
     d = out / t["id"]
     temps, seeds = cand_plan(n_cand)
     d.mkdir(parents=True, exist_ok=True)
     type_only = tdd.is_type_only(t)
-    base = [{"role": "system", "content": SYSTEM}, {"role": "user", "content": build_prompt(t)}]
+    base = tdd.cand_messages(t, fast_gen)   # fast_gen=False: byte-identical to SYSTEM + build_prompt
     t0 = time.time()
     with ThreadPoolExecutor(n_cand + 3) as ex:
-        cf = [ex.submit(_chat, model, base, 2048, temps[k], seeds[k]) for k in range(n_cand)]
+        cf = [ex.submit(tdd.gen_candidate, model, t, base, temps[k], seeds[k], fast_gen) for k in range(n_cand)]
         sf = {s: ex.submit(_chat, model, tdd.suite_messages(t, s, type_only), 1536, 0) for s in tdd.SUITES}
         df = ex.submit(_chat, model, tdd.driver_messages(t), 1536, 0)
         outs, suites, drv = [f.result() for f in cf], {s: f.result() for s, f in sf.items()}, df.result()
@@ -59,7 +59,7 @@ def freeze(t, model: str, n_cand: int = 4, out: Path = OUT) -> dict:
     meta = {"id": t["id"], "topic": t["topic"], "cand_hidden": [bool(h[0]) for h in hidden],
             "cand_hidden_err": [(h[1] or "")[:100] if not h[0] else "" for h in hidden],
             "cand_tokens": [o.get("completion_tokens") or 0 for o in outs], "gen_seconds": gen,
-            "type_only": type_only, "n_cand": n_cand, "hook_tests_dropped": dropped,
+            "type_only": type_only, "fast_gen": fast_gen, "n_capped": sum(bool(o.get("capped")) for o in outs), "n_cand": n_cand, "hook_tests_dropped": dropped,
             "errors": [o["error"] for o in [*outs, *suites.values(), drv] if o.get("error")]}
     (d / "meta.json").write_text(json.dumps(meta, indent=1))
     return meta
@@ -70,6 +70,7 @@ def main():
     ap.add_argument("--only", default="", help="comma-separated id prefixes")
     ap.add_argument("--model", default="7b")
     ap.add_argument("--n-cand", type=int, default=4)
+    ap.add_argument("--fast-gen", action="store_true", help="candidates: fence prefill + stop + 1536 cap + 'No JSDoc comments.'")
     ap.add_argument("--out", default=str(OUT))
     a = ap.parse_args()
     out = Path(a.out)
@@ -81,7 +82,7 @@ def main():
         if (out / t["id"] / "meta.json").exists():
             print(f"[{i}/{len(tasks)}] {t['id']}: already frozen, skipped")
             continue
-        m = freeze(t, a.model, a.n_cand, out)
+        m = freeze(t, a.model, a.n_cand, out, a.fast_gen)
         print(f"[{i}/{len(tasks)}] {t['id']}: gen {m['gen_seconds']}s hidden {''.join('P' if h else '-' for h in m['cand_hidden'])}"
               f" tokens {m['cand_tokens']}" + (f" ERRORS {m['errors']}" if m["errors"] else ""), flush=True)
 
