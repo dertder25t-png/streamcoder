@@ -249,7 +249,13 @@ def _git_commit():
         return None
 
 
-def record_run(a, results, detail_file):
+def _mode(a):
+    if a.tdd:
+        return "tdd+repair" if a.tdd_repair else "tdd"
+    return "stream" if a.stream else "plain"
+
+
+def record_run(a, results, detail_file, extra=None):
     """Append one summary row to stats/runs.jsonl (tracked in git: the project's history)."""
     n = len(results)
     rate = lambda rs: round(sum(r["passed"] for r in rs) / len(rs), 3) if rs else None  # noqa: E731
@@ -257,7 +263,7 @@ def record_run(a, results, detail_file):
     vram = [r["vram_mb"] for r in results if r.get("vram_mb")]
     row = {
         "date": time.strftime("%Y-%m-%d %H:%M"), "label": a.label, "model": a.model,
-        "model_file": a.model_file, "mode": "stream" if a.stream else "plain", "tasks": n,
+        "model_file": a.model_file, "mode": _mode(a), "tasks": n,
         "pass_rate": rate(results),
         "easy": rate([r for r in results if r["difficulty"] == "easy"]),
         "hard": rate([r for r in results if r["difficulty"] == "hard"]),
@@ -268,6 +274,8 @@ def record_run(a, results, detail_file):
         "fail_categories": dict(Counter(r["category"] for r in results if r.get("category"))),
         "commit": _git_commit(), "details": f"results/{detail_file}",
     }
+    if extra:
+        row.update(extra)
     out = path("stats/runs.jsonl")
     out.parent.mkdir(exist_ok=True)
     with out.open("a") as f:
@@ -285,7 +293,12 @@ def main(argv=None):
     ap.add_argument("--topic", choices=["typescript", "react", "node"])
     ap.add_argument("--label", help="what changed, e.g. 'baseline' (goes on the stat sheet)")
     ap.add_argument("--model-file", default="", help="GGUF file name, e.g. coder-7b-q4_k_m.gguf")
+    ap.add_argument("--tdd", action="store_true", help="blind TDD: 4 candidates + self-tests, pick the best")
+    ap.add_argument("--tdd-repair", action="store_true", help="--tdd plus one repair turn on the pick")
     a = ap.parse_args(argv)
+    a.tdd = a.tdd or a.tdd_repair
+    if a.tdd and a.stream:
+        ap.error("--tdd and --stream cannot be combined")
 
     all_tasks = load_tasks()
     if a.list:
@@ -310,6 +323,9 @@ def main(argv=None):
         if a.reference:
             ref = next(task_dir(t).glob("reference.*"))
             code = ref.read_text()
+        elif a.tdd:
+            from . import tdd
+            code, info = tdd.solve(t, a)
         else:
             from . import llm, pipeline
             prompt = build_prompt(t)
@@ -338,6 +354,8 @@ def main(argv=None):
                     info["seconds"] = round(info["seconds"] + out2["seconds"], 2)
                     info["repaired"] = True
         ok, err, cat = run_tests_cat(t, code)
+        if a.tdd and not a.reference:
+            tdd.add_miss_reason(info, ok)
         results.append(dict(id=t["id"], topic=t["topic"], difficulty=t["difficulty"], passed=ok, error=err,
                             category=cat, **info))
         print(f"{'PASS' if ok else 'FAIL'}  {t['id']:<46} {err}")
@@ -358,10 +376,14 @@ def main(argv=None):
         print(f"  avg time: {sum(r['seconds'] for r in results) / n:.1f}s")
         out_dir = path("results")
         out_dir.mkdir(exist_ok=True)
-        name = f"{time.strftime('%Y%m%d-%H%M')}_{a.model}{'_stream' if a.stream else ''}.jsonl"
+        name = f"{time.strftime('%Y%m%d-%H%M')}_{a.model}{'_stream' if a.stream else ''}{'_tdd' if a.tdd else ''}.jsonl"
         (out_dir / name).write_text("\n".join(json.dumps(r) for r in results))
         print(f"  saved results/{name}")
-        record_run(a, results, name)
+        extra = None
+        if a.tdd:
+            extra = {"tdd": tdd.summarize(results)}
+            print("  tdd: " + json.dumps(extra["tdd"]))
+        record_run(a, results, name, extra)
     elif passed != n:
         sys.exit(1)
 

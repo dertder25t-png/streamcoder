@@ -82,6 +82,11 @@ stats/runs.jsonl (run #) or from scratchpad diagnostics that are not on the stat
 | Embedding search (nomic v1.5, CPU), min_score 0.91 | #16 | stream 21% | **kept** |
 | Raw-score gate 0.61 + top-1 chunk | #17 | 19% | reverted |
 | Missing-export check in repair | #18–19 | plain 22% (slower), stream 22% at 21.4 s | reverted |
+| Blind TDD best-of-4, stage 1 pick-best (`--tdd`, -np 4) | #20 | 26% at 32.2 s/task, 4,976 MB | over latency budget; flag off by default |
+
+Stage 1 picker (run #20): in-run oracle 38%, picker accuracy 68% (TS 85, React 58, Node 62),
+top-score tie 86%, self-tests 0/4 = 60% (React 91%), 4/4 = 19%. All 12 missed tasks lost on a
+tie-break, none on self-test score: the self-tests rarely separate candidates.
 
 Current best: **plain 7B + format rules + repair = 22% at ~12 s/task**. The stream setup is not better
 than plain, so retrieval tuning has stopped. Retrieval only comes back as post-mortem retrieval (step 4).
