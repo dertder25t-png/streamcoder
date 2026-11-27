@@ -45,8 +45,11 @@ def build_messages(prompt: str, files=(), system: str = None):
             hits += pf.retrieve(query, pack)
         hits = sorted(hits, key=lambda h: -h["score"])[: cfg()["library"]["top_k"]]
 
-    min_score = cfg()["library"].get("min_score", 0)
-    hits = [h for h in hits if h["score"] >= min_score]
+    lib = cfg()["library"]
+    min_score = lib.get("min_score", 0)
+    gate = "raw" if lib.get("gate_on", "score") == "raw" else "score"  # raw = before recipe boost
+    hits = [h for h in hits if h.get(gate, h["score"]) >= min_score]
+    hits = hits[: lib.get("max_refs", len(hits))]  # e.g. 1 = only the single best chunk
     budget = cfg()["library"]["max_context_chars"]
     refs, used = [], 0
     for h in hits:

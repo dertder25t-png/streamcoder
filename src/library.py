@@ -114,10 +114,13 @@ def search_pack(pack_data: dict, query: str, k: int):
         scores = pack_data["emb"] @ _embed([query], QUERY_PREFIX)[0]
     else:
         scores = linear_kernel(pack_data["vec"].transform([query]), pack_data["matrix"])[0]
+    raw = scores
     doc_weight = 1.0 if cfg()["library"].get("include_docs", True) else 0.0  # 0 = recipes only
     scores = scores * [doc_weight if d["source"].startswith("docs") else RECIPE_BOOST for d in pack_data["docs"]]
     best = scores.argsort()[::-1][:k]
-    return [dict(pack_data["docs"][i], score=round(float(scores[i]), 3)) for i in best if scores[i] > 0]
+    # score = boosted (used for ranking); raw = plain similarity before the recipe boost
+    return [dict(pack_data["docs"][i], score=round(float(scores[i]), 3), raw=round(float(raw[i]), 3))
+            for i in best if scores[i] > 0]
 
 
 def search(query: str, packs=None, k=None, index=None):

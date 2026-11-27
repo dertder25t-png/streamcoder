@@ -4,7 +4,8 @@ For each seed question we take the best library score in its own pack ("on-topic
 best score in a pack it does not belong to ("off-topic"). A good cutoff keeps most on-topic
 matches and drops most off-topic ones. Prints a small table; you choose and set config.yaml.
 
-  python tools/tune_min_score.py
+  python tools/tune_min_score.py          # boosted scores
+  python tools/tune_min_score.py --raw    # raw similarity of the best (boosted) hit, for gate_on: raw
 """
 import json
 import sys
@@ -15,6 +16,7 @@ from src import library  # noqa: E402
 from src.config import path  # noqa: E402
 
 PACKS = ["typescript", "react", "node"]
+RAW = "--raw" in sys.argv
 
 
 def main():
@@ -26,10 +28,11 @@ def main():
             continue
         own = library.search(q["text"], [q["pack"]], k=1, index=index)
         other = library.search(q["text"], [p for p in PACKS if p != q["pack"]], k=1, index=index)
+        key = "raw" if RAW else "score"
         if own:
-            on.append(own[0]["score"])
+            on.append(own[0].get(key, own[0]["score"]))
         if other:
-            off.append(other[0]["score"])
+            off.append(other[0].get(key, other[0]["score"]))
     on.sort()
     off.sort()
     q = lambda xs, f: xs[min(len(xs) - 1, int(f * len(xs)))]
