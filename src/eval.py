@@ -135,6 +135,50 @@ def _write_tsconfig(t, run: Path):
     (run / "tsconfig.json").write_text(json.dumps(tsconfig))
 
 
+_ID = r"[A-Za-z_$][\w$]*"
+
+def _strip_brackets(s: str) -> str:
+    out, depth = [], 0
+    for ch in s:
+        if ch in "([{<": depth += 1
+        elif ch in ")]}>" and depth: depth -= 1; continue
+        if depth == 0: out.append(ch)
+    return "".join(out)
+
+def required_exports(t) -> list[str]:
+    """Names the PROMPT says to export (prompt text + must_export only; never the tests)."""
+    must = t.get("must_export")
+    if must:
+        names = re.findall(r"`(" + _ID + r")", must)
+    else:
+        first = re.split(r"(?<=[.?!])\s", t["prompt"].strip(), 1)[0]
+        m = re.search(r"\b(?:[Ee]xport|Fix)\b(.*)", first)
+        if not m:
+            return []
+        clause = re.split(r"\b(?:where|which|that|so|returning|rendering|containing|wrapping|"
+                          r"supporting|displaying|accepting|showing|using|with)\b", _strip_brackets(m.group(1)))[0]
+        clause = re.sub(r":[^,;]*", "", clause)  # drop return/param types after ':'
+        # identifiers with an inner capital (camelCase / PascalCase) are code names, not English
+        names = [n for n in re.findall(_ID, clause) if re.search(r"[a-z][A-Z]", n)]
+    seen = []
+    for n in names:
+        if n not in seen: seen.append(n)
+    return seen
+
+
+def missing_exports(t, code: str) -> list[str]:
+    """Required names (from the prompt) that the code does not export by name."""
+    out = []
+    for n in required_exports(t):
+        decl = re.search(r"export\s+(?:declare\s+)?(?:async\s+)?(?:abstract\s+)?(?:function\*?|const|let|var|class|"
+                         r"interface|type|enum)\s+" + re.escape(n) + r"\b", code)
+        listed = any(re.search(r"(?<![\w$])" + re.escape(n) + r"(?![\w$])", grp)
+                     for grp in re.findall(r"export\s+(?:type\s+)?\{([^}]*)\}", code))
+        if not (decl or listed):
+            out.append(n)
+    return out
+
+
 def compile_alone(t, code: str, max_lines=15) -> str:
     """Type-check the solution ON ITS OWN (no test file), same compiler settings as grading.
     Returns compiler errors ('' if clean). Safe to show the model: nothing about the hidden tests."""
@@ -279,10 +323,14 @@ def main(argv=None):
             code = extract_code(out["text"])
             if cfg()["eval"].get("repair_retry", False):
                 errors = compile_alone(t, code)
-                if errors:  # one retry; the model sees compiler output only, never the tests
+                if cfg()["eval"].get("export_check", False):  # names come from the prompt text only
+                    missing = "\n".join(f"Missing required export: {n}" for n in missing_exports(t, code))
+                    errors = "\n".join(x for x in (missing, errors) if x)
+                    info["missing_exports_found"] = bool(missing)
+                if errors:  # one retry; the model sees compiler output / missing names only, never the tests
                     lang = "tsx" if t["topic"] == "react" else "ts"
                     msgs = msgs + [{"role": "assistant", "content": out["text"]},
-                                   {"role": "user", "content": "The TypeScript compiler (strict mode) reported:\n"
+                                   {"role": "user", "content": "Checking your module (strict TypeScript) found:\n"
                                     f"```\n{errors}\n```\nFix these errors. Reply with the full corrected "
                                     f"module in one ```{lang} code block."}]
                     out2 = llm.chat(a.model, msgs, max_tokens=2048, temperature=0)

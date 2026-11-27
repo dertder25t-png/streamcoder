@@ -21,9 +21,9 @@ library:
   max_context_chars: 4000      # cap on retrieved text added to the prompt
   query: full                  # first_paragraph = route/search on task description only. Tried 2026-11-26: 19% (no change), slower; reverted
   include_docs: true           # false = recipes only. Tried 2026-11-26: 15% (no change vs v1), reverted
-  min_score: 0.61              # gate on RAW similarity (tools/tune_min_score.py --raw on router seeds: keeps 70% on-topic, drops 62% off-topic)
-  gate_on: raw                 # step 5b change 3: raw = before recipe boost; score = boosted (was 0.91 boosted)
-  max_refs: 1                  # step 5b change 3: only the single best chunk
+  min_score: 0.91              # boosted embed scale (tools/tune_min_score.py on router seeds: keeps 70% on-topic, drops 62% off-topic)
+  gate_on: score              # raw = gate before recipe boost. Tried raw 0.61 + max_refs 1 on 2026-11-26: 19% vs 21%, reverted
+  max_refs: 3                 # 1 = only the best chunk (see gate_on note)
 
 prefetch:
   ram_budget_packs: 3          # how many packs to keep "warm" in memory
@@ -34,6 +34,7 @@ prefetch:
   #  node: 2
 
 eval:
+  export_check: true    # step 3: names from the prompt text only; missing ones go into the repair turn
   repair_retry: true    # step 5 change 3: one retry with compiler errors (solution compiled alone)
   format_rules: true    # step 5 change 2: repeat output-format rules at the end of the prompt
   timeout_seconds: 20   # per tool (tsc / vitest) is 6x this

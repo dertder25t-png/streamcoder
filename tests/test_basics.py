@@ -74,3 +74,14 @@ def test_saved_error_keeps_category():
     tail = "\n".join(full.splitlines()[-2:])
     passed, saved, cat = _short_with_cause("type error: ", tail, full)
     assert cat == "missing-export" and categorize(passed, saved) == cat
+
+
+def test_missing_exports_from_prompt_only():
+    from src.eval import missing_exports, required_exports
+    t = {"prompt": "Export normalizeScores(values: readonly number[]): number[] that maps values.",
+         "must_export": None}
+    assert required_exports(t) == ["normalizeScores"]
+    assert missing_exports(t, "function normalizeScores() {}") == ["normalizeScores"]
+    assert missing_exports(t, "export default function normalizeScores() {}") == ["normalizeScores"]
+    assert missing_exports(t, "export function normalizeScores() {}") == []
+    assert missing_exports(t, "const normalizeScores = () => []; export { normalizeScores };") == []
