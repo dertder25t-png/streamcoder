@@ -1,8 +1,9 @@
 """Offline picker comparison on the frozen candidates (NO LLM calls).
 
-  python3 tools/pickers.py [--refresh] [--ids a,b] [--workers 1] [--report PATH]
+  python3 tools/pickers.py [--refresh] [--ids a,b] [--workers 1] [--report PATH] [--k K] [--frozen DIR]
 
-Step A (per task, cached as JSON in the scratchpad): for each of the 4 frozen candidates compute
+Step A (per candidate, cached as JSON in the scratchpad under <frozen dir name>/<id>/cand<k>.json, so --k 4 and
+--k 8 share work; --k K uses only cand0..K-1 in every picker and in the oracle): for each frozen candidate compute
   tests   {suite::test: passed}   self-tests of both frozen suites (current tdd.py harness)
   counts  {err, warn, unhandled}  console / unhandled-rejection counts from the self-test run
   tsc     number of `error TS` lines from compiling the candidate alone (same tsconfig as grading)
@@ -34,7 +35,6 @@ SCRATCH = Path("/tmp/claude-1000/-home-caleb-Documents-claude-code-projects-stre
                "93da0ffe-0d7b-4d55-a613-68ce44c7d130/scratchpad")
 CACHE = SCRATCH / "picker_cache"
 LIVE_ORACLE = 0.38
-N_CAND = 4
 
 # ------------------------------------------------------------------ step A: features
 
@@ -127,24 +127,36 @@ def _candidate(t, k: int, code: str, suites: dict, type_only: bool, drivers: str
             "smoke": _smoke(t, code, k), "probes": probes}
 
 
-def features(t, refresh=False) -> dict:
-    cache = CACHE / f"{t['id']}.json"
-    if cache.exists() and not refresh:
-        return json.loads(cache.read_text())
-    d = FROZEN / t["id"]
+def features(t, refresh=False, k=None, frozen=FROZEN) -> dict:
+    """Features for cand0..k-1 (k=None: all frozen candidates). Per-candidate cache; only missing ones are computed."""
+    d = frozen / t["id"]
     meta = json.loads((d / "meta.json").read_text())
+    n_have = len(meta["cand_hidden"])
+    k = min(k or n_have, n_have)
     type_only = tdd.is_type_only(t)
     rd = lambda n: (d / n).read_text() if (d / n).exists() else ""  # noqa: E731
-    suites = {s: tdd.parse_suite(rd(f"suite_{s}.raw.txt"), type_only) for s in tdd.SUITES}
+    hook = tdd.is_hook_task(t)
+    suites = {s: tdd.parse_suite(rd(f"suite_{s}.raw.txt"), type_only, hook) for s in tdd.SUITES}
     drivers = rd("drivers.raw.txt")
-    codes = [rd(f"cand{k}{ext(t)}") for k in range(N_CAND)]
-    with ThreadPoolExecutor(N_CAND) as ex:
-        cands = list(ex.map(lambda a: _candidate(t, a[0], a[1], suites, type_only, drivers), enumerate(codes)))
-    out = {"id": t["id"], "topic": t["topic"], "type_only": type_only, "hidden": meta["cand_hidden"],
-           "suites_ok": [bool(suites[s]) for s in tdd.SUITES], "cands": cands}
-    CACHE.mkdir(parents=True, exist_ok=True)
-    cache.write_text(json.dumps(out))
-    return out
+    cdir = CACHE / frozen.name / t["id"]
+    cdir.mkdir(parents=True, exist_ok=True)
+    cands, todo = {}, []
+    for i in range(k):
+        f = cdir / f"cand{i}.json"
+        if f.exists() and not refresh:
+            cands[i] = json.loads(f.read_text())
+        else:
+            todo.append(i)
+
+    def one(i):
+        c = _candidate(t, i, rd(f"cand{i}{ext(t)}"), suites, type_only, drivers)
+        (cdir / f"cand{i}.json").write_text(json.dumps(c))
+        return i, c
+    if todo:
+        with ThreadPoolExecutor(min(len(todo), 4)) as ex:
+            cands.update(dict(ex.map(one, todo)))
+    return {"id": t["id"], "topic": t["topic"], "type_only": type_only, "hidden": meta["cand_hidden"][:k],
+            "suites_ok": [bool(suites[s]) for s in tdd.SUITES], "cands": [cands[i] for i in range(k)]}
 
 
 # ------------------------------------------------------------------ step B: pickers (pure)
@@ -301,15 +313,20 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--refresh", action="store_true")
     ap.add_argument("--ids", default="")
-    ap.add_argument("--workers", type=int, default=1, help="tasks processed in parallel (each runs 4 candidates)")
+    ap.add_argument("--workers", type=int, default=1, help="tasks processed in parallel (each runs up to 4 candidates at once)")
     ap.add_argument("--report", default=str(SCRATCH / "picker_report.json"))
+    ap.add_argument("--k", type=int, default=0, help="use only cand0..K-1 (default: all present)")
+    ap.add_argument("--frozen", default=str(FROZEN))
     a = ap.parse_args()
+    frozen = Path(a.frozen)
+    if not frozen.is_absolute():
+        frozen = ROOT / frozen
     want = {i for i in a.ids.split(",") if i}
-    tasks = [t for t in load_tasks() if (FROZEN / t["id"] / "meta.json").exists() and (not want or t["id"] in want)]
+    tasks = [t for t in load_tasks() if (frozen / t["id"] / "meta.json").exists() and (not want or t["id"] in want)]
     t0 = time.time()
 
     def one(t):
-        f = features(t, a.refresh)
+        f = features(t, a.refresh, a.k or None, frozen)
         print(f"  {t['id']} done ({time.time() - t0:.0f}s)", file=sys.stderr, flush=True)
         return f
     with ThreadPoolExecutor(a.workers) as ex:

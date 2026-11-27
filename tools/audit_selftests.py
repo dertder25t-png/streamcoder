@@ -1,8 +1,8 @@
-"""Find self-tests that fail on all 4 frozen candidates (0/4) and suites that crash.
+"""Find self-tests that fail on all N frozen candidates (0/4) and suites that crash.
 
   python3 tools/audit_selftests.py [--only ts-01,react] [--out FILE] [--sample N --min-react M --seed 0]
 
-Rebuilds suites a/b from data/frozen/<id>/suite_*.raw.txt exactly as tdd.solve does, runs them on cand0..3
+Rebuilds suites a/b from data/frozen/<id>/suite_*.raw.txt exactly as tdd.solve does, runs them on cand0..N-1
 (run dirs audit<k>, removed afterwards) and writes one JSONL record per 0/4 test (and one per crashed suite).
 """
 import argparse
@@ -94,10 +94,10 @@ def vitest_run(run: Path) -> dict:
 
 def audit(t, d: Path, cache: dict):
     type_only = tdd.is_type_only(t)
-    suites = {s: tdd.parse_suite((d / f"suite_{s}.raw.txt").read_text(), type_only) for s in tdd.SUITES}
+    suites = {s: tdd.parse_suite((d / f"suite_{s}.raw.txt").read_text(), type_only, tdd.is_hook_task(t)) for s in tdd.SUITES}
     live = {s: b for s, b in suites.items() if b}
     empty = [s for s in tdd.SUITES if not suites[s]]
-    codes = [(d / f"cand{k}{ext(t)}").read_text() for k in range(4)]
+    codes = [(d / f"cand{k}{ext(t)}").read_text() for k in range(len(list(d.glob("cand*.raw.txt"))))]
     results, runs = [], []
     try:
         for k, c in enumerate(codes):

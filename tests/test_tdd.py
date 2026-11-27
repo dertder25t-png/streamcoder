@@ -100,3 +100,40 @@ def test_driver_messages_mentions_helpers():
     assert "snap()" in m and "getByRole" in m and "Counter" in m
     n = tdd.driver_messages({**T_NODE, "criteria": ["c"]})[1]["content"]
     assert '"pr-"' in n and "snap()" not in n
+
+
+def test_drop_bare_hook_tests():
+    code = '''test("bare", () => {
+  const r = useCounter(1);
+  expect(r.count).toBe(1);
+});
+test("ok renderHook", () => {
+  const { result } = renderHook(() => useCounter(1));
+  expect(result.current.count).toBe(1);
+});
+it("ok component", () => {
+  function Probe() { const c = useCounter(2); return <p>{c.count}</p>; }
+  const Other = () => { useCounter(3); return null; };
+  render(<Probe />);
+  vi.useFakeTimers();
+  expect(screen.getByText("2")).toBeTruthy();
+});
+test("plain react", () => {
+  render(<button>go</button>);
+  expect(screen.getByRole("button")).toBeTruthy();
+});
+'''
+    out, n = tdd.drop_bare_hook_tests(code)
+    assert n == 1
+    assert '"bare"' not in out
+    assert all(x in out for x in ('"ok renderHook"', '"ok component"', '"plain react"'))
+    assert tdd.drop_bare_hook_tests('test("a", () => { expect(1).toBe(1); });')[1] == 0
+
+
+def test_parse_suite_hook_flag_and_header():
+    reply = '```ts\ntest("a", () => { useX(); });\ntest("b", () => { renderHook(() => useX()); });\n```'
+    body, n = tdd.parse_suite_n(reply, False, True)
+    assert n == 1 and '"a"' not in body and '"b"' in body
+    assert tdd.parse_suite(reply, False) .count("test(") == 2   # flag off: untouched
+    t = {"topic": "react", "prompt": "Export a hook `useX`.", "must_export": "`useX`"}
+    assert tdd.is_hook_task(t) and "renderHook" in tdd.test_header(t, "/tmp/c.json")

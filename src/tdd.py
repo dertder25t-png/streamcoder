@@ -31,6 +31,21 @@ def is_type_only(t) -> bool:
     return (t["topic"] == "typescript" and bool(names) and all(re.fullmatch(r"[A-Z]\w*", n) for n in names)
             and not re.search(r"\b(function|class|returns?)\b", text, re.I))
 
+def hook_names(t) -> list:
+    """Required exports that look like React hooks (`useX`) in a React task."""
+    if t["topic"] != "react":
+        return []
+    return [n for n in required_exports(t) if re.match(r"use[A-Z]", n)]
+
+
+def is_hook_task(t) -> bool:
+    return bool(hook_names(t))
+
+
+def hook_rule(t) -> str:
+    return (f"Test hooks only via `const {{ result, rerender, unmount }} = renderHook(() => {hook_names(t)[0]}(...))`; "
+            "never call `use*` directly in a test.")
+
 # ---------------------------------------------------------------- self-test prompts
 
 SUITE_SYSTEM = ("You write small, correct unit tests for a TypeScript task. You do NOT implement the task. "
@@ -58,8 +73,10 @@ def suite_messages(t, suite: str, type_only: bool) -> list:
     else:
         rules = ["Tests must be self-contained: no imports, no describe needed, no shared state between tests."]
         if t["topic"] == "react":
-            rules.append("Already imported: React, render, screen, fireEvent, cleanup, act, waitFor, within "
+            rules.append("Already imported: React, render, renderHook, screen, fireEvent, cleanup, act, waitFor, within "
                          "(testing-library) and test, expect, vi, afterEach, beforeEach, describe (vitest).")
+            if is_hook_task(t):
+                rules.append(hook_rule(t))
             rules.append("Query only with `screen.getByRole` or text strings quoted in the task. Never use CSS "
                          "classes, tag selectors, invented labels or test ids. Use `fireEvent`, not userEvent. "
                          "Use `vi.useFakeTimers()` if timers are needed.")
@@ -97,18 +114,89 @@ def _strip_call(code: str, name: str) -> str:
         code = code[:m.start()] + code[i:].lstrip(";")
 
 
-def parse_suite(reply: str, type_only: bool) -> str:
-    """Code block of the reply minus imports, the model's own hooks and Equal/Expect definitions.
-    Returns '' if there is no usable code block."""
+_HOOK_CALL = re.compile(r"(?<![.\w$])use[A-Z]\w*\s*\(")
+_TEST_START = re.compile(r"^[ \t]*(?:test|it)(?:\.\w+)*\s*\(", re.M)
+_COMPONENT = re.compile(r"function\s+[A-Z]\w*\s*\([^)]*\)\s*(?::[^{]*)?\{"
+                        r"|const\s+[A-Z]\w*\s*(?::[^=]*)?=\s*(?:\([^)]*\)|\w+)\s*(?::[^=]*?)?=>\s*\{")
+
+
+def _balanced_end(code: str, i: int, open_c: str, close_c: str) -> int:
+    """Index just past the bracket matching code[i] (== open_c); len(code) if unbalanced. Skips strings."""
+    depth, q = 0, None
+    while i < len(code):
+        c = code[i]
+        if q:
+            if c == "\\":
+                i += 1
+            elif c == q:
+                q = None
+        elif c in "\"'`":
+            q = c
+        elif c == open_c:
+            depth += 1
+        elif c == close_c:
+            depth -= 1
+            if depth == 0:
+                return i + 1
+        i += 1
+    return len(code)
+
+
+def _bare_hook_call(block: str) -> bool:
+    spans = []
+    for m in re.finditer(r"\brenderHook\s*\(", block):
+        spans.append((m.start(), _balanced_end(block, m.end() - 1, "(", ")")))
+    for m in _COMPONENT.finditer(block):
+        spans.append((m.start(), _balanced_end(block, m.end() - 1, "{", "}")))
+    for m in _HOOK_CALL.finditer(block):
+        if re.search(r"function\s+$", block[:m.start()]):   # a hook being DEFINED in the test, not called
+            continue
+        if not any(a <= m.start() < b for a, b in spans):
+            return True
+    return False
+
+
+def drop_bare_hook_tests(code: str) -> tuple:
+    """Drop top-level `test(`/`it(` blocks that call `useX(` outside renderHook(...) and outside a component
+    function defined in the block. Returns (code, n_dropped). Conservative: only drops when clearly outside."""
+    out, pos, dropped = [], 0, 0
+    while True:
+        m = _TEST_START.search(code, pos)
+        if not m:
+            break
+        end = _balanced_end(code, m.end() - 1, "(", ")")
+        if end < len(code) and code[end:end + 1] == ";":
+            end += 1
+        if _bare_hook_call(code[m.start():end]):
+            out.append(code[pos:m.start()])
+            dropped += 1
+        else:
+            out.append(code[pos:end])
+        pos = end
+    out.append(code[pos:])
+    return "".join(out), dropped
+
+
+def parse_suite_n(reply: str, type_only: bool, hook: bool = False) -> tuple:
+    """Like parse_suite but returns (suite, hook_tests_dropped). `hook`: apply the bare-hook-call filter."""
     if "```" not in reply:
-        return ""
+        return "", 0
     code = _clean_body(reply)
+    dropped = 0
     if type_only:
         code = re.sub(r"^\s*(?:export\s+)?type\s+(?:Equal|Expect)\b.*?;[ \t]*$", "", code, flags=re.M | re.S)
         ok = "Expect<" in code or "@ts-expect-error" in code
     else:
+        if hook:
+            code, dropped = drop_bare_hook_tests(code)
         ok = re.search(r"\b(?:test|it)\s*\(", code) is not None
-    return code.strip() + "\n" if ok else ""
+    return (code.strip() + "\n" if ok else ""), dropped
+
+
+def parse_suite(reply: str, type_only: bool, hook: bool = False) -> str:
+    """Code block of the reply minus imports, the model's own hooks and Equal/Expect definitions (and, for hook
+    tasks with hook=True, tests that call a hook outside renderHook). Returns '' if there is no usable code."""
+    return parse_suite_n(reply, type_only, hook)[0]
 
 
 _ID = r"[A-Za-z_$][\w$]*"
@@ -172,7 +260,7 @@ def test_header(t, counts_path: str, body: str = "") -> str:
     lines = ["// @vitest-environment jsdom"] if react else []
     if react:
         lines += ['import React from "react";',
-                  'import { render, screen, fireEvent, cleanup, act, waitFor, within } from "@testing-library/react";',
+                  'import { render, renderHook, screen, fireEvent, cleanup, act, waitFor, within } from "@testing-library/react";',
                   'import "@testing-library/jest-dom/vitest";  // toBeInTheDocument etc. (models use them a lot)']
     lines.append('import { test, it, expect, vi, afterEach, afterAll, beforeEach, describe } from "vitest";')
     if t["topic"] == "node":
@@ -364,8 +452,10 @@ def driver_messages(t) -> list:
              "Each probe is `probe(\"short name\", async () => { ...; return value; })`. "
              "`probe` is already defined."]
     if react:
-        rules.append("Already imported: React, render, screen, fireEvent, cleanup, act, waitFor, within "
+        rules.append("Already imported: React, render, renderHook, screen, fireEvent, cleanup, act, waitFor, within "
                      "(testing-library) and vi (vitest).")
+        if is_hook_task(t):
+            rules.append(hook_rule(t))
         rules.append("Render the component with props taken from the task, then do a sequence of `fireEvent` "
                      "interactions. Query only with `screen.getByRole` (not getByLabelText / getByTestId) or text strings quoted in the task. Never "
                      "use CSS classes, tag selectors, invented labels or test ids. End with `return snap();` "
@@ -478,7 +568,8 @@ def solve(t, a):
     with ThreadPoolExecutor(6) as ex:
         sf = {s: ex.submit(_chat, a.model, suite_messages(t, s, type_only), 1536, 0) for s in SUITES}
         cf = [ex.submit(_chat, a.model, base, 2048, CAND_TEMP) for _ in range(N_CAND)]
-        suites = {s: parse_suite(f.result()["text"], type_only) for s, f in sf.items()}
+        parsed = {s: parse_suite_n(f.result()["text"], type_only, is_hook_task(t)) for s, f in sf.items()}
+        suites = {s: p[0] for s, p in parsed.items()}
         outs = [f.result() for f in cf]
     gen_secs = time.time() - t0
     codes = [extract_code(o["text"]) for o in outs]
@@ -523,6 +614,7 @@ def solve(t, a):
     toks = sum(o.get("completion_tokens") or 0 for o in outs)
     info.update(seconds=seconds, tokens_per_sec=round(toks / gen_secs, 1) if gen_secs and toks else None,
                 vram_mb=vram_used_mb(), type_only=type_only, suites_ok=[bool(suites[s]) for s in SUITES],
+                hook_tests_dropped={s: p[1] for s, p in parsed.items()},
                 cand_hidden=cand_hidden, cand_scores=sc["scores"], picked=picked, top_tie=top_tie,
                 n_tests=sc["n_tests"], n_zero=sc["n_zero"], n_all=sc["n_all"], oracle=any(cand_hidden))
     return final, info
