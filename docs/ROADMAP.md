@@ -113,3 +113,16 @@ than plain, so retrieval tuning has stopped. Retrieval only comes back as post-m
 - The model writes 4–5 vitest tests from the prompt only. It never sees the hidden tests or references.
 - 4 samples (temp 0 + 3 at 0.6), drop tsc failures, rank by self-test passes, tie-break on agreement,
   up to 2 repair rounds. Compare with plain 7B + rules + repair (22%). Latency must stay under 21 s/task.
+
+### Offline picker comparison (frozen best-of-4, fixed harness; diagnostic, not a stat-sheet score)
+Frozen oracle 29/100 (TS 13, React 7, Node 9). Capture = picked passes / oracle tasks.
+| Picker | Pass | Capture | TS | React | Node | Top tie |
+|---|---|---|---|---|---|---|
+| cand0 (temp 0 only) | 20% | 69% | 11/13 | 5/7 | 4/9 | n/a |
+| self-test count | **25%** | **86%** | 12/13 | 7/7 | 6/9 | 73% |
+| CodeT clusters | 23% | 79% | 12/13 | 6/7 | 5/9 | 85% |
+| MBR-Exec | 23% | 79% | 12/13 | 6/7 | 5/9 | 88% |
+| zero-LLM filter only | 22% | 76% | 12/13 | 6/7 | 4/9 | 84% |
+| filter + self-test | **25%** | **86%** | 12/13 | 7/7 | 6/9 | 65% |
+MBR is weak because every probe errors for every candidate on 24 tasks (mostly React). The filters never
+dropped a hidden-passing candidate. Next: 8-candidate freeze (data/frozen8) for best-of-4 vs best-of-8.
