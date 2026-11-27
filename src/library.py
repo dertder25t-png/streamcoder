@@ -11,10 +11,13 @@ Usage:
   python -m src.library search "read a csv" --pack python
 """
 import argparse
+import json
 import re
 import sys
+import urllib.request
 
 import joblib
+import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import linear_kernel
 
@@ -43,6 +46,36 @@ def _chunks(text: str, source: str):
             yield {"source": source, "text": prefix + buf.strip()[: CHUNK_CHARS * 2]}
 
 
+QUERY_PREFIX = "search_query: "      # nomic-embed-text-v1.5 needs these task prefixes
+DOC_PREFIX = "search_document: "
+EMBED_BATCH = 16
+EMBED_MAX_CHARS = 3500  # the model reads at most 2048 tokens; embed a chunk's start (the stored text stays whole)
+
+
+def _backend() -> str:
+    return cfg()["library"].get("backend", "tfidf")
+
+
+def _embed(texts, prefix):
+    """Call llama-server's OpenAI-style /v1/embeddings (CPU server, never loads a model here).
+    Returns an L2-normalised float32 matrix, one row per text."""
+    c = cfg()["library"]
+    url = c.get("embed_url", "http://127.0.0.1:8081").rstrip("/") + "/v1/embeddings"
+    rows = []
+    for i in range(0, len(texts), EMBED_BATCH):
+        body = json.dumps({"model": c.get("embed_model", "embed"),
+                           "input": [prefix + t[:EMBED_MAX_CHARS] for t in texts[i:i + EMBED_BATCH]]}).encode()
+        req = urllib.request.Request(url, body, {"Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=300) as r:
+                data = sorted(json.load(r)["data"], key=lambda d: d["index"])
+        except OSError as e:
+            raise RuntimeError(f"embedding server not reachable at {url} (see library.embed_url): {e}") from e
+        rows += [d["embedding"] for d in data]
+    m = np.asarray(rows, dtype=np.float32)
+    return m / np.maximum(np.linalg.norm(m, axis=1, keepdims=True), 1e-9)
+
+
 def build(report=True):
     root = path(cfg()["library"]["root"])
     packs = {}
@@ -53,9 +86,13 @@ def build(report=True):
                 docs.extend(_chunks(f.read_text(errors="ignore"), str(f.relative_to(pack_dir))))
         if not docs:
             continue
-        vec = TfidfVectorizer(ngram_range=(1, 2), sublinear_tf=True, stop_words="english")
-        matrix = vec.fit_transform(d["text"] for d in docs)
-        packs[pack_dir.name] = {"docs": docs, "vec": vec, "matrix": matrix}
+        if _backend() == "embed":
+            emb = _embed([d["text"] for d in docs], DOC_PREFIX)
+            packs[pack_dir.name] = {"docs": docs, "emb": emb}
+        else:
+            vec = TfidfVectorizer(ngram_range=(1, 2), sublinear_tf=True, stop_words="english")
+            matrix = vec.fit_transform(d["text"] for d in docs)
+            packs[pack_dir.name] = {"docs": docs, "vec": vec, "matrix": matrix}
         if report:
             print(f"  {pack_dir.name:<8} {len(docs):>4} chunks")
     joblib.dump(packs, path(cfg()["library"]["index_path"]))
@@ -73,7 +110,10 @@ RECIPE_BOOST = 1.5  # hand-written recipes beat raw docs when scores are close
 
 
 def search_pack(pack_data: dict, query: str, k: int):
-    scores = linear_kernel(pack_data["vec"].transform([query]), pack_data["matrix"])[0]
+    if "emb" in pack_data:  # embedding index: cosine similarity on normalised vectors
+        scores = pack_data["emb"] @ _embed([query], QUERY_PREFIX)[0]
+    else:
+        scores = linear_kernel(pack_data["vec"].transform([query]), pack_data["matrix"])[0]
     doc_weight = 1.0 if cfg()["library"].get("include_docs", True) else 0.0  # 0 = recipes only
     scores = scores * [doc_weight if d["source"].startswith("docs") else RECIPE_BOOST for d in pack_data["docs"]]
     best = scores.argsort()[::-1][:k]

@@ -13,12 +13,15 @@ router:
 
 library:
   root: data/library
-  index_path: data/library/index.joblib
+  index_path: data/library/index_embed.joblib   # tfidf index: data/library/index.joblib
+  backend: embed               # step 5b change 2: tfidf | embed (rebuild index after changing)
+  embed_url: http://127.0.0.1:8081   # CPU llama-server with the embedding model (never loaded in Python)
+  embed_model: nomic-embed-text-v1.5
   top_k: 3
   max_context_chars: 4000      # cap on retrieved text added to the prompt
   query: full                  # first_paragraph = route/search on task description only. Tried 2026-11-26: 19% (no change), slower; reverted
   include_docs: true           # false = recipes only. Tried 2026-11-26: 15% (no change vs v1), reverted
-  min_score: 0.12              # drop weak matches: irrelevant context can confuse a small model
+  min_score: 0.91              # embed scale (tools/tune_min_score.py on router seeds: keeps 70% on-topic, drops 62% off-topic). TF-IDF used 0.12
 
 prefetch:
   ram_budget_packs: 3          # how many packs to keep "warm" in memory
