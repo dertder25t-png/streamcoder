@@ -58,3 +58,12 @@ If two phases in a row gain less than +3 pts, pivot to a benchmark project.
   `data/final_exam/`. Never open, run or tune on it until I say so. It runs once, at the very end.
 - **The 100 eval tasks and their tests are frozen.** Edits would break comparisons with the
   baselines. If a task looks broken, ask first.
+
+## Phase A results so far
+
+- **React audit (2026-11-26), 10 failing React tasks, plain 7B:** spec misreads at boundaries or in
+  conditional rendering 5, mirrored state instead of derived 2, invented or changed props/types 2,
+  wrong DOM event 1. No single React mechanic reaches 4 of 10, so there's no React-rule run.
+- **Oracle pass@4 (diagnostic, not a score):** temp-0 single shot 21%. At least one of 4 samples passes
+  on 34% (TS 15/35, React 10/35, Node 9/30). Tasks by passing samples (0–4): 66 / 13 / 4 / 6 / 11.
+  A perfect picker could add up to +13 pts, and the gate needs +5.

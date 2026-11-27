@@ -61,3 +61,23 @@ training tools assume NVIDIA. Options:
 1. Phases 2–5 need no training at all except the CPU router. Do these first.
 2. Train LoRA adapters on a 1.5B model locally to learn the process.
 3. Rent a cloud GPU for an hour or two to train 7B adapters, then run them locally.
+
+## Speed check after the slow run 19 (2026-11-26)
+
+Run 19 (stream, export check) ran at 21–27 tok/s instead of the usual ~36. Run 18's second half had
+already slowed (36.5 -> 32.4 tok/s). llama-bench, 7B Q4_K_M, Vulkan1, 3 reps:
+
+| Condition | pp512 t/s | tg128 t/s |
+|---|---|---|
+| Embedding server stopped | 769 | 42.2 |
+| Embedding server running, idle | 787 | 42.9 |
+| Embedding server busy (embedding loop) | 784 | 42.6 |
+
+- The embedding server is **not** the cause (<1% effect), so its thread count (-t 8) stays as it is.
+- Power: ACPI platform profile `performance`, CPU governor `powersave` with EPP `balance_performance`,
+  on AC power. GPU power level `auto`. (`powerprofilesctl` isn't installed.)
+- Temps: GPU junction 50–63 °C (fine). CPU package 67 °C idle, 90 °C under the embedding load.
+- No amdgpu, Thunderbolt or thermal messages in the kernel log for that time.
+- Likely cause: a temporary slowdown during that session (heat, or other load on the laptop). It
+  could not be reproduced. Guard: the run script now records a quick tg128 bench before each eval, so a
+  slow machine shows up before the numbers get blamed on a change.
