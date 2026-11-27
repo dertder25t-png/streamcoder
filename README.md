@@ -38,7 +38,8 @@ once and stays put; only text (and later small LoRA files) move across the cable
 |---|---|
 | Router | Works. 178 examples (62 real Stack Overflow posts), ~79% accuracy |
 | Library | Works. Recipes for TS/React/Node + official docs (React, TS Handbook, Node API) |
-| Eval | 100 questions merged and cleaned. **9 ready** (tests + reference, verified). **91 todo** |
+| Eval | **100/100 ready** (reference passes, a plausible buggy version fails). Failure categories: missing-export / type-error / test-fail / timeout |
+| Results so far | Plain 7B 20%, plain 14B 41%. Best 7B + StreamCoder 19%: the library doesn't help yet. See `stats/STAT_SHEET.md` |
 | Stat sheet | Works. Baselines, change log, "gap closed vs 14B", VRAM, speed |
 | Pipeline / prefetch | Works end to end (tested against a fake server) |
 | LoRA skill packs, speculative decoding, team loop | Later phases |
