@@ -23,9 +23,7 @@ from src.eval import SYSTEM, build_prompt, ext, extract_code, load_tasks, run_te
 OUT = ROOT / "data" / "frozen"
 
 
-def cand_plan(n: int) -> tuple:
-    """cand0 at temperature 0 (no seed); cand1..n-1 at temperature 0.7 with seeds 1..n-1."""
-    return [0] + [0.7] * (n - 1), [None] + list(range(1, n))
+cand_plan = tdd.cand_plan  # shared with the live pipeline (src/tdd.py)
 
 
 def _chat(model, msgs, max_tokens, temperature, seed=None) -> dict:

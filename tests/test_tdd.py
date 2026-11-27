@@ -137,3 +137,28 @@ def test_parse_suite_hook_flag_and_header():
     assert tdd.parse_suite(reply, False) .count("test(") == 2   # flag off: untouched
     t = {"topic": "react", "prompt": "Export a hook `useX`.", "must_export": "`useX`"}
     assert tdd.is_hook_task(t) and "renderHook" in tdd.test_header(t, "/tmp/c.json")
+
+
+def test_cand_plan_k4_and_k8():
+    from src import tdd
+    assert tdd.cand_plan(4) == ([0, 0.7, 0.7, 0.7], [None, 1, 2, 3])
+    temps, seeds = tdd.cand_plan(8)
+    assert temps == [0] + [0.7] * 7 and seeds == [None] + list(range(1, 8))
+
+
+def test_freeze_and_pickers_share_logic():
+    from src import tdd
+    from tools import freeze, pickers
+    assert freeze.cand_plan is tdd.cand_plan
+    assert pickers.filter_survivors is tdd.filter_survivors
+    good = {"tsc": 0, "missing": [], "smoke": {"ok": True}}
+    bad = {"tsc": 2, "missing": [], "smoke": {"ok": True}}
+    assert tdd.filter_survivors([bad, good, bad]) == [1]
+    assert tdd.filter_survivors([bad, bad]) == [0, 1]
+
+
+def test_mode_string():
+    from types import SimpleNamespace as N
+    from src.eval import _mode
+    assert _mode(N(tdd=True, tdd_repair=False, tdd_k=8, tdd_filter=True, stream=False)) == "tdd k8+filter"
+    assert _mode(N(tdd=True, tdd_repair=False, tdd_k=4, tdd_filter=False, stream=False)) == "tdd"

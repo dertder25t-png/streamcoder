@@ -17,9 +17,15 @@ from concurrent.futures import ThreadPoolExecutor
 from . import llm
 from .config import cfg
 from .eval import (KIT, SYSTEM, _run, _write_tsconfig, build_prompt, compile_alone, ext, extract_code,
-                   required_exports, run_tests_cat, vram_used_mb)
+                   missing_exports, required_exports, run_tests_cat, vram_used_mb)
 
 N_CAND, CAND_TEMP, SUITES = 4, 0.7, "ab"
+
+
+def cand_plan(n: int) -> tuple:
+    """cand0 at temperature 0 (no seed); cand1..n-1 at temperature 0.7 with seeds 1..n-1.
+    Shared by tools/freeze.py and solve() so offline and live candidates are identical."""
+    return [0] + [CAND_TEMP] * (n - 1), [None] + list(range(1, n))
 
 # ---------------------------------------------------------------- type-only detection
 
@@ -358,6 +364,91 @@ def miss_reason(scores: list, picked: int, hidden: list):
         return None
     return "self-test" if all(scores[i] < scores[picked] for i in good) else "tie-break"
 
+def _smoke_file(t) -> str:
+    react = t["topic"] == "react"
+    head = ["// @vitest-environment jsdom"] if react else []
+    head.append('import { test } from "vitest";')
+    head.append('import { writeFileSync as __wf } from "node:fs";')
+    if react:
+        head += ['import React from "react";', 'import { render, cleanup } from "@testing-library/react";']
+        boundary = """
+class EB extends React.Component<{ children?: any }, { e: boolean }> {
+  state = { e: false };
+  static getDerivedStateFromError() { return { e: true }; }
+  componentDidCatch() {}
+  render() { return this.state.e ? null : (this.props as any).children; }
+}
+"""
+    else:
+        boundary = ""
+    body = """
+const OUT = (globalThis as any).__SMOKE_OUT__;
+test("smoke", async () => {
+  const res: any = { import_ok: false, render_errors: [] };
+  const origErr = console.error; console.error = () => {};
+  try {
+    const m: any = await import("./solution");
+    res.import_ok = true;
+    %s
+  } catch (e: any) { res.import_error = String((e && e.message) || e).slice(0, 200); }
+  console.error = origErr;
+  __wf(OUT, JSON.stringify(res));
+}, 20000);
+"""
+    render = ""
+    if react:
+        render = """for (const [k, v] of Object.entries(m)) {
+      if (!/^[A-Z]/.test(k) || typeof v !== "function") continue;
+      try { const C: any = v; render(<EB><C /></EB>); cleanup(); }
+      catch (e: any) { res.render_errors.push(k); try { cleanup(); } catch {} }
+    }"""
+    return "\n".join(head) + "\n" + boundary + body.replace("(globalThis as any).__SMOKE_OUT__", "OUTPATH") % render
+
+
+def _tsc_count(t, code: str, k: int) -> int:
+    run = KIT / ".runs" / f"tdd--{t['id']}--pk{k}tsc"   # "tdd--" prefix: hidden grading's `.runs/<id>` filter ignores it
+    shutil.rmtree(run, ignore_errors=True)
+    run.mkdir(parents=True)
+    try:
+        (run / f"solution{ext(t)}").write_text(code)
+        _write_tsconfig(t, run)
+        out = _run([str(KIT / "node_modules" / ".bin" / "tsc"), "-p", str(run / "tsconfig.json")], tdd._timeout())
+        return len(re.findall(r"error TS\d+", out.stdout))
+    except Exception:
+        return 0
+    finally:
+        shutil.rmtree(run, ignore_errors=True)
+
+
+def _smoke(t, code: str, k: int) -> dict:
+    run = tdd._run_dir(t, f"pk{k}smoke")
+    try:
+        (run / f"solution{ext(t)}").write_text(code)
+        out = run / "smoke.json"
+        src = _smoke_file(t).replace("OUTPATH", json.dumps(str(out)))
+        (run / f"smoke.test{ext(t)}").write_text(src)
+        _write_tsconfig(t, run)
+        _run([str(KIT / "node_modules" / ".bin" / "vitest"), "run", f".runs/{run.name}", "--reporter=json",
+              f"--outputFile={run / 'result.json'}"], tdd._timeout())
+        d = json.loads(out.read_text())
+        return {"ok": bool(d.get("import_ok")), "error": d.get("import_error", ""),
+                "render_errors": d.get("render_errors", [])}
+    except Exception as e:  # smoke file never wrote its result (crash/timeout at import) => failed
+        return {"ok": False, "error": f"no result: {type(e).__name__}", "render_errors": []}
+    finally:
+        shutil.rmtree(run, ignore_errors=True)
+
+
+def filter_survivors(cands: list) -> list:
+    """Zero-LLM filter: drop candidates with tsc errors, missing exports or a failed smoke import.
+    cands[i] needs "tsc", "missing", "smoke". If none survive, keep all."""
+    ok = [i for i, c in enumerate(cands) if c["tsc"] == 0 and not c["missing"] and c["smoke"]["ok"]]
+    return ok or list(range(len(cands)))
+
+
+def filter_features(t, k: int, code: str) -> dict:
+    return {"tsc": _tsc_count(t, code, k), "missing": missing_exports(t, code), "smoke": _smoke(t, code, k)}
+
 # ---------------------------------------------------------------- running self-tests
 
 def _run_dir(t, name: str):
@@ -553,22 +644,26 @@ def build_repair(t, base: list, answer: str, failing: list, suites: dict) -> lis
 
 # ---------------------------------------------------------------- main entry
 
-def _chat(model, msgs, max_tokens, temperature) -> dict:
+def _chat(model, msgs, max_tokens, temperature, seed=None) -> dict:
     try:
-        return llm.chat(model, msgs, max_tokens=max_tokens, temperature=temperature)
+        return llm.chat(model, msgs, max_tokens=max_tokens, temperature=temperature, seed=seed)
     except Exception as e:  # one failed request must not kill the whole run
         return {"text": "", "seconds": 0, "completion_tokens": 0, "error": str(e)[:100]}
 
 
 def solve(t, a):
-    """Returns (final code, info dict). info['seconds'] covers generation + self-tests + repair only."""
+    """Returns (final code, info dict). info['seconds'] covers generation + filter + self-tests + repair
+    (not the diagnostic hidden grading of every candidate)."""
     t0 = time.time()
-    type_only = is_type_only(t)
+    k_n = max(1, int(getattr(a, "tdd_k", N_CAND)))
+    use_filter = bool(getattr(a, "tdd_filter", False))
+    temps, seeds = cand_plan(k_n)
+    type_only, hook = is_type_only(t), is_hook_task(t)
     base = [{"role": "system", "content": SYSTEM}, {"role": "user", "content": build_prompt(t)}]
-    with ThreadPoolExecutor(6) as ex:
+    with ThreadPoolExecutor(k_n + len(SUITES)) as ex:
         sf = {s: ex.submit(_chat, a.model, suite_messages(t, s, type_only), 1536, 0) for s in SUITES}
-        cf = [ex.submit(_chat, a.model, base, 2048, CAND_TEMP) for _ in range(N_CAND)]
-        parsed = {s: parse_suite_n(f.result()["text"], type_only, is_hook_task(t)) for s, f in sf.items()}
+        cf = [ex.submit(_chat, a.model, base, 2048, temps[k], seeds[k]) for k in range(k_n)]
+        parsed = {s: parse_suite_n(f.result()["text"], type_only, hook) for s, f in sf.items()}
         suites = {s: p[0] for s, p in parsed.items()}
         outs = [f.result() for f in cf]
     gen_secs = time.time() - t0
@@ -576,22 +671,28 @@ def solve(t, a):
 
     runs = [write_run(t, f"cand{k}", c, suites, type_only) for k, c in enumerate(codes)]
     try:
-        with ThreadPoolExecutor(N_CAND) as ex:
+        with ThreadPoolExecutor(k_n) as ex:
             res = list(ex.map(lambda r: run_selftests(t, r[0], r[1], type_only), runs))
+            feats = list(ex.map(lambda kc: filter_features(t, *kc), enumerate(codes))) if use_filter else None
         counts = [read_counts(r[0]) for r in runs]
-        sc = score_tests([{k: v[0] for k, v in r.items()} for r in res])
+        keep = filter_survivors(feats) if use_filter else list(range(k_n))
+        sc = score_tests([{k: v[0] for k, v in res[i].items()} for i in keep])
 
-        def tiebreak(i):  # fewer tsc errors, fewer console problems, fewer unhandled rejections, lowest index
-            c = counts[i]
+        def tiebreak(j):  # j indexes `keep`: fewer tsc errors, fewer console problems, fewer unhandled, lowest index
+            i, c = keep[j], counts[keep[j]]
             return (len(compile_alone(t, codes[i], 999).splitlines()), c["err"] + c["warn"], c["unhandled"], i)
-        picked, top_tie = pick(sc["scores"], tiebreak)
+        pj, top_tie = pick(sc["scores"], tiebreak)
+        picked = keep[pj]
+        cand_scores = [None] * k_n
+        for j, i in enumerate(keep):
+            cand_scores[i] = sc["scores"][j]
         final, info = codes[picked], {}
 
         # stage 2: one repair turn if the pick fails a test that another candidate passes
         info.update(repair_called=False, repair_kept=False, repaired_passed=None)
         if getattr(a, "tdd_repair", False):
             failing = [(k, res[picked].get(k, (False, "suite crashed"))[1]) for k in sc["keys"]
-                       if not res[picked].get(k, (False,))[0] and any(r.get(k, (False,))[0] for r in res)]
+                       if not res[picked].get(k, (False,))[0] and any(res[i].get(k, (False,))[0] for i in keep)]
             if failing:
                 info["repair_called"] = True
                 msgs = build_repair(t, base, outs[picked]["text"], failing, suites)
@@ -599,7 +700,7 @@ def solve(t, a):
                 code2 = extract_code(out2["text"])
                 run2 = write_run(t, "repair", code2, suites, type_only)
                 res2 = run_selftests(t, run2[0], run2[1], type_only)
-                if sum(bool(res2.get(k, (False,))[0]) for k in sc["keys"]) > sc["scores"][picked]:
+                if sum(bool(res2.get(k, (False,))[0]) for k in sc["keys"]) > sc["scores"][pj]:
                     final, info["repair_kept"] = code2, True
         seconds = round(time.time() - t0, 2)
     finally:
@@ -614,8 +715,10 @@ def solve(t, a):
     toks = sum(o.get("completion_tokens") or 0 for o in outs)
     info.update(seconds=seconds, tokens_per_sec=round(toks / gen_secs, 1) if gen_secs and toks else None,
                 vram_mb=vram_used_mb(), type_only=type_only, suites_ok=[bool(suites[s]) for s in SUITES],
+                k=k_n, temps=temps, seeds=seeds, filter=use_filter,
+                filtered_out=[i for i in range(k_n) if i not in keep],
                 hook_tests_dropped={s: p[1] for s, p in parsed.items()},
-                cand_hidden=cand_hidden, cand_scores=sc["scores"], picked=picked, top_tie=top_tie,
+                cand_hidden=cand_hidden, cand_scores=cand_scores, picked=picked, top_tie=top_tie,
                 n_tests=sc["n_tests"], n_zero=sc["n_zero"], n_all=sc["n_all"], oracle=any(cand_hidden))
     return final, info
 

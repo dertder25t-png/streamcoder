@@ -251,6 +251,9 @@ def _git_commit():
 
 def _mode(a):
     if a.tdd:
+        k, flt = getattr(a, "tdd_k", 4), getattr(a, "tdd_filter", False)
+        if k != 4 or flt:
+            return f"tdd k{k}" + ("+filter" if flt else "") + ("+repair" if a.tdd_repair else "")
         return "tdd+repair" if a.tdd_repair else "tdd"
     return "stream" if a.stream else "plain"
 
@@ -295,6 +298,8 @@ def main(argv=None):
     ap.add_argument("--model-file", default="", help="GGUF file name, e.g. coder-7b-q4_k_m.gguf")
     ap.add_argument("--tdd", action="store_true", help="blind TDD: 4 candidates + self-tests, pick the best")
     ap.add_argument("--tdd-repair", action="store_true", help="--tdd plus one repair turn on the pick")
+    ap.add_argument("--tdd-k", type=int, default=4, help="--tdd: candidates per task (cand0 temp 0, rest temp 0.7 + seeds)")
+    ap.add_argument("--tdd-filter", action="store_true", help="--tdd: drop tsc-error/missing-export/bad-import candidates first")
     a = ap.parse_args(argv)
     a.tdd = a.tdd or a.tdd_repair
     if a.tdd and a.stream:

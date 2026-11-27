@@ -39,79 +39,7 @@ LIVE_ORACLE = 0.38
 # ------------------------------------------------------------------ step A: features
 
 
-def _smoke_file(t) -> str:
-    react = t["topic"] == "react"
-    head = ["// @vitest-environment jsdom"] if react else []
-    head.append('import { test } from "vitest";')
-    head.append('import { writeFileSync as __wf } from "node:fs";')
-    if react:
-        head += ['import React from "react";', 'import { render, cleanup } from "@testing-library/react";']
-        boundary = """
-class EB extends React.Component<{ children?: any }, { e: boolean }> {
-  state = { e: false };
-  static getDerivedStateFromError() { return { e: true }; }
-  componentDidCatch() {}
-  render() { return this.state.e ? null : (this.props as any).children; }
-}
-"""
-    else:
-        boundary = ""
-    body = """
-const OUT = (globalThis as any).__SMOKE_OUT__;
-test("smoke", async () => {
-  const res: any = { import_ok: false, render_errors: [] };
-  const origErr = console.error; console.error = () => {};
-  try {
-    const m: any = await import("./solution");
-    res.import_ok = true;
-    %s
-  } catch (e: any) { res.import_error = String((e && e.message) || e).slice(0, 200); }
-  console.error = origErr;
-  __wf(OUT, JSON.stringify(res));
-}, 20000);
-"""
-    render = ""
-    if react:
-        render = """for (const [k, v] of Object.entries(m)) {
-      if (!/^[A-Z]/.test(k) || typeof v !== "function") continue;
-      try { const C: any = v; render(<EB><C /></EB>); cleanup(); }
-      catch (e: any) { res.render_errors.push(k); try { cleanup(); } catch {} }
-    }"""
-    return "\n".join(head) + "\n" + boundary + body.replace("(globalThis as any).__SMOKE_OUT__", "OUTPATH") % render
-
-
-def _tsc_count(t, code: str, k: int) -> int:
-    run = KIT / ".runs" / f"tdd--{t['id']}--pk{k}tsc"   # "tdd--" prefix: hidden grading's `.runs/<id>` filter ignores it
-    shutil.rmtree(run, ignore_errors=True)
-    run.mkdir(parents=True)
-    try:
-        (run / f"solution{ext(t)}").write_text(code)
-        _write_tsconfig(t, run)
-        out = _run([str(KIT / "node_modules" / ".bin" / "tsc"), "-p", str(run / "tsconfig.json")], tdd._timeout())
-        return len(re.findall(r"error TS\d+", out.stdout))
-    except Exception:
-        return 0
-    finally:
-        shutil.rmtree(run, ignore_errors=True)
-
-
-def _smoke(t, code: str, k: int) -> dict:
-    run = tdd._run_dir(t, f"pk{k}smoke")
-    try:
-        (run / f"solution{ext(t)}").write_text(code)
-        out = run / "smoke.json"
-        src = _smoke_file(t).replace("OUTPATH", json.dumps(str(out)))
-        (run / f"smoke.test{ext(t)}").write_text(src)
-        _write_tsconfig(t, run)
-        _run([str(KIT / "node_modules" / ".bin" / "vitest"), "run", f".runs/{run.name}", "--reporter=json",
-              f"--outputFile={run / 'result.json'}"], tdd._timeout())
-        d = json.loads(out.read_text())
-        return {"ok": bool(d.get("import_ok")), "error": d.get("import_error", ""),
-                "render_errors": d.get("render_errors", [])}
-    except Exception as e:  # smoke file never wrote its result (crash/timeout at import) => failed
-        return {"ok": False, "error": f"no result: {type(e).__name__}", "render_errors": []}
-    finally:
-        shutil.rmtree(run, ignore_errors=True)
+_smoke_file, _tsc_count, _smoke = tdd._smoke_file, tdd._tsc_count, tdd._smoke  # shared with src/tdd.py
 
 
 def _candidate(t, k: int, code: str, suites: dict, type_only: bool, drivers: str) -> dict:
@@ -218,11 +146,7 @@ def pick_mbr(cands: list) -> tuple:
     return _best(mbr_scores(cands), cands)
 
 
-def filter_survivors(cands: list) -> list:
-    """(d) zero-LLM filter: drop candidates with tsc errors, missing exports or a failed smoke import.
-    If none survive, keep all."""
-    ok = [i for i, c in enumerate(cands) if c["tsc"] == 0 and not c["missing"] and c["smoke"]["ok"]]
-    return ok or list(range(len(cands)))
+filter_survivors = tdd.filter_survivors  # one implementation, shared with the live pipeline
 
 
 def pick_filter(cands: list) -> tuple:
