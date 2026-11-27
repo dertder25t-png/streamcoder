@@ -59,11 +59,46 @@ If two phases in a row gain less than +3 pts, pivot to a benchmark project.
 - **The 100 eval tasks and their tests are frozen.** Edits would break comparisons with the
   baselines. If a task looks broken, ask first.
 
-## Phase A results so far
+## Status (2026-11-26)
 
-- **React audit (2026-11-26), 10 failing React tasks, plain 7B:** spec misreads at boundaries or in
-  conditional rendering 5, mirrored state instead of derived 2, invented or changed props/types 2,
-  wrong DOM event 1. No single React mechanic reaches 4 of 10, so there's no React-rule run.
-- **Oracle pass@4 (diagnostic, not a score):** temp-0 single shot 21%. At least one of 4 samples passes
-  on 34% (TS 15/35, React 10/35, Node 9/30). Tasks by passing samples (0–4): 66 / 13 / 4 / 6 / 11.
-  A perfect picker could add up to +13 pts, and the gate needs +5.
+**Next step: Phase A step 3, blind TDD + best-of-4.** Steps 1–2 are done. Everything below is from
+stats/runs.jsonl (run #) or from scratchpad diagnostics that are not on the stat sheet.
+
+### Baselines (plain prompt, temp 0, 100 frozen tasks)
+| Model | Pass | Sec/task | VRAM |
+|---|---|---|---|
+| 7B Q4_K_M (#6) | 20% | 8.4 | 4,732 MB |
+| 14B Q4_K_M (#7) | 41% | 15.9 | 9,296 MB |
+| 14B + format rules + repair (#14, the target to compare with) | 42% | 21.0 | 9,304 MB |
+
+### Changes tried (7B)
+| Change | Runs | Result | Decision |
+|---|---|---|---|
+| Router + library v1 (TF-IDF) | #8 | 15% | baseline for stream |
+| Recipes only, no docs | #9 | 15% | reverted (no gain) |
+| Format rules at end of prompt | #10–11 | plain 21%, stream 17% | **kept** |
+| One tsc repair retry (solution compiled alone, no tests) | #12–13 | plain 22%, stream 19% | **kept** |
+| Route/search on first paragraph only | #15 | 19% | reverted |
+| Embedding search (nomic v1.5, CPU), min_score 0.91 | #16 | stream 21% | **kept** |
+| Raw-score gate 0.61 + top-1 chunk | #17 | 19% | reverted |
+| Missing-export check in repair | #18–19 | plain 22% (slower), stream 22% at 21.4 s | reverted |
+
+Current best: **plain 7B + format rules + repair = 22% at ~12 s/task**. The stream setup is not better
+than plain, so retrieval tuning has stopped. Retrieval only comes back as post-mortem retrieval (step 4).
+
+### Diagnostics (not scores)
+- **Speed check:** a slow run 19 (24 tok/s instead of ~36) was not caused by the embedding server
+  (llama-bench shows the same speed with it stopped, idle or busy). The run script now benches before
+  each eval. Details: docs/hardware.md.
+- **React audit (10 failing tasks):** spec misreads at boundaries or in conditional rendering 5,
+  mirrored state instead of derived 2, invented or changed props/types 2, wrong DOM event 1. No React
+  mechanic reaches 4 of 10, so there's no React-rule run. Soft spot: the react-06 prompt doesn't say the
+  component takes no props (the eval is frozen, so that's the user's call).
+- **Oracle pass@4** (single shot, temp 0 + 3 at temp 0.6, no repair): temp 0 = 21%, any of 4 = **34%**
+  (TS 15/35, React 10/35, Node 9/30). Tasks by passing samples (0–4): 66 / 13 / 4 / 6 / 11. A perfect
+  picker could add up to +13 pts, and the gate needs +5. Script: tools/diag.py (audit | oracle).
+
+### Blind TDD plan details (to start)
+- The model writes 4–5 vitest tests from the prompt only. It never sees the hidden tests or references.
+- 4 samples (temp 0 + 3 at 0.6), drop tsc failures, rank by self-test passes, tie-break on agreement,
+  up to 2 repair rounds. Compare with plain 7B + rules + repair (22%). Latency must stay under 21 s/task.

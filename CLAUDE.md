@@ -5,10 +5,21 @@ Keep token use low: read only the files a task needs, prefer small diffs, no lon
 - Goal, status, phases: README.md. Hardware/runtime: docs/hardware.md. Multi-AI plan: docs/multi-model.md.
 - Stack under test: TypeScript, React, Node. Packs: typescript, react, node, general.
 - Python 3.11+ (`python -m src.<name>`). Eval grading lives in evalkit/ (Node: tsc + vitest).
-- Router and library are CPU-only (scikit-learn TF-IDF) on purpose. Swap to embeddings later behind the same functions.
+- Router (TF-IDF) and library are CPU-only on purpose. The library uses nomic-embed-text on a CPU llama-server
+  (`setup/embed_server.sh`, port 8081), which must be running for `--stream` runs.
 - LLM calls go to llama-server's OpenAI-compatible API (config.yaml `models`). Never load models in Python.
 - Base model stays resident on the eGPU; only text and LoRA adapters get swapped (slow Thunderbolt link).
+- GPU: always pass `--device Vulkan1` (the RX 6700 XT; Vulkan0 is the Intel iGPU). Eval runs use temperature 0.
+- Plan, current status and the next step: docs/ROADMAP.md (currently Phase A step 3, blind TDD + best-of-4).
 - Checks: `python -m pytest -q` and `python -m src.eval --reference` (every ready task must pass).
+
+## Standing rules from the user
+- Don't change the SYSTEM prompt in src/eval.py.
+- Never put eval tests or solutions in the library or router data. Never invent benchmark numbers.
+- Ask before downloading anything over 1 GB.
+- Latency budget: stay under the 14B's 21 s/task.
+- One labeled run per change, short result tables, commit and push after each.
+- Diagnostics (React audit, oracle pass@N via tools/diag.py) are never scores and stay off the stat sheet.
 
 ## Frozen eval and final exam (see docs/ROADMAP.md)
 - The 100 tasks in data/eval/ and their tests are FROZEN. Don't edit them; ask the user first if one looks broken.
