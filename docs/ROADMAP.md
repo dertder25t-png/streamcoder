@@ -88,6 +88,12 @@ Stage 1 picker (run #20): in-run oracle 38%, picker accuracy 68% (TS 85, React 5
 top-score tie 86%, self-tests 0/4 = 60% (React 91%), 4/4 = 19%. All 12 missed tasks lost on a
 tie-break, none on self-test score: the self-tests rarely separate candidates.
 
+Stage 2, + one repair turn (run #21): 33% at 30.5 s/task, 4,978 MB. The repair was called on only 2
+tasks and kept 0 times, so run #21 used the same pipeline as #20. The 26 -> 33 gap is sampling noise
+at temp 0.7, which means a single best-of-4 run has about ±4 pts of noise. Picker accuracy 87%,
+top tie 80%, 5 tie-break misses. Repair rarely runs because the pick almost never fails a test that
+another candidate passes (ties dominate). Both runs are over the 21 s/task budget; `--tdd` stays off by default.
+
 Current best: **plain 7B + format rules + repair = 22% at ~12 s/task**. The stream setup is not better
 than plain, so retrieval tuning has stopped. Retrieval only comes back as post-mortem retrieval (step 4).
 
