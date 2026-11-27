@@ -10,6 +10,10 @@ Keep token use low: read only the files a task needs, prefer small diffs, no lon
 - Base model stays resident on the eGPU; only text and LoRA adapters get swapped (slow Thunderbolt link).
 - Checks: `python -m pytest -q` and `python -m src.eval --reference` (every ready task must pass).
 
+## Frozen eval and final exam (see docs/ROADMAP.md)
+- The 100 tasks in data/eval/ and their tests are FROZEN. Don't edit them; ask the user first if one looks broken.
+- `data/final_exam/` (added later): never open, read, run or tune on it until the user says so.
+
 ## Eval rules
 - A task becomes `status: "ready"` only when `data/eval/tasks/<id>/` has `reference.ts(x)` and
   `solution.test.ts(x)`, the reference passes, AND at least one plausible buggy version fails.
