@@ -16,7 +16,7 @@ library:
   index_path: data/library/index.joblib
   top_k: 3
   max_context_chars: 4000      # cap on retrieved text added to the prompt
-  query: first_paragraph       # step 5b change 1: route/search on the task description only (full = whole prompt)
+  query: full                  # first_paragraph = route/search on task description only. Tried 2026-11-26: 19% (no change), slower; reverted
   include_docs: true           # false = recipes only. Tried 2026-11-26: 15% (no change vs v1), reverted
   min_score: 0.12              # drop weak matches: irrelevant context can confuse a small model
 
